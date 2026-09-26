@@ -1,0 +1,373 @@
+% رزنامة العطل المدرسية والمناسبات الوطنية والدينية
+% Compile with:  xelatex rozname.tex
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=0mm]{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,calc}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\setotherlanguage{arabic}
+\newfontfamily\arabicfont[Script=Arabic]{Amiri}
+\newfontfamily\arabicfonttt[Script=Arabic]{Amiri}
+\newfontfamily\numfont{Amiri}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+% ---------------- Colors ----------------
+\definecolor{bgpink}{HTML}{F48FA8}
+\definecolor{pinkline}{HTML}{EE7C98}
+\definecolor{pinkdark}{HTML}{D94F77}
+\definecolor{pinkhead}{HTML}{F9B8C8}
+\definecolor{pinkheadtop}{HTML}{F6A2B7}
+\definecolor{pinksoft}{HTML}{FDECF1}
+\definecolor{paper}{HTML}{FFFBFB}
+\definecolor{cream}{HTML}{FFF8EE}
+\definecolor{gold}{HTML}{D6AA52}
+\definecolor{golddark}{HTML}{B8862E}
+\definecolor{leaf}{HTML}{5DAA4A}
+\definecolor{leafdark}{HTML}{3D7F33}
+\definecolor{cloudblue}{HTML}{DCEBFA}
+\definecolor{sky}{HTML}{7FB2E5}
+\definecolor{algreen}{HTML}{0B7A3E}
+\definecolor{alred}{HTML}{D21034}
+\definecolor{txt}{HTML}{1E1E1E}
+
+\newcommand{\ar}[1]{\textarabic{#1}}
+
+% ---------------- Decorative macros ----------------
+% cloud: \cloud{x}{y}{scale}
+\newcommand{\cloud}[3]{%
+  \begin{scope}[shift={({#1},{#2})},scale=#3]
+    \fill[cloudblue] (-9,0) circle (4) (-3,2.5) circle (5.5) (4,1.5) circle (4.5) (9,-0.5) circle (3.3)
+                     (-12,-1.5) circle (2.6);
+    \fill[cloudblue] (-13,-3.2) rectangle (12,-1);
+    \fill[white] (-8.6,0.6) circle (3.3) (-2.8,3.2) circle (4.6) (4,2.2) circle (3.6) (8.5,0.2) circle (2.4);
+  \end{scope}}
+
+% sparkle: \sparkle{x}{y}{size}
+\newcommand{\sparkle}[3]{%
+  \fill[gold] (#1,#2+#3) .. controls (#1+0.15*#3,#2+0.15*#3) .. (#1+#3,#2)
+              .. controls (#1+0.15*#3,#2-0.15*#3) .. (#1,#2-#3)
+              .. controls (#1-0.15*#3,#2-0.15*#3) .. (#1-#3,#2)
+              .. controls (#1-0.15*#3,#2+0.15*#3) .. cycle;}
+
+% leaf: \leafat{x}{y}{angle}{length}
+\newcommand{\leafat}[4]{%
+  \begin{scope}[shift={({#1},{#2})},rotate=#3]
+    \fill[leaf] (0,0) .. controls (0.35*#4,0.3*#4) and (0.75*#4,0.2*#4) .. (#4,0)
+                      .. controls (0.75*#4,-0.2*#4) and (0.35*#4,-0.3*#4) .. (0,0);
+    \draw[leafdark,line width=0.25pt] (0,0) -- (0.9*#4,0);
+  \end{scope}}
+
+% rose bud: \bud{x}{y}{angle}{scale}
+\newcommand{\bud}[4]{%
+  \begin{scope}[shift={({#1},{#2})},rotate=#3,scale=#4]
+    \draw[leafdark,line width=0.8pt] (0,-4) -- (0,0);
+    \fill[leaf] (0,0.2) .. controls (-1.6,0.4) and (-1.9,1.6) .. (-1.4,2.6) .. controls (-1.2,1.4) .. (0,0.9) -- cycle;
+    \fill[leaf] (0,0.2) .. controls (1.6,0.4) and (1.9,1.6) .. (1.4,2.6) .. controls (1.2,1.4) .. (0,0.9) -- cycle;
+    \shade[top color=pinkhead,bottom color=pinkdark] (0,0.6) .. controls (-1.5,1.2) and (-1.4,3.4) .. (0,4.6)
+         .. controls (1.4,3.4) and (1.5,1.2) .. (0,0.6);
+    \draw[pinkdark,line width=0.3pt] (0,0.8) .. controls (-0.6,2) .. (0,4.4);
+  \end{scope}}
+
+% branch of leaves with buds: \branch{x}{y}{angle}{scale}
+\newcommand{\branch}[4]{%
+  \begin{scope}[shift={({#1},{#2})},rotate=#3,scale=#4]
+    \draw[leafdark,line width=0.9pt] (0,0) .. controls (8,2) and (16,1) .. (24,-2);
+    \foreach \p/\a in {3/60,6/-50,9/65,12/-45,15/60,18/-40,21/50}{
+      \leafat{\p}{0.08*\p*(1-\p/24)*4}{\a}{4.2}}
+    \bud{24}{-2}{-70}{0.8}
+    \bud{11}{2.5}{-20}{0.6}
+  \end{scope}}
+
+% gold flourish divider with a tulip: \divider{x}{y}{halfwidth}
+\newcommand{\divider}[3]{%
+  \begin{scope}[shift={({#1},{#2})}]
+    \draw[gold,line width=0.6pt] (-#3,0) -- (-6,0) (6,0) -- (#3,0);
+    \fill[gold] (-#3,0) circle (0.5) (#3,0) circle (0.5);
+    \foreach \s in {-1,1}{
+      \draw[gold,line width=0.8pt] (\s*6,0) .. controls (\s*4.5,1.6) and (\s*3,1.4) .. (\s*3.2,0.3)
+                                   (\s*6,0) .. controls (\s*4.5,-1.6) and (\s*3,-1.4) .. (\s*3.2,-0.3);
+      \draw[gold,line width=0.6pt] (\s*9,0) circle (0.7);
+      \fill[gold] (\s*12,0) -- (\s*12.8,0.6) -- (\s*13.6,0) -- (\s*12.8,-0.6) -- cycle;
+    }
+    \fill[pinkline] (0,-1.2) .. controls (-2.2,0) and (-1.2,2) .. (0,3.2) .. controls (1.2,2) and (2.2,0) .. (0,-1.2);
+    \fill[pinkhead] (0,-1) .. controls (-1,0.3) .. (0,2.2) .. controls (1,0.3) .. (0,-1);
+    \fill[leaf] (0,-1.2) .. controls (-2.6,-0.8) .. (-3,0.6) .. controls (-1.6,0) .. (0,-0.6) -- cycle;
+    \fill[leaf] (0,-1.2) .. controls (2.6,-0.8) .. (3,0.6) .. controls (1.6,0) .. (0,-0.6) -- cycle;
+  \end{scope}}
+
+% plaque with curved pointed ends: \plaque{cx}{cy}{w}{h}
+\newcommand{\plaque}[4]{%
+  \pgfmathsetmacro{\hw}{#3/2}\pgfmathsetmacro{\hh}{#4/2}\pgfmathsetmacro{\tp}{#4*0.28}
+  \fill[black!12] ($(#1,#2)+(-\hw+\tp,\hh-0.6)$) -- ($(#1,#2)+(\hw-\tp,\hh-0.6)$)
+        .. controls ($(#1,#2)+(\hw-0.2*\tp,\hh-0.6)$) and ($(#1,#2)+(\hw-0.6*\tp,-0.6)$) .. ($(#1,#2)+(\hw+0.4,-0.6)$)
+        .. controls ($(#1,#2)+(\hw-0.6*\tp,-0.6)$) and ($(#1,#2)+(\hw-0.2*\tp,-\hh-0.6)$) .. ($(#1,#2)+(\hw-\tp,-\hh-0.6)$)
+        -- ($(#1,#2)+(-\hw+\tp,-\hh-0.6)$)
+        .. controls ($(#1,#2)+(-\hw+0.2*\tp,-\hh-0.6)$) and ($(#1,#2)+(-\hw+0.6*\tp,-0.6)$) .. ($(#1,#2)+(-\hw-0.4,-0.6)$)
+        .. controls ($(#1,#2)+(-\hw+0.6*\tp,-0.6)$) and ($(#1,#2)+(-\hw+0.2*\tp,\hh-0.6)$) .. cycle;
+  \filldraw[fill=cream,draw=gold,line width=0.9pt]
+        ($(#1,#2)+(-\hw+\tp,\hh)$) -- ($(#1,#2)+(\hw-\tp,\hh)$)
+        .. controls ($(#1,#2)+(\hw-0.2*\tp,\hh)$) and ($(#1,#2)+(\hw-0.6*\tp,0)$) .. ($(#1,#2)+(\hw,0)$)
+        .. controls ($(#1,#2)+(\hw-0.6*\tp,0)$) and ($(#1,#2)+(\hw-0.2*\tp,-\hh)$) .. ($(#1,#2)+(\hw-\tp,-\hh)$)
+        -- ($(#1,#2)+(-\hw+\tp,-\hh)$)
+        .. controls ($(#1,#2)+(-\hw+0.2*\tp,-\hh)$) and ($(#1,#2)+(-\hw+0.6*\tp,0)$) .. ($(#1,#2)+(-\hw,0)$)
+        .. controls ($(#1,#2)+(-\hw+0.6*\tp,0)$) and ($(#1,#2)+(-\hw+0.2*\tp,\hh)$) .. cycle;
+  \fill[gold] ($(#1,#2)+(-\hw,0)$) circle (0.55) ($(#1,#2)+(\hw,0)$) circle (0.55);}
+
+% ---------------- Icons ----------------
+\newcommand{\mapleleaf}[3]{% x y size
+  \begin{scope}[shift={({#1},{#2})},scale=#3]
+    \draw[golddark!80!red,line width=0.8pt] (0,-0.2) -- (0.1,-1.4);
+    \shade[top color=orange!90!yellow,bottom color=red!80!orange]
+      (0,-0.2) -- (-0.35,0) -- (-1.05,-0.25) -- (-0.85,0.1) -- (-1.25,0.35) -- (-0.75,0.45) -- (-0.95,0.95)
+      -- (-0.45,0.7) -- (-0.4,1.1) -- (-0.15,0.85) -- (0,1.35) -- (0.15,0.85) -- (0.4,1.1) -- (0.45,0.7)
+      -- (0.95,0.95) -- (0.75,0.45) -- (1.25,0.35) -- (0.85,0.1) -- (1.05,-0.25) -- (0.35,0) -- cycle;
+    \draw[red!60!black,line width=0.25pt] (0,-0.1) -- (0,1.15) (0,0.2) -- (-0.9,0.8) (0,0.2) -- (0.9,0.8)
+         (0,0) -- (-0.9,0.05) (0,0) -- (0.9,0.05);
+  \end{scope}}
+
+\newcommand{\snowflake}[3]{%
+  \begin{scope}[shift={({#1},{#2})},scale=#3]
+    \foreach \a in {0,60,...,300}{
+      \begin{scope}[rotate=\a]
+        \draw[sky!85!blue,line width=1.3pt,line cap=round] (0,0) -- (0,1.25);
+        \draw[sky!85!blue,line width=1pt,line cap=round] (0,0.55) -- (-0.3,0.85) (0,0.55) -- (0.3,0.85)
+                                                        (0,0.9) -- (-0.22,1.12) (0,0.9) -- (0.22,1.12);
+      \end{scope}}
+  \end{scope}}
+
+\newcommand{\blossom}[3]{%
+  \begin{scope}[shift={({#1},{#2})},scale=#3]
+    \foreach \a in {90,162,...,378}{
+      \shade[inner color=pinkhead!60,outer color=pinkline,draw=pinkdark,line width=0.3pt] (\a:0.62) circle (0.55);}
+    \fill[yellow!70!orange] (0,0) circle (0.3);
+    \foreach \a in {0,45,...,315}{\fill[orange!80!red] (\a:0.2) circle (0.05);}
+  \end{scope}}
+
+\newcommand{\sunicon}[3]{%
+  \begin{scope}[shift={({#1},{#2})},scale=#3]
+    \foreach \a in {0,30,...,330}{
+      \fill[orange!85!yellow,rotate=\a] (0.78,0.12) -- (1.3,0) -- (0.78,-0.12) -- cycle;}
+    \shade[inner color=yellow!80!orange,outer color=orange] (0,0) circle (0.68);
+  \end{scope}}
+
+% ---------------- Illustrations ----------------
+\newcommand{\calendarpic}[3]{%
+  \begin{scope}[shift={({#1},{#2})},rotate=#3,scale=0.9]
+    \fill[black!10] (0.8,-0.8) rectangle (26.8,27.2);
+    \fill[red!75!pink] (0,0) rectangle (26,27);
+    \fill[orange!20] (-0.8,-2) rectangle (26.8,0.8);
+    \draw[orange!60,line width=0.5pt] (-0.8,-2) rectangle (26.8,0.8);
+    \filldraw[fill=white,draw=black!25,line width=0.3pt] (1,0.8) rectangle (25,25);
+    \fill[pinkhead!70] (1,21) rectangle (25,25);
+    \foreach \x in {4,7.3,...,24}{
+      \filldraw[fill=gold!80,draw=golddark,line width=0.3pt] (\x-0.6,23.6) rectangle (\x+0.6,28);
+      \fill[golddark] (\x,28) circle (0.6);}
+    \foreach \i in {0,...,5}{\foreach \j in {0,...,3}{
+      \draw[black!30,line width=0.3pt] (2.3+\i*3.6,3.2+\j*4.2) rectangle (5.3+\i*3.6,6.6+\j*4.2);}}
+    \foreach \i/\j/\n in {0/3/1,1/3/2,2/3/3,3/3/4,4/3/5,5/3/6,0/2/7,1/2/8,2/2/9,3/2/10,4/2/11,5/2/12,
+                          0/1/13,1/1/14,2/1/15,3/1/16,4/1/17,5/1/18,0/0/19,1/0/20,2/0/21,3/0/22,4/0/23,5/0/24}{
+      \node[font=\fontsize{4}{4}\selectfont,text=black!55] at (3.8+\i*3.6,4.9+\j*4.2) {\n};}
+    \fill[pinkline] (5,4.9+2*4.2) circle (1.1);
+    \node[font=\fontsize{4}{4}\selectfont,text=white] at (3.8+2*3.6,4.9+2*4.2) {9};
+    \fill[red!70!pink] (8,1.5) rectangle (18,2.5);
+  \end{scope}}
+
+\newcommand{\flagpic}[2]{%
+  \begin{scope}[shift={({#1},{#2})}]
+    \fill[golddark] (0,0) ellipse (3 and 0.9);
+    \fill[gold] (0,0.4) ellipse (2.4 and 0.6);
+    \shade[left color=golddark,right color=gold!60] (-0.35,0.4) rectangle (0.35,27);
+    \fill[gold] (0,27.3) circle (0.8);
+    \shade[left color=algreen!85!black,right color=algreen] (0.35,25.8)
+       .. controls (5,27) and (9,24.5) .. (13,25.8) -- (13,13.2)
+       .. controls (9,11.9) and (5,14.4) .. (0.35,13.2) -- cycle;
+    \shade[left color=white,right color=black!8] (13,25.8)
+       .. controls (17,27.1) and (21,25) .. (25,26) -- (25,13.4)
+       .. controls (21,12.4) and (17,14.5) .. (13,13.2) -- cycle;
+    \fill[alred] (13,19.4) circle (4.3);
+    \fill[white] (14.3,19.4) circle (3.6);
+    \begin{scope}[shift={(14.2,20.2)}]
+      \fill[alred] (90:1.9) -- (126:0.75) -- (162:1.9) -- (198:0.75) -- (234:1.9) -- (270:0.75)
+                  -- (306:1.9) -- (342:0.75) -- (18:1.9) -- (54:0.75) -- cycle;
+    \end{scope}
+  \end{scope}}
+
+\newcommand{\mosquepic}[2]{%
+  \begin{scope}[shift={({#1},{#2})}]
+    % minaret
+    \shade[left color=cream,right color=gold!35] (22,0) rectangle (26.5,23);
+    \fill[gold!55] (21.3,15.5) rectangle (27.2,16.6) (21.3,21.5) rectangle (27.2,22.6);
+    \shade[left color=algreen!70,right color=algreen] (21.8,22.6) .. controls (22,26) and (24,27) .. (24.25,29.5)
+          .. controls (24.5,27) and (26.5,26) .. (26.7,22.6) -- cycle;
+    \fill[gold] (24.25,29.8) circle (0.45);
+    \foreach \y in {5,10,18.3}{\fill[golddark!80] (23.5,\y) rectangle (25,\y+2.3); \fill[golddark!80] (24.25,\y+2.3) circle (0.75);}
+    % main building
+    \shade[left color=cream,right color=gold!35] (1,0) rectangle (21,12);
+    \fill[gold!55] (0.5,12) rectangle (21.5,13.3);
+    % main dome
+    \shade[ball color=algreen!80] (3,13.3) .. controls (2,19) and (7,21.5) .. (11,23.5)
+           .. controls (15,21.5) and (20,19) .. (19,13.3) -- cycle;
+    \fill[gold] (11,23.5) -- (10.7,25.5) -- (11.3,25.5) -- cycle;
+    \fill[gold] (11,26.3) circle (0.5);
+    % small side dome
+    \shade[ball color=algreen!80] (-2.5,6) .. controls (-2.8,9) and (0,10) .. (0.5,10.8) .. controls (1,10) and (3.8,9) .. (3.5,6) -- cycle;
+    \shade[left color=cream,right color=gold!35] (-2.8,0) rectangle (3.8,6);
+    % arches
+    \foreach \x in {4,8.5,13}{
+      \fill[golddark!75] (\x,1) rectangle (\x+3,6.5); \fill[golddark!75] (\x+1.5,6.5) circle (1.5);}
+    \fill[golddark!90] (8.5,0) rectangle (11.5,1);
+    % bushes
+    \fill[leaf] (19,0) circle (2.6) (22,0.5) circle (2.4) (25.5,-0.3) circle (2.8) (-3,-0.3) circle (2);
+    \fill[leaf!80!white] (20,0.8) circle (1.5) (25,0.7) circle (1.6);
+  \end{scope}}
+
+\newcommand{\pencilcup}[2]{%
+  \begin{scope}[shift={({#1},{#2})}]
+    % pencils
+    \begin{scope}[rotate=6]
+      \fill[sky!80!blue] (3,8) rectangle (5.2,30);
+      \fill[orange!40] (3,30) -- (5.2,30) -- (4.1,33.5) -- cycle;
+      \fill[black!80] (3.75,32.4) -- (4.45,32.4) -- (4.1,33.5) -- cycle;
+    \end{scope}
+    \begin{scope}[rotate=-4]
+      \fill[yellow!85!orange] (6.5,8) rectangle (8.7,26);
+      \fill[orange!40] (6.5,26) -- (8.7,26) -- (7.6,29.5) -- cycle;
+      \fill[black!80] (7.25,28.4) -- (7.95,28.4) -- (7.6,29.5) -- cycle;
+    \end{scope}
+    % plant
+    \draw[leafdark,line width=0.9pt] (12,10) .. controls (13,16) and (15,20) .. (16.5,25);
+    \foreach \y/\a in {13/150,15/20,18/160,20/30}{\leafat{12.8+0.35*(\y-12)}{\y}{\a}{3.8}}
+    \bud{16.5}{25}{-15}{0.8}
+    % cup
+    \shade[top color=pinkline,bottom color=pinkdark] (0,0) rectangle (15,12);
+    \fill[pinkdark!80!black] (0,12) rectangle (15,13);
+    \draw[gold,line width=0.5pt] (1,1) rectangle (14,11);
+    \draw[gold,line width=0.6pt] (7.5,6) ellipse (3 and 2.8);
+    \draw[gold,line width=0.4pt] (7.5,3.2) .. controls (6,5) and (6,7) .. (7.5,8.8) .. controls (9,7) and (9,5) .. (7.5,3.2);
+  \end{scope}}
+
+% ---------------- Table helpers ----------------
+\newcommand{\dotline}[3]{% x1 x2 y  : dotted fill line
+  \draw[black!70,line width=0.5pt,dash pattern=on 0.15mm off 0.55mm,line cap=round] (#1,#3) -- (#2,#3);}
+
+\newcommand{\numbadge}[3]{% x y number
+  \filldraw[fill=pinksoft,draw=pinkline,line width=0.6pt,rounded corners=1mm] (#1-3.6,#2-2.6) rectangle (#1+3.6,#2+2.6);
+  \node[text=pinkdark,font=\numfont\fontsize{13}{13}\selectfont] at (#1,#2) {#3};}
+
+\begin{document}
+\noindent
+\begin{tikzpicture}[x=1mm,y=1mm]
+  \useasboundingbox (0,0) rectangle (210,297);
+
+  % ---------- Background and frame ----------
+  \fill[bgpink] (0,0) rectangle (210,297);
+  \filldraw[fill=paper,draw=white,line width=2.2pt,rounded corners=10mm] (5,5) rectangle (205,292);
+  \draw[gold!70,line width=0.5pt,rounded corners=8.5mm] (7.2,7.2) rectangle (202.8,289.8);
+
+  % ---------- Scenery (clouds, sparkles, birds, branches) ----------
+  \cloud{30}{268}{0.55}
+  \cloud{183}{273}{0.75}
+  \cloud{183}{248}{0.85}
+  \cloud{33}{238}{0.6}
+  \cloud{195}{265}{0.4}
+  \foreach \x/\y/\s in {50/284/1.1,47/259/1.4,158/262/1.3,176/260/1.1,190/240/1.2,200/258/0.9,
+                        58/275/0.8,162/280/0.8,42/268/0.7,170/233/0.8,152/250/0.7}{\sparkle{\x}{\y}{\s}}
+  \foreach \x/\y/\s in {162/284/1,172/281/0.8,181/285/0.9}{
+    \draw[sky!90!blue,line width=0.9pt,line cap=round]
+      (\x-2*\s,\y+0.6*\s) .. controls (\x-\s,\y+1.2*\s) .. (\x,\y) .. controls (\x+\s,\y+1.2*\s) .. (\x+2*\s,\y+0.6*\s);}
+  \branch{7}{258}{55}{1.05}
+
+  % ---------- Title ----------
+  \divider{105}{283.5}{38}
+  \plaque{105}{264}{112}{31}
+  \node[text=txt,align=center,font=\arabicfont\bfseries\fontsize{23}{31}\selectfont] at (105,264.5)
+     {\ar{رزنامة العطل المدرسية}\\[-1mm]\ar{والمناسبات الوطنية والدينية}};
+  \begin{scope}[shift={(105,246)}]
+    \draw[gold,line width=0.5pt] (-10,0) -- (-2,0) (2,0) -- (10,0);
+    \fill[gold] (0,0) circle (0.7) (-2,0) circle (0.3) (2,0) circle (0.3);
+    \draw[gold,line width=0.5pt] (-3.5,0) .. controls (-2.5,1.2) .. (-1,0.5) (3.5,0) .. controls (2.5,1.2) .. (1,0.5);
+  \end{scope}
+  \calendarpic{17}{230}{7}
+
+  % ---------- Section 1 banner ----------
+  \plaque{105}{234.5}{86}{12.5}
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (105,235)
+     {\ar{أولاً: رزنامة العطل المدرسية}};
+  \bud{56}{233}{50}{1}
+  \leafat{56}{232}{190}{4}
+  \bud{154}{233}{-50}{1}
+  \leafat{154}{232}{-10}{4}
+
+  % ---------- Table 1 : school holidays ----------
+  % geometry: x 14..196 ; top 225 ; header 10 ; rows 15
+  \begin{scope}
+    \fill[white,rounded corners=4mm] (14,155) rectangle (196,225);
+    \fill[pinksoft] (178,155) [rounded corners=4mm] -- (196,155) -- (196,215) [sharp corners] -- (178,215) -- cycle;
+    \shade[top color=pinkheadtop,bottom color=pinkhead,rounded corners=4mm] (14,215) rectangle (196,225);
+    \fill[pinkhead] (14,215) rectangle (196,218);
+    \draw[pinkline!70,line width=0.5pt] (14,215) -- (196,215)
+         \foreach \y in {170,185,200}{ (14,\y) -- (196,\y) }
+         (134,155) -- (134,225) (74,155) -- (74,225) (178,155) -- (178,215);
+    \draw[pinkline,line width=0.9pt,rounded corners=4mm] (14,155) rectangle (196,225);
+  \end{scope}
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (156,219.2) {\ar{المناسبة}};
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (104,219.2) {\ar{من}};
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (44,219.2) {\ar{إلى}};
+  \foreach \y/\t in {207.5/{عطلة الخريف},192.5/{عطلة الشتاء},177.5/{عطلة الربيع},162.5/{العطلة الصيفية}}{
+    \node[text=txt,anchor=east,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (172,\y-1.0) {\ar{\t}};
+    \dotline{84}{124}{\y-2.5}
+    \dotline{24}{64}{\y-2.5}}
+  \mapleleaf{187}{207.5}{3.8}
+  \snowflake{187}{192.5}{3.9}
+  \blossom{187}{177.5}{3.3}
+  \sunicon{187}{162.5}{3.6}
+
+  % ---------- Divider and section 2 ----------
+  \divider{105}{148}{42}
+  \cloud{27}{128}{0.5}
+  \flagpic{19}{128}
+  \cloud{182}{128}{0.6}
+  \mosquepic{169}{128.5}
+  \sparkle{200}{143}{1.2}
+  \sparkle{160}{146}{0.9}
+  \plaque{105}{136}{104}{12.5}
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (105,136.5)
+     {\ar{ثانياً: المناسبات الوطنية والدينية}};
+  \bud{47}{134}{50}{1}
+  \leafat{47}{133}{190}{4}
+  \bud{163}{134}{-50}{1}
+  \leafat{163}{133}{-10}{4}
+
+  % ---------- Table 2 : national and religious occasions ----------
+  % geometry: x 14..196 ; top 126 ; header 10 ; 10 rows of 10
+  \begin{scope}
+    \fill[white,rounded corners=4mm] (14,16) rectangle (196,126);
+    \fill[pinksoft] (182,16) [rounded corners=4mm] -- (196,16) -- (196,116) [sharp corners] -- (182,116) -- cycle;
+    \shade[top color=pinkheadtop,bottom color=pinkhead,rounded corners=4mm] (14,116) rectangle (196,126);
+    \fill[pinkhead] (14,116) rectangle (196,119);
+    \draw[pinkline!70,line width=0.5pt] (14,116) -- (196,116)
+         \foreach \y in {26,36,...,106}{ (14,\y) -- (196,\y) }
+         (92,16) -- (92,126) (182,16) -- (182,116);
+    \draw[pinkline,line width=0.9pt,rounded corners=4mm] (14,16) rectangle (196,126);
+  \end{scope}
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (140,120.2) {\ar{المناسبة}};
+  \node[text=txt,font=\arabicfont\bfseries\fontsize{15}{15}\selectfont] at (53,120.2) {\ar{التاريخ}};
+  \foreach \n/\t [count=\i] in {01/{ذكرى اندلاع الثورة التحريرية},02/{رأس السنة الأمازيغية},03/{عيد العمال},
+       04/{عيد الاستقلال},05/{ذكرى مجازر 8 ماي 1945},06/{رأس السنة الهجرية},07/{عاشوراء},
+       08/{المولد النبوي الشريف},09/{عيد الفطر},10/{عيد الأضحى}}{
+    \pgfmathsetmacro{\yy}{116-10*\i+5}
+    \numbadge{189}{\yy-0.2}{\n}
+    \node[text=txt,anchor=east,font=\arabicfont\bfseries\fontsize{13.5}{13.5}\selectfont] at (179,\yy-0.9) {\ar{\t}};
+    \dotline{31}{75}{\yy-2.3}}
+
+  % ---------- Corner decorations ----------
+  \pencilcup{9}{12}
+  \branch{198}{9}{108}{0.72}
+  \bud{196}{36}{15}{1.1}
+  \divider{105}{8.5}{22}
+\end{tikzpicture}
+\end{document}
