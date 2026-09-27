@@ -1,13 +1,23 @@
 /**
  * Choix des projets (Google Forms + Apps Script)
- * - retire de la liste chaque projet déjà choisi ;
- * - prévient par e-mail un groupe qui a choisi un projet pris juste avant lui ;
- * - ferme le formulaire quand tous les projets sont choisis.
+ * - les projets déjà choisis restent visibles, marqués « déjà choisi » ;
+ * - un groupe qui en choisit un est envoyé vers une section qui le renvoie
+ *   au début du formulaire : il ne peut pas l'envoyer ;
+ * - un groupe qui a choisi un projet pris juste avant lui est prévenu par e-mail ;
+ * - le formulaire se ferme quand tous les projets sont choisis.
+ *
+ * Structure du formulaire (titres EXACTS) :
+ *   Section 1 : question « Projet choisi » (liste déroulante)
+ *   Section 2 : « Projet déjà choisi » (message, sans question)
+ *   Section 3 : « Informations du groupe » (membres + e-mail du responsable)
  */
 
-// Titres EXACTS des questions du formulaire
 const QUESTION_PROJET = 'Projet choisi';
 const QUESTION_EMAIL  = 'E-mail du responsable du groupe';
+const SECTION_PRIS    = 'Projet déjà choisi';
+const SECTION_GROUPE  = 'Informations du groupe';
+const MARQUE_PRIS     = '⛔ ';
+const SUFFIXE_PRIS    = ' (déjà choisi)';
 
 // Liste complète des projets (un par ligne)
 const PROJETS = [
@@ -46,24 +56,36 @@ function surEnvoi(e) {
   }
 }
 
-// Met la liste à jour avec les projets encore libres
+// Met à jour la liste : projets libres -> section groupe ; projets pris -> section « déjà choisi »
 function majListe_() {
   const form = FormApp.getActiveForm();
-  const item = form.getItems().find(i => i.getTitle() === QUESTION_PROJET);
-  if (!item) throw new Error('Question introuvable : ' + QUESTION_PROJET);
+  const item = trouver_(form, QUESTION_PROJET);
+  const sectionPris = trouver_(form, SECTION_PRIS).asPageBreakItem();
+  const sectionGroupe = trouver_(form, SECTION_GROUPE).asPageBreakItem();
+
+  // la section « déjà choisi » renvoie toujours au début du formulaire
+  sectionPris.setGoToPage(FormApp.PageNavigationType.RESTART);
 
   const pris = new Set(form.getResponses().map(r => reponse_(r, QUESTION_PROJET)));
-  const libres = PROJETS.filter(p => !pris.has(p));
-
-  if (libres.length === 0) {
-    form.setAcceptingResponses(false);
-    form.setCustomClosedFormMessage('Tous les projets ont déjà été choisis.');
-    return;
-  }
-  form.setAcceptingResponses(true);
   const liste = item.getType() === FormApp.ItemType.LIST
     ? item.asListItem() : item.asMultipleChoiceItem();
-  liste.setChoiceValues(libres);
+
+  liste.setChoices(PROJETS.map(p => pris.has(p)
+    ? liste.createChoice(MARQUE_PRIS + p + SUFFIXE_PRIS, sectionPris)
+    : liste.createChoice(p, sectionGroupe)));
+
+  if (PROJETS.every(p => pris.has(p))) {
+    form.setAcceptingResponses(false);
+    form.setCustomClosedFormMessage('Tous les projets ont déjà été choisis.');
+  } else {
+    form.setAcceptingResponses(true);
+  }
+}
+
+function trouver_(form, titre) {
+  const item = form.getItems().find(i => i.getTitle() === titre);
+  if (!item) throw new Error('Élément introuvable dans le formulaire : ' + titre);
+  return item;
 }
 
 // Réponse d'une question donnée dans une réponse du formulaire
