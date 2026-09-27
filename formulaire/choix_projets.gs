@@ -10,6 +10,9 @@
  *   Section 1 : question « Projet choisi » (liste déroulante)
  *   Section 2 : « Projet déjà choisi » (message, sans question)
  *   Section 3 : « Informations du groupe » (membres + e-mail du responsable)
+ *
+ * Images : déposer les images (01.jpg, 02.jpg, ...) dans un dossier Google Drive
+ * nommé DOSSIER_IMAGES, puis exécuter ajouterImages() une fois.
  */
 
 const QUESTION_PROJET = 'Projet choisi';
@@ -18,6 +21,8 @@ const SECTION_PRIS    = 'Projet déjà choisi';
 const SECTION_GROUPE  = 'Informations du groupe';
 const MARQUE_PRIS     = '⛔ ';
 const SUFFIXE_PRIS    = ' (déjà choisi)';
+const DOSSIER_IMAGES  = 'Images_Projets';
+const LARGEUR_IMAGE   = 400; // en pixels
 
 // Liste complète des projets (un par ligne)
 const PROJETS = [
@@ -56,6 +61,43 @@ const PROJETS = [
 // À exécuter une fois à la main (et après chaque modification de PROJETS)
 function initialiser() {
   majListe_();
+}
+
+// À exécuter une fois : ajoute l'image de chaque projet avant la question « Projet choisi ».
+// On peut la relancer : les anciennes images de projets sont d'abord supprimées.
+function ajouterImages() {
+  const form = FormApp.getActiveForm();
+  const dossiers = DriveApp.getFoldersByName(DOSSIER_IMAGES);
+  if (!dossiers.hasNext()) throw new Error('Dossier Drive introuvable : ' + DOSSIER_IMAGES);
+  const dossier = dossiers.next();
+
+  // fichiers du dossier, indexés par numéro : « 01.jpg » -> '01'
+  const fichiers = {};
+  const it = dossier.getFiles();
+  while (it.hasNext()) {
+    const fichier = it.next();
+    fichiers[fichier.getName().split('.')[0]] = fichier;
+  }
+
+  imagesProjets_(form).forEach(i => form.deleteItem(i));
+
+  PROJETS.forEach(p => {
+    const fichier = fichiers[p.slice(0, 2)];
+    if (!fichier) return; // pas d'image pour ce projet
+    const image = form.addImageItem()
+      .setImage(fichier.getBlob())
+      .setTitle(p)
+      .setHelpText(p)   // clé utilisée par majListe_ pour retrouver le projet
+      .setWidth(LARGEUR_IMAGE);
+    form.moveItem(image, trouver_(form, QUESTION_PROJET).getIndex());
+  });
+  majListe_();
+}
+
+// Images de projets déjà présentes dans le formulaire
+function imagesProjets_(form) {
+  return form.getItems(FormApp.ItemType.IMAGE)
+    .filter(i => PROJETS.indexOf(i.getHelpText()) !== -1);
 }
 
 // Déclencheur « Lors de l'envoi du formulaire »
@@ -99,6 +141,12 @@ function majListe_() {
   liste.setChoices(PROJETS.map(p => pris.has(p)
     ? liste.createChoice(MARQUE_PRIS + p + SUFFIXE_PRIS, sectionPris)
     : liste.createChoice(p, sectionGroupe)));
+
+  // le titre des images suit l'état du projet
+  imagesProjets_(form).forEach(i => {
+    const p = i.getHelpText();
+    i.setTitle(pris.has(p) ? MARQUE_PRIS + p + SUFFIXE_PRIS : p);
+  });
 
   if (PROJETS.every(p => pris.has(p))) {
     form.setAcceptingResponses(false);
