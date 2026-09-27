@@ -106,13 +106,25 @@ function choisirProjet(projet, membres, email) {
     lock.releaseLock();
   }
 
+  // Le choix est déjà enregistré : un e-mail qui échoue (quota atteint...) ne doit pas l'annuler
   if (NOTIFIER) {
-    const corps = 'Projet : ' + projet + '\nMembres du groupe :\n' + membres + '\nResponsable : ' + email;
-    MailApp.sendEmail(Session.getEffectiveUser().getEmail(), 'Nouveau choix : ' + projet, corps);
-    MailApp.sendEmail(email, 'Confirmation du choix de projet',
-      'Votre choix a bien été enregistré.\n\n' + corps);
+    try {
+      const corps = 'Projet : ' + projet + '\nMembres du groupe :\n' + membres + '\nResponsable : ' + email;
+      MailApp.sendEmail(Session.getEffectiveUser().getEmail(), 'Nouveau choix : ' + projet, corps);
+      MailApp.sendEmail(email, 'Confirmation du choix de projet',
+        'Votre choix a bien été enregistré.\n\n' + corps);
+    } catch (err) {
+      console.warn('E-mail non envoyé : ' + err.message);
+    }
   }
   return getProjets();
+}
+
+// À exécuter à la main : nombre d'e-mails encore autorisés aujourd'hui
+function quotaEmails() {
+  const n = MailApp.getRemainingDailyQuota();
+  console.log('E-mails restants aujourd\'hui : ' + n);
+  return n;
 }
 
 // Onglet des choix (créé au besoin avec sa ligne d'en-tête)
