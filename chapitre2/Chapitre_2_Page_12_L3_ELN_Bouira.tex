@@ -1,0 +1,93 @@
+% Chapitre 2 - Page 12 | Travaux Avant-Projet | L3 ELN
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage{tikz,graphicx,xcolor,geometry,hyperref}
+\usetikzlibrary{calc}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleugris}{HTML}{5C7190}
+\hypersetup{colorlinks=true,urlcolor=bleufonce}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
+\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
+\newcommand{\step}[1]{{\color{bleufonce}\bfseries\fontsize{11.5}{13.5}\selectfont #1}}
+\newcommand{\bodyfont}{\fontsize{10.5}{13.2}\selectfont}
+\newcommand{\smallfont}{\fontsize{9.4}{11.5}\selectfont}
+\newcommand{\puce}{\textcolor{bleufonce}{\textbullet}\enspace}
+% \shot{x}{y}{largeur}{hauteur}{fichier} : capture encadrée
+\newcommand{\shot}[5]{\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(#1,-#2)$) {\includegraphics[width=#3]{#5}};
+  \draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
+    ($(current page.north west)+(#1,-#2)+(-.4mm,.4mm)$) rectangle ($(current page.north west)+(#1,-#2)+(#3,-#4)+(.4mm,-.4mm)$);}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[bleufonce,line width=.95pt,rounded corners=8mm]
+ ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
+
+% --- Introduction ----------------------------------------------------------------
+\pos{10mm}{13mm}{189mm}{\sect{10. Ajouter une bibliothèque dans Fritzing}}
+\pos{10mm}{25mm}{188mm}{{\bodyfont Certains composants, comme le module \textbf{ESP32}, ne figurent pas dans la bibliothèque de Fritzing. On peut alors télécharger le fichier du composant (\texttt{.fzpz}) et l'\textbf{importer} dans le logiciel.}}
+
+% --- Où trouver ------------------------------------------------------------------
+\fill[bleupale!55,rounded corners=2mm]
+  ($(current page.north west)+(11mm,-39mm)$) rectangle
+  ($(current page.north west)+(199mm,-72mm)$);
+\pos{16mm}{42mm}{180mm}{\subsect{Où trouver de nouveaux composants ?}}
+\pos{16mm}{51mm}{84mm}{{\smallfont
+  \textcolor{bleufonce}{\bfseries Le site officiel}\\[1mm]
+  \href{https://fritzing.org}{\textbf{fritzing.org}} : composants et projets partagés par la communauté Fritzing.}}
+\pos{106mm}{51mm}{90mm}{{\smallfont
+  \textcolor{bleufonce}{\bfseries GitHub}\\[1mm]
+  \puce le dépôt officiel \textbf{fritzing-parts} ;\\[.6mm]
+  \puce les dépôts des fabricants (Adafruit, SparkFun\ldots) ;\\[.6mm]
+  \puce les dépôts de la communauté (exemple : ESP32).}}
+
+% --- Étapes 1 et 2 ----------------------------------------------------------------
+\pos{10mm}{78mm}{92mm}{\step{Étape 1 --- Chercher le composant}}
+\shot{14mm}{86mm}{34mm}{34mm}{assets/F10_recherche_esp32.png}
+\pos{53mm}{87mm}{47mm}{{\smallfont Dans \textbf{Parts}, la recherche \emph{esp32} ne donne \textbf{aucun résultat} : le composant n'est pas installé.}}
+
+\pos{106mm}{78mm}{92mm}{\step{Étape 2 --- Télécharger le fichier}}
+\shot{110mm}{86mm}{54mm}{35.1mm}{assets/F11_github_zip.png}
+\pos{168mm}{87mm}{30mm}{{\smallfont Sur la page GitHub : \textbf{Code} \(\rightarrow\) \textbf{Download ZIP}.}}
+
+% --- Étapes 3 et 4 ----------------------------------------------------------------
+\pos{10mm}{128mm}{92mm}{\step{Étape 3 --- Extraire l'archive}}
+\shot{14mm}{136mm}{70mm}{30.2mm}{assets/F12_extraire.png}
+\pos{14mm}{170mm}{86mm}{{\smallfont Clic droit sur le fichier ZIP \(\rightarrow\) \textbf{Extraire vers\ldots} On obtient un dossier contenant les fichiers \texttt{.fzpz}.}}
+
+\pos{106mm}{128mm}{92mm}{\step{Étape 4 --- Ouvrir le menu Import}}
+\shot{110mm}{136mm}{40mm}{38mm}{assets/F13_import.png}
+\pos{155mm}{137mm}{43mm}{{\smallfont Dans \textbf{Parts}, cliquer sur le petit menu \textbf{\(\equiv\)} à droite de la barre de recherche, puis sur \textbf{Import\ldots}}}
+
+% --- Étapes 5 et 6 ----------------------------------------------------------------
+\pos{10mm}{184mm}{92mm}{\step{Étape 5 --- Choisir le fichier .fzpz}}
+\shot{14mm}{192mm}{46mm}{40.8mm}{assets/F14_ouvrir_fzpz.png}
+\pos{65mm}{193mm}{36mm}{{\smallfont Aller dans le dossier extrait, sélectionner le fichier \texttt{.fzpz} souhaité, puis cliquer sur \textbf{Open}.}}
+
+\pos{106mm}{184mm}{92mm}{\step{Étape 6 --- Utiliser le composant}}
+\shot{110mm}{192mm}{50mm}{28.1mm}{assets/F15_mine.png}
+\pos{164mm}{193mm}{34mm}{{\smallfont Le composant apparaît dans l'onglet \textbf{MINE} (\emph{My Parts}).}}
+\pos{110mm}{224mm}{88mm}{{\smallfont Il suffit ensuite de le \textbf{glisser} sur le plan de travail, comme les autres composants.}}
+
+\pos{14mm}{237mm}{184mm}{{\color{bleugris}\fontsize{8.5}{10}\selectfont Figures 19 à 24 --- Importation du module \textbf{ESP32} dans Fritzing, depuis un dépôt GitHub.}}
+
+% --- À retenir ---------------------------------------------------------------------
+\draw[bleufonce,line width=.8pt,rounded corners=2.8mm]
+  ($(current page.north west)+(10mm,-244mm)$) rectangle
+  ($(current page.north west)+(200mm,-269mm)$);
+\pos{16mm}{248mm}{174mm}{{\color{bleufonce}\bfseries\fontsize{12}{14}\selectfont À retenir}}
+\pos{16mm}{256mm}{178mm}{{\fontsize{9.3}{11.3}\selectfont
+  \puce Un fichier \texttt{.fzpz} contient \textbf{un composant} ; un fichier \texttt{.fzbz} contient \textbf{une bibliothèque} (\emph{bin}) complète.\\[.8mm]
+  \puce Les composants importés sont rangés dans \textbf{MINE}. Télécharger uniquement depuis des sources fiables.}}
+
+% --- Pied de page -------------------------------------------------------------------
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont Page 12};
+\end{tikzpicture}
+\null
+\end{document}

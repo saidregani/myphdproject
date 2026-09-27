@@ -12,9 +12,8 @@
 \newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
 \newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
 \newcommand{\step}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{14.5}\selectfont #1}}
-\newcommand{\smallfont}{\fontsize{9.6}{11.8}\selectfont}
+\newcommand{\smallfont}{\fontsize{9.8}{12}\selectfont}
 \newcommand{\legende}[1]{{\color{bleugris}\fontsize{8.5}{10}\selectfont #1}}
-\newcommand{\puce}{\textcolor{bleufonce}{\textbullet}\enspace}
 % \shot{x}{y}{largeur}{hauteur}{fichier} : capture encadrée
 \newcommand{\shot}[5]{\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(#1,-#2)$) {\includegraphics[width=#3]{#5}};
   \draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
@@ -24,40 +23,39 @@
 \draw[bleufonce,line width=.95pt,rounded corners=8mm]
  ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
 
-\pos{10mm}{13mm}{189mm}{\sect{7. Les vues Schematic et PCB, puis l'exportation}}
-\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Une fois le montage réalisé sur la plaque d'essai, il suffit de changer d'onglet : Fritzing affiche \textbf{automatiquement} le même circuit sous forme de schéma puis de circuit imprimé.}}
+\pos{10mm}{13mm}{189mm}{\sect{8. Créer un montage dans Fritzing}}
+\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Les étapes ci-dessous sont illustrées par des captures de \textbf{Fritzing 1.0}. L'interface étant en anglais, le nom de chaque commande est donné tel qu'il apparaît à l'écran.}}
 
-% --- Étape 5 : Schematic -------------------------------------------------------
-\pos{10mm}{39mm}{188mm}{\step{Étape 5 --- La vue Schematic (schéma électrique)}}
-\shot{14mm}{48mm}{112mm}{58.2mm}{assets/F06_schematic.png}
-\pos{133mm}{49mm}{64mm}{{\smallfont
-  \puce Les composants sont remplacés par leurs \textbf{symboles}.\\[1.4mm]
-  \puce Les \textbf{lignes fines} (\emph{ratsnest}) indiquent les liaisons venant de la vue Breadboard.\\[1.4mm]
-  \puce Le bouton \textbf{Autoroute} trace les fils automatiquement ; on peut ensuite les déplacer pour rendre le schéma lisible.}}
-\pos{14mm}{108mm}{184mm}{\legende{Figure 11 --- La vue \textbf{Schematic} : l'Arduino Uno, la photorésistance sur A0 et la LED sur la broche 2.}}
+% --- Étape 1 ---------------------------------------------------------------------
+\pos{10mm}{40mm}{188mm}{\step{Étape 1 --- Ouvrir Fritzing}}
+\shot{14mm}{49mm}{104mm}{55.1mm}{assets/F02_accueil.png}
+\pos{125mm}{50mm}{72mm}{{\smallfont Au lancement, Fritzing s'ouvre sur l'onglet \textbf{Welcome} (accueil) :\\[1.8mm]
+  \textcolor{bleufonce}{\textbullet}\enspace \textbf{Recent Sketches} : les derniers croquis ouverts ;\\[1.2mm]
+  \textcolor{bleufonce}{\textbullet}\enspace \textbf{New Sketch} / \textbf{Open Sketch} : créer ou ouvrir un croquis ;\\[1.2mm]
+  \textcolor{bleufonce}{\textbullet}\enspace à droite : actualités (\textbf{Blog}) et service de fabrication de PCB (\textbf{Fab}).}}
+\pos{14mm}{106mm}{184mm}{\legende{Figure 12 --- L'écran d'accueil (\textbf{Welcome}) de Fritzing.}}
 
-% --- Étape 6 : PCB -----------------------------------------------------------------
-\pos{10mm}{118mm}{188mm}{\step{Étape 6 --- La vue PCB (circuit imprimé)}}
-\shot{14mm}{127mm}{112mm}{58.9mm}{assets/F07_pcb.png}
-\pos{133mm}{128mm}{64mm}{{\smallfont
-  \puce La carte a ici la forme d'un \textbf{shield} Arduino.\\[1.4mm]
-  \puce Les \textbf{pistes} relient les pastilles des composants ; \textbf{Both Layers} permet de travailler sur les deux faces.\\[1.4mm]
-  \puce \textbf{Autoroute} trace les pistes ; le message \textbf{Routing completed} confirme que toutes les liaisons sont faites.}}
-\pos{14mm}{188mm}{184mm}{\legende{Figure 12 --- La vue \textbf{PCB} : placement des composants et tracé des pistes.}}
+% --- Étapes 2 et 3 --------------------------------------------------------------
+\pos{10mm}{116mm}{90mm}{\step{Étape 2 --- Nouveau croquis}}
+\shot{14mm}{125mm}{54mm}{36.6mm}{assets/F03_nouveau_croquis.png}
+\pos{14mm}{165mm}{84mm}{{\smallfont Cliquer sur \textbf{New Sketch} (nouveau croquis) ou utiliser \textbf{File \(\rightarrow\) New} (\textbf{Ctrl+N}). Un plan de travail avec une plaque d'essai s'ouvre.}}
 
-% --- Étape 7 : Export ------------------------------------------------------------
-\pos{10mm}{198mm}{188mm}{\step{Étape 7 --- Exporter le travail}}
-\shot{14mm}{207mm}{62mm}{47.3mm}{assets/F08_export.png}
-\pos{83mm}{208mm}{114mm}{{\smallfont Le menu \textbf{File \(\rightarrow\) Export} propose :\\[1.6mm]
-  \puce \textbf{as Image} : image (PNG, SVG) ou PDF de la vue active, pour un rapport ;\\[1.2mm]
-  \puce \textbf{for Production} : fichiers \textbf{Gerber} pour faire fabriquer le PCB ;\\[1.2mm]
-  \puce \textbf{List of parts (Bill of Materials)} : la liste des composants à acheter ;\\[1.2mm]
-  \puce \textbf{XML / SPICE Netlist} : la liste des connexions, pour d'autres logiciels.}}
-\pos{14mm}{256.5mm}{184mm}{\legende{Figure 13 --- Le menu \textbf{File \(\rightarrow\) Export}.}}
+\pos{108mm}{116mm}{90mm}{\step{Étape 3 --- Chercher un composant}}
+\shot{112mm}{125mm}{44mm}{44.3mm}{assets/F04_recherche.png}
+\pos{161mm}{126mm}{37mm}{{\fontsize{9.4}{11.5}\selectfont Dans le panneau \textbf{Parts}, cliquer sur la \textbf{loupe}, taper le nom en anglais (\emph{resistor}, \emph{LED}, \emph{photocell}\ldots) puis valider.}}
+\pos{112mm}{172mm}{86mm}{{\smallfont Il suffit ensuite de \textbf{glisser} le composant vers le plan de travail.}}
+\pos{14mm}{184mm}{184mm}{\legende{Figures 13 et 14 --- Création d'un croquis et recherche d'une résistance dans la bibliothèque.}}
 
-\draw[bleufonce,line width=.7pt,rounded corners=2mm]
- ($(current page.north west)+(10mm,-263mm)$) rectangle ($(current page.north west)+(200mm,-276mm)$);
-\pos{15mm}{265.2mm}{180mm}{{\fontsize{9.3}{11.2}\selectfont \textcolor{bleufonce}{\bfseries À retenir :} on dessine une seule fois dans Breadboard ; Schematic et PCB se complètent, puis \textbf{Export} fournit les documents du projet.}}
+% --- Étape 4 ---------------------------------------------------------------------
+\pos{10mm}{192mm}{188mm}{\step{Étape 4 --- Placer et relier les composants}}
+\shot{14mm}{201mm}{68mm}{54.7mm}{assets/F05_exemple_breadboard.png}
+\pos{90mm}{202mm}{107mm}{{\smallfont
+  \textcolor{bleufonce}{\textbullet}\enspace Placer l'\textbf{Arduino Uno} et les composants sur la plaque d'essai.\\[1.3mm]
+  \textcolor{bleufonce}{\textbullet}\enspace Une patte bien insérée devient \textcolor{green!50!black}{\textbf{verte}} : elle est connectée.\\[1.3mm]
+  \textcolor{bleufonce}{\textbullet}\enspace Pour tracer un fil : \textbf{cliquer-glisser} depuis une broche jusqu'à un trou.\\[1.3mm]
+  \textcolor{bleufonce}{\textbullet}\enspace Un \textbf{clic droit} sur un fil permet de changer sa couleur (rouge : 5~V, noir : GND).\\[1.3mm]
+  \textcolor{bleufonce}{\textbullet}\enspace La valeur d'une résistance se règle dans le panneau \textbf{Inspector} (menu \textbf{Window}).}}
+\pos{14mm}{258mm}{184mm}{\legende{Figure 15 --- Notre exemple en version simplifiée : la photorésistance en pont diviseur sur \textbf{A0} et une \textbf{LED} commandée par la broche \textbf{2}.}}
 
 \draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
 \node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};

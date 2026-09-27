@@ -2,104 +2,63 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage{fontspec}
 \setmainfont{TeXGyrePagella}
-\setmonofont{TeX Gyre Cursor}
 \usepackage[french]{babel}
-\usepackage{tikz,graphicx,xcolor,geometry,array,colortbl,listings}
+\usepackage{graphicx,tikz,xcolor,geometry,hyperref}
 \usetikzlibrary{calc}
 \geometry{margin=0pt}
 \pagestyle{empty}
 \definecolor{bleufonce}{HTML}{1B3A6B}
-\definecolor{bleupale}{HTML}{D9E9FB}
 \definecolor{bleugris}{HTML}{5C7190}
-\definecolor{bleuclair}{HTML}{EAF3FB}
-\definecolor{vertcom}{HTML}{3C7A4A}
+\hypersetup{colorlinks=true,urlcolor=bleufonce}
 \newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
 \newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
-\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
-\newcommand{\bodyfont}{\fontsize{10.5}{13.2}\selectfont}
-\newcommand{\smallfont}{\fontsize{9.5}{11.7}\selectfont}
-\lstset{
-  language=C++,
-  basicstyle=\ttfamily\fontsize{8.3}{10.2}\selectfont,
-  keywordstyle=\color{bleufonce}\bfseries,
-  commentstyle=\color{vertcom}\itshape,
-  numbers=left, numberstyle=\color{bleugris}\fontsize{6.5}{10.2}\selectfont, numbersep=7pt,
-  morekeywords={pinMode,digitalWrite,analogRead,Serial,delay,HIGH,LOW,OUTPUT,A0},
-  columns=fullflexible, keepspaces=true, showstringspaces=false,
-  extendedchars=true, inputencoding=utf8,
-  literate={é}{{\'e}}1 {à}{{\`a}}1 {è}{{\`e}}1,
-  frame=none, xleftmargin=0pt, aboveskip=0pt, belowskip=0pt}
+\newcommand{\step}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{14.5}\selectfont #1}}
+\newcommand{\smallfont}{\fontsize{9.8}{12}\selectfont}
+\newcommand{\legende}[1]{{\color{bleugris}\fontsize{8.5}{10}\selectfont #1}}
+\newcommand{\puce}{\textcolor{bleufonce}{\textbullet}\enspace}
+% \shot{x}{y}{largeur}{hauteur}{fichier} : capture encadrée
+\newcommand{\shot}[5]{\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(#1,-#2)$) {\includegraphics[width=#3]{#5}};
+  \draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
+    ($(current page.north west)+(#1,-#2)+(-.4mm,.4mm)$) rectangle ($(current page.north west)+(#1,-#2)+(#3,-#4)+(.4mm,-.4mm)$);}
 \begin{document}
 \begin{tikzpicture}[remember picture,overlay]
 \draw[bleufonce,line width=.95pt,rounded corners=8mm]
-  ($(current page.north west)+(5mm,-5mm)$) rectangle
-  ($(current page.south east)+(-5mm,5mm)$);
+ ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
 
-% --- Titre et introduction ------------------------------------------------------
-\pos{10mm}{13mm}{189mm}{\sect{Notre exemple sous Tinkercad}}
-\pos{10mm}{25mm}{188mm}{{\bodyfont Nous reprenons la \textbf{lampe automatique} : quand la lumière ambiante diminue, l'Arduino commande un \textbf{relais} qui allume la lampe. Contrairement à Proteus, Tinkercad simule en même temps le \textbf{montage} et le \textbf{programme}.}}
+\pos{10mm}{13mm}{189mm}{\sect{5. Créer un circuit dans Tinkercad}}
+\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Les trois étapes ci-dessous sont illustrées par des captures du site officiel \href{https://www.tinkercad.com/circuits}{\textbf{www.tinkercad.com/circuits}}.}}
 
-% --- Tableau des composants --------------------------------------------------
-\pos{10mm}{44mm}{188mm}{\subsect{Composants et câblage}}
-\pos{12mm}{53mm}{186mm}{{\fontsize{9.3}{11.4}\selectfont
-  \renewcommand{\arraystretch}{1.38}
-  \arrayrulecolor{bleufonce!45}
-  \begin{tabular}{>{\raggedright\arraybackslash}p{46mm}>{\raggedright\arraybackslash}p{50mm}>{\raggedright\arraybackslash}p{76mm}}
-    \multicolumn{1}{l}{\color{bleufonce}\bfseries Composant (Tinkercad)} &
-    \multicolumn{1}{l}{\color{bleufonce}\bfseries Rôle} &
-    \multicolumn{1}{l}{\color{bleufonce}\bfseries Connexion}\\\hline
-    Photorésistance (LDR)  & capteur de lumière            & entre \textbf{5 V} et \textbf{A0}\\\hline
-    Résistance R1 = 10 k\(\Omega\) & pont diviseur avec la LDR & entre \textbf{A0} et \textbf{GND}\\\hline
-    Résistance R2 = 330 \(\Omega\) & limite le courant de base & entre \textbf{D10} et la base de Q1\\\hline
-    Transistor NPN (Q1)    & commande la bobine du relais  & émetteur à GND, collecteur à la bobine\\\hline
-    Diode (D1)             & protège le transistor         & en inverse, en parallèle sur la bobine\\\hline
-    Relais SPDT            & commute le circuit de la lampe & bobine entre 5 V et le collecteur de Q1\\\hline
-    Ampoule + alimentation & charge commandée              & en série avec le contact du relais\\\hline
-  \end{tabular}}}
+% --- Étape 1 ---------------------------------------------------------------------
+\pos{10mm}{37mm}{188mm}{\step{Étape 1 --- Créer un compte ou se connecter}}
+\shot{14mm}{46mm}{40mm}{55.7mm}{assets/T02_compte.png}
+\pos{62mm}{47mm}{135mm}{{\smallfont Sur le site officiel, cliquer sur \textbf{S'inscrire} lors de la première visite, ou sur \textbf{Connexion} si le compte existe déjà. Tinkercad demande ensuite le type de compte :\\[2mm]
+  \puce \textbf{Étudiants disposant d'un code de classe} : l'enseignant a créé une classe et donne un code ;\\[1.3mm]
+  \puce \textbf{Comptes d'étudiants} : compte individuel pour l'apprentissage ;\\[1.3mm]
+  \puce \textbf{Enseignants} : pour créer et suivre des classes ;\\[1.3mm]
+  \puce \textbf{Comptes personnels} : usage personnel, en dehors d'un cadre scolaire.}}
+\pos{14mm}{104mm}{184mm}{\legende{Figure 6 --- Choix du type de compte lors de l'inscription.}}
 
-% --- Programme -------------------------------------------------------------------
-\pos{10mm}{108mm}{188mm}{\subsect{Le programme Arduino}}
-\fill[bleuclair,rounded corners=2mm]
-  ($(current page.north west)+(10mm,-116mm)$) rectangle
-  ($(current page.north west)+(122mm,-193mm)$);
-\draw[bleufonce!60,line width=.5pt,rounded corners=2mm]
-  ($(current page.north west)+(10mm,-116mm)$) rectangle
-  ($(current page.north west)+(122mm,-193mm)$);
-\node[anchor=north west,inner sep=0pt] at ($(current page.north west)+(17mm,-120mm)$)
-  {\begin{minipage}{103mm}\lstinputlisting{code/lampe_automatique.ino}\end{minipage}};
+% --- Étape 2 ---------------------------------------------------------------------
+\pos{10mm}{114mm}{188mm}{\step{Étape 2 --- Ouvrir l'espace Circuits}}
+\shot{14mm}{123mm}{124mm}{55.9mm}{assets/T03_tableau_bord.png}
+\pos{145mm}{124mm}{52mm}{{\smallfont Une fois connecté, ouvrir le menu \textbf{Concevoir}. Il présente les espaces de Tinkercad : \textbf{Conception 3D}, \textbf{Circuits}, \textbf{Codeblocks}\ldots\\[2mm]
+  Choisir \textbf{Circuits} pour accéder aux montages électroniques.}}
+\pos{14mm}{181mm}{184mm}{\legende{Figure 7 --- Le menu \textbf{Concevoir} et l'espace \textbf{Circuits}.}}
 
-\pos{128mm}{118mm}{70mm}{{\smallfont
-  \textcolor{bleufonce}{\bfseries Lecture :} \texttt{analogRead(A0)} donne une valeur entre 0 et 1023 ; elle \textbf{diminue} quand la lumière baisse.\\[2.6mm]
-  \textcolor{bleufonce}{\bfseries Décision :} si la valeur passe sous le \textbf{seuil}, la sortie D10 passe à l'état haut.\\[2.6mm]
-  \textcolor{bleufonce}{\bfseries Action :} le transistor conduit, la bobine est alimentée et le contact du relais allume la lampe.\\[2.6mm]
-  \textcolor{bleufonce}{\bfseries Contrôle :} la valeur lue est affichée dans le \textbf{moniteur série}.}}
+% --- Étape 3 ---------------------------------------------------------------------
+\pos{10mm}{191mm}{188mm}{\step{Étape 3 --- Créer un nouveau circuit}}
+\shot{14mm}{200mm}{44mm}{43.7mm}{assets/T04_creer.png}
+\pos{66mm}{201mm}{131mm}{{\smallfont Cliquer sur le bouton \textbf{+ Créer}, puis choisir \textbf{Circuits}.\\[2mm]
+  Un plan de travail vide s'ouvre : c'est l'interface présentée à la page précédente (Figure 5). Le nom du projet, en haut à gauche, peut être modifié d'un simple clic.}}
+\pos{14mm}{246mm}{184mm}{\legende{Figure 8 --- Le bouton \textbf{+ Créer} et le choix \textbf{Circuits}.}}
 
-% --- Simuler -----------------------------------------------------------------------
-\pos{10mm}{202mm}{188mm}{\subsect{Lancer la simulation}}
-\pos{14mm}{211mm}{184mm}{{\smallfont
-  \textcolor{bleufonce}{\bfseries 1.}\enspace Cliquer sur \textbf{Code}, choisir le mode \textbf{Texte} et coller le programme.\\[1.3mm]
-  \textcolor{bleufonce}{\bfseries 2.}\enspace Cliquer sur \textbf{Démarrer la simulation}, puis sur la photorésistance : un curseur permet de faire varier la lumière.\\[1.3mm]
-  \textcolor{bleufonce}{\bfseries 3.}\enspace Observer la lampe et les valeurs du moniteur série ; ajuster le \textbf{seuil} si nécessaire.}}
+\draw[bleufonce,line width=.7pt,rounded corners=2mm]
+ ($(current page.north west)+(10mm,-255mm)$) rectangle ($(current page.north west)+(200mm,-270mm)$);
+\pos{15mm}{257.3mm}{180mm}{{\fontsize{9.4}{11.4}\selectfont \textcolor{bleufonce}{\bfseries À retenir :} un compte suffit pour accéder à Tinkercad depuis n'importe quel ordinateur ; les circuits sont enregistrés automatiquement.}}
 
-% --- Exercice ------------------------------------------------------------------------
-\fill[bleupale!55,rounded corners=2mm]
-  ($(current page.north west)+(11mm,-230mm)$) rectangle
-  ($(current page.north west)+(199mm,-250mm)$);
-\pos{16mm}{233mm}{178mm}{{\fontsize{9.4}{11.4}\selectfont \textcolor{bleufonce}{\bfseries À vous de jouer :} remplacer le relais et la lampe par une \textbf{LED} en série avec une résistance de 220~\(\Omega\) sur D10, puis modifier le programme pour que la LED \textbf{clignote} lorsque la lumière devient très faible.}}
-
-% --- Remarque ------------------------------------------------------------------------
-\draw[bleufonce,line width=.65pt,rounded corners=2mm]
-  ($(current page.north west)+(10mm,-256mm)$) rectangle
-  ($(current page.north west)+(200mm,-272mm)$);
-\pos{15mm}{258.3mm}{180mm}{{\fontsize{9.1}{10.9}\selectfont \textcolor{bleufonce}{\bfseries Remarque :} la diode D1 n'apparaît pas dans le schéma Proteus, mais elle est \textbf{indispensable dans le montage réel} : elle protège le transistor de la surtension produite par la bobine du relais à la coupure.}}
-
-% --- Pied de page -------------------------------------------------------------------
-\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$) --
-  ($(current page.south east)+(-10mm,14.7mm)$);
-\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$)
-  {\fontsize{9.5}{11}\selectfont 2026/2027};
-\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$)
-  {\fontsize{9.5}{11}\selectfont Page 7};
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont Page 7};
 \end{tikzpicture}
 \null
 \end{document}

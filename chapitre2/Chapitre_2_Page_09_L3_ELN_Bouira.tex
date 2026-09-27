@@ -3,63 +3,84 @@
 \usepackage{fontspec}
 \setmainfont{TeXGyrePagella}
 \usepackage[french]{babel}
-\usepackage{graphicx,tikz,xcolor,geometry}
+\usepackage{tikz,graphicx,xcolor,geometry,hyperref}
 \usetikzlibrary{calc}
 \geometry{margin=0pt}
 \pagestyle{empty}
 \definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
 \definecolor{bleugris}{HTML}{5C7190}
+\hypersetup{colorlinks=true,urlcolor=bleufonce}
 \newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
 \newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
-\newcommand{\step}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{14.5}\selectfont #1}}
-\newcommand{\smallfont}{\fontsize{9.8}{12}\selectfont}
-\newcommand{\legende}[1]{{\color{bleugris}\fontsize{8.5}{10}\selectfont #1}}
-% \shot{x}{y}{largeur}{hauteur}{fichier} : capture encadrée
-\newcommand{\shot}[5]{\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(#1,-#2)$) {\includegraphics[width=#3]{#5}};
-  \draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
-    ($(current page.north west)+(#1,-#2)+(-.4mm,.4mm)$) rectangle ($(current page.north west)+(#1,-#2)+(#3,-#4)+(.4mm,-.4mm)$);}
+\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
+\newcommand{\bodyfont}{\fontsize{10.5}{13.2}\selectfont}
+\newcommand{\smallfont}{\fontsize{9.5}{11.7}\selectfont}
+\newcommand{\marque}[2]{\node[circle,fill=bleufonce,draw=white,line width=.6pt,text=white,inner sep=0pt,minimum size=5.4mm,font=\bfseries\fontsize{9}{9}\selectfont] at #1 {#2};}
+\newcommand{\champ}[2]{\textcolor{bleufonce}{\bfseries #1 :}\enspace #2}
 \begin{document}
 \begin{tikzpicture}[remember picture,overlay]
 \draw[bleufonce,line width=.95pt,rounded corners=8mm]
- ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
+  ($(current page.north west)+(5mm,-5mm)$) rectangle
+  ($(current page.south east)+(-5mm,5mm)$);
 
-\pos{10mm}{13mm}{189mm}{\sect{6. Créer un montage dans Fritzing}}
-\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Les étapes ci-dessous sont illustrées par des captures de \textbf{Fritzing 1.0}. L'interface étant en anglais, le nom de chaque commande est donné tel qu'il apparaît à l'écran.}}
+% --- Définition ------------------------------------------------------------------
+\pos{10mm}{13mm}{189mm}{\sect{7. Découvrir Fritzing}}
+\pos{10mm}{25mm}{188mm}{{\bodyfont \textbf{Fritzing} est un logiciel \textbf{libre} (\emph{open source}) de conception électronique, très utilisé avec \textbf{Arduino}. Il permet de représenter un montage tel qu'il apparaît sur une \textbf{plaque d'essai}, d'en obtenir le \textbf{schéma électrique} et de préparer le \textbf{circuit imprimé} (PCB). Ce n'est pas un simulateur complet : son rôle principal est de \textbf{documenter} et de \textbf{fabriquer} un montage.}}
 
-% --- Étape 1 ---------------------------------------------------------------------
-\pos{10mm}{40mm}{188mm}{\step{Étape 1 --- Ouvrir Fritzing}}
-\shot{14mm}{49mm}{104mm}{55.1mm}{assets/F02_accueil.png}
-\pos{125mm}{50mm}{72mm}{{\smallfont Au lancement, Fritzing s'ouvre sur l'onglet \textbf{Welcome} (accueil) :\\[1.8mm]
-  \textcolor{bleufonce}{\textbullet}\enspace \textbf{Recent Sketches} : les derniers croquis ouverts ;\\[1.2mm]
-  \textcolor{bleufonce}{\textbullet}\enspace \textbf{New Sketch} / \textbf{Open Sketch} : créer ou ouvrir un croquis ;\\[1.2mm]
-  \textcolor{bleufonce}{\textbullet}\enspace à droite : actualités (\textbf{Blog}) et service de fabrication de PCB (\textbf{Fab}).}}
-\pos{14mm}{106mm}{184mm}{\legende{Figure 7 --- L'écran d'accueil (\textbf{Welcome}) de Fritzing.}}
+% --- Fiche d'identité -----------------------------------------------------------
+\fill[bleupale!55,rounded corners=2mm]
+  ($(current page.north west)+(11mm,-51mm)$) rectangle
+  ($(current page.north west)+(199mm,-87mm)$);
+\pos{16mm}{54mm}{140mm}{\subsect{Fiche d'identité}}
+\pos{16mm}{62.5mm}{78mm}{{\smallfont
+  \champ{Site officiel}{\href{https://fritzing.org}{\textbf{fritzing.org}}}\\[1.4mm]
+  \champ{Version}{1.0.x}\\[1.4mm]
+  \champ{Systèmes}{Windows, macOS, Linux}\\[1.4mm]
+  \champ{Fichiers}{extension \texttt{.fzz}}}}
+\pos{92mm}{62.5mm}{76mm}{{\smallfont
+  \champ{Prix}{logiciel libre, mais le téléchargement officiel demande une \textbf{contribution d'environ 8~€}}\\[1.4mm]
+  \champ{Version gratuite}{vous pouvez télécharger la version \textbf{0.9.3b} gratuitement depuis \href{https://github.com/fritzing/fritzing-app/releases\#release-0.9.3b}{\textbf{GitHub}} (scanner le QR code).}}}
+\node[anchor=north east,inner sep=0pt] at ($(current page.north west)+(195mm,-54mm)$)
+  {\href{https://github.com/fritzing/fritzing-app/releases\#release-0.9.3b}{\includegraphics[width=23mm]{assets/qr_fritzing.png}}};
+\node[anchor=north,inner sep=0pt,text=bleugris] at ($(current page.north west)+(183.5mm,-78.3mm)$)
+  {\fontsize{7}{8}\selectfont GitHub (0.9.3b)};
 
-% --- Étapes 2 et 3 --------------------------------------------------------------
-\pos{10mm}{116mm}{90mm}{\step{Étape 2 --- Nouveau croquis}}
-\shot{14mm}{125mm}{54mm}{36.6mm}{assets/F03_nouveau_croquis.png}
-\pos{14mm}{165mm}{84mm}{{\smallfont Cliquer sur \textbf{New Sketch} (nouveau croquis) ou utiliser \textbf{File \(\rightarrow\) New} (\textbf{Ctrl+N}). Un plan de travail avec une plaque d'essai s'ouvre.}}
+% --- Interface -------------------------------------------------------------------
+\pos{10mm}{93mm}{188mm}{\subsect{L'interface de Fritzing}}
+\begin{scope}[shift={($(current page.north west)+(15mm,-102mm)$)},x=1mm,y=-1mm]
+  \node[anchor=north west,inner sep=0pt] at (0,0) {\includegraphics[width=180mm]{assets/F01_interface.png}};
+  \draw[bleufonce!75,line width=.55pt,rounded corners=1mm] (-.4,-.4) rectangle (180.4,95.1);
+  % 1 px de la capture = 180/1918 mm
+  \marque{(56.5,5.4)}{1}
+  \marque{(29.1,11.4)}{2}
+  \marque{(18,58)}{3}
+  \marque{(147,9.9)}{4}
+  \marque{(53,84.5)}{5}
+  \marque{(110,93.6)}{6}
+\end{scope}
+\pos{15mm}{199mm}{182mm}{{\color{bleugris}\fontsize{8.5}{10.3}\selectfont Figure 11 --- Interface de Fritzing (vue \textbf{Breadboard}) avec notre exemple : les six repères désignent les zones à connaître.}}
 
-\pos{108mm}{116mm}{90mm}{\step{Étape 3 --- Chercher un composant}}
-\shot{112mm}{125mm}{44mm}{44.3mm}{assets/F04_recherche.png}
-\pos{161mm}{126mm}{37mm}{{\fontsize{9.4}{11.5}\selectfont Dans le panneau \textbf{Parts}, cliquer sur la \textbf{loupe}, taper le nom en anglais (\emph{resistor}, \emph{LED}, \emph{photocell}\ldots) puis valider.}}
-\pos{112mm}{172mm}{86mm}{{\smallfont Il suffit ensuite de \textbf{glisser} le composant vers le plan de travail.}}
-\pos{14mm}{184mm}{184mm}{\legende{Figures 8 et 9 --- Création d'un croquis et recherche d'une résistance dans la bibliothèque.}}
+% --- Légende ----------------------------------------------------------------------
+\pos{14mm}{207mm}{86mm}{{\smallfont \textcolor{bleufonce}{\textbf{1. Barre de menus :}} \textbf{File} (fichier), \textbf{Edit}, \textbf{Part}, \textbf{View}, \textbf{Routing}\ldots}}
+\pos{109mm}{207mm}{88mm}{{\smallfont \textcolor{bleufonce}{\textbf{2. Onglets des vues :}} \textbf{Welcome} (accueil), \textbf{Breadboard}, \textbf{Schematic}, \textbf{PCB} et \textbf{Code}.}}
+\pos{14mm}{220mm}{86mm}{{\smallfont \textcolor{bleufonce}{\textbf{3. Plan de travail :}} espace où l'on place les composants et où l'on trace les fils.}}
+\pos{109mm}{220mm}{88mm}{{\smallfont \textcolor{bleufonce}{\textbf{4. Panneau Parts :}} bibliothèque des composants, classés par familles (\textbf{CORE}, \textbf{MINE}\ldots), avec une loupe pour la recherche.}}
+\pos{14mm}{235mm}{86mm}{{\smallfont \textcolor{bleufonce}{\textbf{5. Barre d'outils :}} ajouter une note, pivoter (\textbf{Rotate}), retourner (\textbf{Flip}) et état du routage.}}
+\pos{109mm}{235mm}{88mm}{{\smallfont \textcolor{bleufonce}{\textbf{6. Barre d'état :}} coordonnées du pointeur et réglage du zoom.}}
 
-% --- Étape 4 ---------------------------------------------------------------------
-\pos{10mm}{192mm}{188mm}{\step{Étape 4 --- Placer et relier les composants}}
-\shot{14mm}{201mm}{68mm}{54.7mm}{assets/F05_exemple_breadboard.png}
-\pos{90mm}{202mm}{107mm}{{\smallfont
-  \textcolor{bleufonce}{\textbullet}\enspace Placer l'\textbf{Arduino Uno} et les composants sur la plaque d'essai.\\[1.3mm]
-  \textcolor{bleufonce}{\textbullet}\enspace Une patte bien insérée devient \textcolor{green!50!black}{\textbf{verte}} : elle est connectée.\\[1.3mm]
-  \textcolor{bleufonce}{\textbullet}\enspace Pour tracer un fil : \textbf{cliquer-glisser} depuis une broche jusqu'à un trou.\\[1.3mm]
-  \textcolor{bleufonce}{\textbullet}\enspace Un \textbf{clic droit} sur un fil permet de changer sa couleur (rouge : 5~V, noir : GND).\\[1.3mm]
-  \textcolor{bleufonce}{\textbullet}\enspace La valeur d'une résistance se règle dans le panneau \textbf{Inspector} (menu \textbf{Window}).}}
-\pos{14mm}{258mm}{184mm}{\legende{Figure 10 --- Notre exemple en version simplifiée : la photorésistance en pont diviseur sur \textbf{A0} et une \textbf{LED} commandée par la broche \textbf{2}.}}
+% --- À retenir ----------------------------------------------------------------------
+\draw[bleufonce,line width=.7pt,rounded corners=2mm]
+  ($(current page.north west)+(10mm,-250mm)$) rectangle ($(current page.north west)+(200mm,-264mm)$);
+\pos{15mm}{252.3mm}{180mm}{{\fontsize{9.4}{11.4}\selectfont \textcolor{bleufonce}{\bfseries À retenir :} les vues \textbf{Breadboard}, \textbf{Schematic} et \textbf{PCB} représentent \textbf{le même montage}. Un fil tracé dans une vue apparaît dans les autres sous forme d'une \textbf{ligne fine} (\emph{ratsnest}) qui indique une connexion à tracer.}}
 
-\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
-\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};
-\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont Page 9};
+% --- Pied de page -------------------------------------------------------------------
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$) --
+  ($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont Page 9};
 \end{tikzpicture}
 \null
 \end{document}
