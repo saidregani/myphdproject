@@ -1,0 +1,92 @@
+% Chapitre 2 - Page 13 | Travaux Avant-Projet | L3 ELN
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage{tikz,graphicx,xcolor,geometry,array,colortbl}
+\usetikzlibrary{calc}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleugris}{HTML}{5C7190}
+\definecolor{bleuclair}{HTML}{EAF3FB}
+\definecolor{vert}{HTML}{2E7D32}
+\definecolor{rouge}{HTML}{B23A3A}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
+\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
+\newcommand{\smallfont}{\fontsize{9.4}{11.5}\selectfont}
+\newcommand{\oui}{\textcolor{vert}{\bfseries Oui}}
+\newcommand{\non}{\textcolor{rouge}{\bfseries Non}}
+\newcommand{\crit}[1]{\textcolor{bleufonce}{\bfseries #1}}
+\newcolumntype{C}[1]{>{\raggedright\arraybackslash}p{#1}}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[bleufonce,line width=.95pt,rounded corners=8mm]
+  ($(current page.north west)+(5mm,-5mm)$) rectangle
+  ($(current page.south east)+(-5mm,5mm)$);
+
+\pos{10mm}{13mm}{189mm}{\sect{11. Comparaison des trois logiciels}}
+\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Le tableau ci-dessous résume les caractéristiques de Proteus, Tinkercad et Fritzing étudiées dans ce chapitre.}}
+
+% --- Tableau comparatif -----------------------------------------------------------
+\node[anchor=north west,inner sep=0pt] at ($(current page.north west)+(11mm,-35mm)$) {\fontsize{9.3}{11.2}\selectfont
+  \renewcommand{\arraystretch}{1.85}\setlength{\tabcolsep}{4pt}
+  \arrayrulecolor{bleufonce!35}
+  \begin{tabular}{C{30mm}|C{49mm}|C{49mm}|C{49mm}}
+    \rowcolor{bleufonce}
+    & \centering\includegraphics[height=9mm]{chapitre_2_logo_assets/logo_proteus.png}\par{\color{white}\bfseries Proteus}
+    & \centering\includegraphics[height=6.5mm]{chapitre_2_logo_assets/logo_tinkercad.png}\par{\color{white}\bfseries Tinkercad Circuits}
+    & \centering\includegraphics[height=9mm]{chapitre_2_logo_assets/logo_fritzing.png}\par{\color{white}\bfseries Fritzing}\tabularnewline
+    \crit{Type} & logiciel de conception et de simulation électronique & plateforme web de montage et de simulation & logiciel de représentation du câblage et de PCB\\\hline
+    \rowcolor{bleuclair}
+    \crit{Éditeur} & Labcenter Electronics & Autodesk & Fritzing (projet libre)\\\hline
+    \crit{Site officiel} & labcenter.com & tinkercad.com/circuits & fritzing.org\\\hline
+    \rowcolor{bleuclair}
+    \crit{Prix} & \textbf{payant} (licence) ; version d'évaluation limitée & \textbf{gratuit} (compte nécessaire) & libre : environ 8~€ sur le site officiel, version 0.9.3b \textbf{gratuite} sur GitHub\\\hline
+    \crit{Installation} & Oui (Windows) & \textbf{Non} : navigateur web & Oui (Windows, macOS, Linux)\\\hline
+    \rowcolor{bleuclair}
+    \crit{Internet requis} & \non & \oui & \non\\\hline
+    \crit{Simulation} & \oui{} : analogique, numérique et microcontrôleurs & \oui{} : Arduino et composants de base & \non{} (ce n'est pas un simulateur)\\\hline
+    \rowcolor{bleuclair}
+    \crit{Programmation Arduino} & \oui{} (programme chargé dans le microcontrôleur) & \oui{} : blocs ou texte, simulés & éditeur de code, \textbf{sans simulation}\\\hline
+    \crit{Vue plaque d'essai} & \non & \oui & \oui\\\hline
+    \rowcolor{bleuclair}
+    \crit{Schéma électrique} & \oui{} (ISIS) & \oui{} (vue Schéma) & \oui{} (vue Schematic)\\\hline
+    \crit{Circuit imprimé (PCB)} & \oui{} (ARES) & \non & \oui{} (export Gerber)\\\hline
+    \rowcolor{bleuclair}
+    \crit{Bibliothèque} & très riche ; import de bibliothèques & limitée ; \textbf{pas d'import} & riche ; import de fichiers \texttt{.fzpz}\\\hline
+    \crit{Points forts} & simulation précise, instruments virtuels & simple, gratuit, sans installation & rendu réaliste, documentation, PCB\\\hline
+    \rowcolor{bleuclair}
+    \crit{Limites} & payant, prise en main plus longue & composants peu nombreux & pas de simulation\\
+  \end{tabular}};
+
+% --- Quel logiciel choisir ? ------------------------------------------------------
+\pos{10mm}{205mm}{188mm}{\subsect{Quel logiciel choisir ?}}
+\foreach \x/\titre/\texte in {
+  11/{Simuler un circuit}/{Tester le fonctionnement électrique d'un montage avant sa réalisation : \textbf{Proteus}.},
+  74/{Découvrir l'Arduino}/{Monter, programmer et simuler rapidement une carte Arduino : \textbf{Tinkercad}.},
+  137/{Documenter et fabriquer}/{Représenter le câblage réel et préparer un circuit imprimé : \textbf{Fritzing}.}}{
+  \fill[bleupale!55,rounded corners=2mm] ($(current page.north west)+(\x mm,-214mm)$) rectangle ++(62mm,-24mm);
+  \node[anchor=north west,inner sep=0pt,text width=54mm,align=left] at ($(current page.north west)+(\x mm,-217mm)+(4mm,0)$)
+    {{\color{bleufonce}\bfseries\fontsize{10}{12}\selectfont \titre}\\[1.2mm]{\smallfont \texte}};
+}
+
+% --- Conclusion ---------------------------------------------------------------------
+\draw[bleufonce,line width=.8pt,rounded corners=2.8mm]
+  ($(current page.north west)+(10mm,-244mm)$) rectangle
+  ($(current page.north west)+(200mm,-273mm)$);
+\pos{16mm}{248mm}{174mm}{{\color{bleufonce}\bfseries\fontsize{12}{14}\selectfont Conclusion}}
+\pos{16mm}{256mm}{178mm}{{\fontsize{9.4}{11.5}\selectfont Ces trois logiciels sont \textbf{complémentaires} : le choix dépend du besoin du projet. Dans tous les cas, la simulation aide à détecter les erreurs, mais elle \textbf{ne remplace pas les essais réels} sur le montage.}}
+
+% --- Pied de page -------------------------------------------------------------------
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$) --
+  ($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont Page 13};
+\end{tikzpicture}
+\null
+\end{document}
