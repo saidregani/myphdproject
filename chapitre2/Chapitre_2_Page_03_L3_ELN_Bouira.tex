@@ -1,0 +1,58 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage{graphicx,tikz,xcolor,geometry}
+\usetikzlibrary{calc}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleugris}{HTML}{5C7190}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
+\newcommand{\step}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{14.5}\selectfont #1}}
+\newcommand{\smallfont}{\fontsize{10}{12.2}\selectfont}
+\newcommand{\shot}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(#1,-#2)$) {\includegraphics[width=#3]{#4}};}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[bleufonce,line width=.95pt,rounded corners=8mm]
+ ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
+
+\pos{10mm}{13mm}{189mm}{\sect{2. Créer un nouveau projet dans Proteus}}
+\pos{10mm}{25mm}{188mm}{{\fontsize{10.5}{13}\selectfont Avant de dessiner un circuit, il faut créer et enregistrer un projet. Les trois étapes ci-dessous sont illustrées par des captures d'écran de \textbf{Proteus 8}.}}
+
+\pos{10mm}{44mm}{188mm}{\step{Étape 1 --- Ouvrir la création d'un projet}}
+\shot{14mm}{57mm}{113mm}{assets/01_accueil.png}
+\draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
+ ($(current page.north west)+(13.6mm,-56.6mm)$) rectangle ($(current page.north west)+(127.4mm,-77.8mm)$);
+\pos{135mm}{58mm}{61mm}{{\smallfont Sur la page d'accueil de Proteus, cliquer sur \textbf{New Project}. L'assistant de création s'ouvre.}}
+\pos{14mm}{81mm}{184mm}{{\color{bleugris}\fontsize{8.5}{10}\selectfont Figure 2 --- Commande \textbf{New Project} sur la page d'accueil.}}
+
+\pos{10mm}{92mm}{188mm}{\step{Étape 2 --- Nommer et enregistrer le projet}}
+\shot{14mm}{106mm}{126mm}{assets/02_assistant.png}
+\draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
+ ($(current page.north west)+(13.6mm,-105.6mm)$) rectangle ($(current page.north west)+(140.4mm,-138.3mm)$);
+\pos{146mm}{108mm}{50mm}{{\fontsize{9.65}{11.8}\selectfont
+ \textbf{Name :} nommer le projet, par exemple \emph{TP01\_LED}.\\[1.9mm]
+ \textbf{Path :} choisir son dossier.\\[1.9mm]
+ Garder \textbf{New Project}.}}
+\pos{14mm}{142mm}{95mm}{{\fontsize{9.6}{11.2}\selectfont Valider avec \textbf{Next}, puis poursuivre l'assistant.}}
+\shot{120mm}{141mm}{28mm}{assets/02_bouton_suivant.png}
+\pos{14mm}{153mm}{184mm}{{\color{bleugris}\fontsize{8.5}{10}\selectfont Figure 3 --- Champs du projet et bouton de validation.}}
+
+\pos{10mm}{164mm}{188mm}{\step{Étape 3 --- Accéder à la feuille de schéma}}
+\shot{14mm}{179mm}{182mm}{assets/03_feuille.png}
+\draw[bleufonce!75,line width=.55pt,rounded corners=1mm]
+ ($(current page.north west)+(13.6mm,-178.6mm)$) rectangle ($(current page.north west)+(196.4mm,-242.0mm)$);
+\pos{14mm}{243mm}{182mm}{{\color{bleugris}\fontsize{8.4}{10}\selectfont Figure 4 --- La feuille de schéma quadrillée de \textbf{Schematic Capture (ISIS)}.}}
+
+\draw[bleufonce,line width=.7pt,rounded corners=2mm]
+ ($(current page.north west)+(10mm,-250mm)$) rectangle ($(current page.north west)+(200mm,-260mm)$);
+\pos{15mm}{251.3mm}{180mm}{{\fontsize{9.5}{11.4}\selectfont \textcolor{bleufonce}{\bfseries À retenir :} enregistrer le projet, puis utiliser la feuille de schéma pour y placer et relier les composants.}}
+
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont Page 3};
+\end{tikzpicture}
+\null
+\end{document}
