@@ -1,0 +1,123 @@
+% Chapitre 2 - Page 6 | Travaux Avant-Projet | L3 ELN
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage{amssymb}
+\usepackage[french]{babel}
+\usepackage{tikz,graphicx,xcolor,geometry,hyperref}
+\usetikzlibrary{calc}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleugris}{HTML}{5C7190}
+\definecolor{bleuclair}{HTML}{EAF3FB}
+\hypersetup{colorlinks=true,urlcolor=bleufonce}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
+\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
+\newcommand{\bodyfont}{\fontsize{10.5}{13.2}\selectfont}
+\newcommand{\smallfont}{\fontsize{9.5}{11.7}\selectfont}
+% Repère numéroté (cercle bleu foncé, chiffre blanc)
+\newcommand{\marque}[2]{\node[circle,fill=bleufonce,text=white,inner sep=0pt,minimum size=5.2mm,font=\bfseries\fontsize{9}{9}\selectfont] at #1 {#2};}
+% Tuile de composant dans le panneau de droite
+\newcommand{\tuile}[3]{\draw[bleugris!60,fill=white,rounded corners=.8mm] (#1,#2) rectangle ++(20,8);
+  \node[font=\fontsize{6.3}{7}\selectfont,text=bleufonce] at ($(#1,#2)+(10,4)$) {#3};}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[bleufonce,line width=.95pt,rounded corners=8mm]
+  ($(current page.north west)+(5mm,-5mm)$) rectangle
+  ($(current page.south east)+(-5mm,5mm)$);
+
+% --- Accès -------------------------------------------------------------------
+\pos{10mm}{13mm}{189mm}{\sect{L'interface de Tinkercad Circuits}}
+\pos{10mm}{25mm}{188mm}{{\bodyfont Tinkercad fonctionne directement dans le \textbf{navigateur web} : aucune installation n'est nécessaire. Il suffit de créer un compte gratuit (Autodesk) pour enregistrer ses montages en ligne.}}
+
+\fill[bleupale!55,rounded corners=2mm]
+  ($(current page.north west)+(11mm,-41mm)$) rectangle
+  ($(current page.north west)+(199mm,-73mm)$);
+\pos{16mm}{45mm}{150mm}{\subsect{Créer un nouveau circuit}}
+\pos{16mm}{53mm}{150mm}{{\smallfont
+  \textcolor{bleufonce}{\bfseries 1.}\enspace Ouvrir \href{https://www.tinkercad.com}{\textbf{www.tinkercad.com}} et se connecter.\\[1.2mm]
+  \textcolor{bleufonce}{\bfseries 2.}\enspace Dans le menu de gauche, choisir \textbf{Circuits}.\\[1.2mm]
+  \textcolor{bleufonce}{\bfseries 3.}\enspace Cliquer sur \textbf{Créer} \(\rightarrow\) \textbf{Circuit} : un plan de travail vide s'ouvre.}}
+\node[anchor=north east,inner sep=0pt] at ($(current page.north west)+(195mm,-44mm)$)
+  {\href{https://www.tinkercad.com/circuits}{\includegraphics[width=25mm]{assets/qr_tinkercad.png}}};
+
+% --- Schéma de l'interface --------------------------------------------------
+\begin{scope}[shift={($(current page.north west)+(18mm,-80mm)$)},x=1mm,y=-1mm]
+  % cadre général
+  \draw[bleufonce,line width=.75pt,rounded corners=2mm,fill=white] (0,0) rectangle (174,98);
+  % barre supérieure
+  \fill[bleuclair] (0.4,0.4) rectangle (173.6,10);
+  \node[anchor=west,font=\bfseries\fontsize{8}{9}\selectfont,text=bleufonce] at (4,5.2) {TINKERCAD};
+  \node[anchor=west,font=\fontsize{7.5}{9}\selectfont,text=bleugris] at (30,5.2) {Lampe automatique};
+  \draw[bleugris,fill=white,rounded corners=.8mm] (98,2) rectangle (113,8.4);
+  \node[font=\fontsize{7}{8}\selectfont,text=bleufonce] at (105.5,5.2) {Code};
+  \draw[bleufonce,fill=bleufonce,rounded corners=.8mm] (115,2) rectangle (151,8.4);
+  \node[font=\fontsize{7}{8}\selectfont,text=white] at (133,5.2) {Démarrer la simulation};
+  \draw[bleugris,fill=white,rounded corners=.8mm] (153,2) rectangle (171,8.4);
+  \node[font=\fontsize{7}{8}\selectfont,text=bleufonce] at (162,5.2) {Envoyer};
+  % barre d'outils
+  \draw[bleugris!50] (0.4,10) -- (173.6,10);
+  \draw[bleugris!50] (0.4,17) -- (173.6,17);
+  \foreach \x/\s in {4/{\(\circlearrowright\)},12/{\(\times\)},20/{\(\leftarrow\)},28/{\(\rightarrow\)},36/{\(\square\)},44/{\(\bullet\)}}
+    {\draw[bleugris!70,rounded corners=.6mm] (\x,11.2) rectangle ++(6,4.6);
+     \node[font=\fontsize{7}{8}\selectfont,text=bleufonce] at ($(\x,13.5)+(3,0)$) {\s};}
+  % plan de travail quadrillé
+  \begin{scope}
+    \clip (0.4,17) rectangle (127,97.6);
+    \foreach \x in {4,10,...,126} \foreach \y in {21,27,...,97} \fill[bleugris!35] (\x,\y) circle (.25);
+  \end{scope}
+  % Arduino et breadboard stylisés
+  \draw[bleufonce!70,fill=teal!45,rounded corners=1mm] (10,30) rectangle (52,60);
+  \node[font=\bfseries\fontsize{6.5}{7}\selectfont,text=white,align=center] at (31,45) {ARDUINO\\UNO};
+  \draw[bleugris,fill=gray!8,rounded corners=.8mm] (62,34) rectangle (118,62);
+  \foreach \x in {65,68,...,116} \foreach \y in {38,41,44,47,50,53,56} \fill[bleugris!60] (\x,\y) circle (.35);
+  \node[font=\fontsize{6.5}{7}\selectfont,text=bleugris] at (90,66) {Plaque d'essai (breadboard)};
+  \draw[red!70!black,line width=.6pt] (52,40) -- (62,40);
+  \draw[black!80,line width=.6pt] (52,48) -- (62,48);
+  % panneau des composants
+  \draw[bleugris!50] (127,17) -- (127,97.6);
+  \fill[bleuclair!60] (127.2,17.2) rectangle (173.6,97.4);
+  \node[anchor=west,font=\bfseries\fontsize{7}{8}\selectfont,text=bleufonce] at (129.5,21.5) {Composants : Basique \(\blacktriangledown\)};
+  \draw[bleugris,fill=white,rounded corners=.8mm] (129.5,25.5) rectangle (171.5,31);
+  \node[anchor=west,font=\itshape\fontsize{6.5}{7}\selectfont,text=bleugris] at (131,28.3) {Rechercher\ldots};
+  \tuile{129.5}{34}{Résistance}  \tuile{151.5}{34}{LED}
+  \tuile{129.5}{45}{Bouton}      \tuile{151.5}{45}{Potentiomètre}
+  \tuile{129.5}{56}{Photorésistance} \tuile{151.5}{56}{Buzzer}
+  \tuile{129.5}{67}{Arduino Uno} \tuile{151.5}{67}{Breadboard}
+  \tuile{129.5}{78}{Pile 9 V}    \tuile{151.5}{78}{Multimètre}
+  % repères
+  \marque{(24,0)}{1}
+  \marque{(54,13.5)}{2}
+  \marque{(8,70)}{3}
+  \marque{(114,0)}{4}
+  \marque{(150,93)}{5}
+\end{scope}
+\pos{18mm}{181mm}{174mm}{{\color{bleugris}\fontsize{8.5}{10.3}\selectfont Figure 5 --- Schéma simplifié de l'interface de Tinkercad Circuits : les cinq repères désignent les zones à connaître.}}
+
+% --- Légende ------------------------------------------------------------------
+\pos{14mm}{191mm}{85mm}{{\smallfont \textcolor{bleufonce}{\textbf{1. Barre supérieure :}} nom du projet, retour au tableau de bord et enregistrement automatique.}}
+\pos{109mm}{191mm}{87mm}{{\smallfont \textcolor{bleufonce}{\textbf{2. Barre d'outils :}} pivoter, supprimer, annuler, rétablir, ajouter une note et choisir la couleur des fils.}}
+\pos{14mm}{206mm}{85mm}{{\smallfont \textcolor{bleufonce}{\textbf{3. Plan de travail :}} glisser les composants, puis cliquer sur une broche pour tirer un fil.}}
+\pos{109mm}{206mm}{87mm}{{\smallfont \textcolor{bleufonce}{\textbf{4. Code et simulation :}} écrire le programme (blocs ou texte) puis lancer ou arrêter la simulation.}}
+\pos{14mm}{221mm}{182mm}{{\smallfont \textcolor{bleufonce}{\textbf{5. Panneau des composants :}} choisir la liste \emph{Basique} ou \emph{Tous}, ou utiliser la barre de recherche ; un clic sur un composant placé ouvre ses propriétés (valeur, couleur, nom).}}
+
+% --- À retenir ----------------------------------------------------------------
+\draw[bleufonce,line width=.8pt,rounded corners=2.8mm]
+  ($(current page.north west)+(10mm,-237mm)$) rectangle
+  ($(current page.north west)+(200mm,-270mm)$);
+\pos{16mm}{242mm}{174mm}{{\color{bleufonce}\bfseries\fontsize{12}{14}\selectfont À retenir}}
+\pos{16mm}{251mm}{176mm}{{\fontsize{9.4}{11.6}\selectfont Le bouton \textbf{Code} permet de programmer l'Arduino en \textbf{blocs} (comme Scratch) ou en \textbf{texte} (langage Arduino). Pendant la simulation, le \textbf{moniteur série}, en bas de la fenêtre de code, affiche les valeurs envoyées par la carte. La page suivante reprend notre exemple fil rouge sous Tinkercad.}}
+
+% --- Pied de page -------------------------------------------------------------
+\draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$) --
+  ($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$)
+  {\fontsize{9.5}{11}\selectfont Page 6};
+\end{tikzpicture}
+\null
+\end{document}
