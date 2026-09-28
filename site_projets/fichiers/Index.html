@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choix des projets Arduino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --bleu: #1B3A6B;
+    --bleu-2: #2C5596;
+    --bleu-pale: #D9E9FB;
+    --fond: #F3F6FA;
+    --carte: #FFFFFF;
+    --encre: #1C2533;
+    --gris: #5C7190;
+    --ligne: #D5DEEA;
+    --vert: #2E7D32;
+    --vert-pale: #E3F2E4;
+    --rouge: #A63A3A;
+    --rouge-pale: #F6E3E3;
+    --titre: "Palatino Linotype", Palatino, "Book Antiqua", "TeX Gyre Pagella", Georgia, serif;
+    --texte: "Source Sans 3", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--fond); color: var(--encre); font: 16px/1.5 var(--texte); }
+  img { max-width: 100%; display: block; }
+
+  /* En-tête */
+  .entete { background: var(--bleu); color: #fff; padding: 28px 16px 26px; }
+  .entete .contenu, main { max-width: 1120px; margin: 0 auto; }
+  .surtitre { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--bleu-pale); margin: 0 0 6px; }
+  h1 { font-family: var(--titre); font-weight: 700; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0 0 10px; text-wrap: balance; }
+  .entete p { margin: 0; max-width: 62ch; color: #E6EEF9; }
+
+  main { padding: 22px 16px 48px; }
+  .barre { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .compteur { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .compteur b { color: var(--vert); }
+  .filtres { display: flex; gap: 6px; }
+  .filtres button { font: inherit; font-size: 14px; border: 1px solid var(--ligne); background: var(--carte); color: var(--encre);
+    padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+  .filtres button[aria-pressed="true"] { background: var(--bleu); border-color: var(--bleu); color: #fff; }
+
+  /* Grille des projets */
+  .grille { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .projet { background: var(--carte); border: 1px solid var(--ligne); border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column; transition: transform .15s, box-shadow .15s; }
+  .projet .visuel { aspect-ratio: 16 / 10; background: var(--bleu-pale); position: relative; overflow: hidden; }
+  .projet .visuel img { width: 100%; height: 100%; object-fit: cover; }
+  .projet .visuel .sans-image { position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: var(--titre); font-size: 42px; color: var(--bleu); opacity: .35; }
+  .numero { position: absolute; top: 10px; left: 10px; background: var(--bleu); color: #fff; font-weight: 700;
+    font-size: 13px; padding: 2px 9px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+  .corps { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .corps h2 { font-family: var(--titre); font-size: 17px; line-height: 1.3; margin: 0; font-weight: 700; }
+  .pied { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .etat { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+  .etat.libre { background: var(--vert-pale); color: var(--vert); }
+  .etat.pris { background: var(--rouge-pale); color: var(--rouge); }
+  .choisir { font: inherit; font-size: 14px; font-weight: 600; background: var(--bleu); color: #fff; border: 0;
+    padding: 7px 14px; border-radius: 7px; cursor: pointer; }
+  .choisir:hover { background: var(--bleu-2); }
+  .projet.libre:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(27, 58, 107, .12); }
+  .projet.pris { background: #F7F8FA; }
+  .projet.pris .visuel img { filter: grayscale(1); opacity: .55; }
+  .projet.pris h2 { color: var(--gris); }
+  :focus-visible { outline: 3px solid #F2B705; outline-offset: 2px; }
+
+  .proposer { border: 2px dashed var(--bleu-2); background: var(--bleu-pale); display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center; gap: 10px; padding: 22px 18px; min-height: 220px; }
+  .proposer h2 { font-family: var(--titre); font-size: 19px; margin: 0; color: var(--bleu); }
+  .proposer p { margin: 0; color: var(--encre); font-size: 15px; }
+  .message { background: var(--carte); border: 1px solid var(--ligne); border-radius: 10px; padding: 18px; color: var(--gris); }
+
+  /* Fenêtre de choix */
+  .voile { position: fixed; inset: 0; background: rgba(16, 28, 48, .55); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  .fenetre { background: var(--carte); border-radius: 12px; width: min(520px, 100%); max-height: calc(100% - 32px); overflow: auto;
+    padding: 22px 22px 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
+  .fenetre h3 { font-family: var(--titre); font-size: 22px; margin: 0 0 4px; }
+  .fenetre .rappel { margin: 0 0 16px; color: var(--bleu); font-weight: 600; }
+  form { display: grid; gap: 14px; }
+  label { font-weight: 600; display: grid; gap: 5px; }
+  label small { font-weight: 400; color: var(--gris); }
+  textarea, input { font: inherit; border: 1px solid var(--ligne); border-radius: 7px; padding: 9px 11px; width: 100%; background: #fff; color: var(--encre); }
+  textarea { min-height: 110px; resize: vertical; }
+  .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+  .secondaire { font: inherit; background: transparent; border: 1px solid var(--ligne); color: var(--encre); padding: 8px 16px; border-radius: 7px; cursor: pointer; }
+  .principal { font: inherit; font-weight: 600; background: var(--bleu); color: #fff; border: 0; padding: 9px 18px; border-radius: 7px; cursor: pointer; }
+  .principal[disabled] { opacity: .6; cursor: wait; }
+  .erreur { background: var(--rouge-pale); color: var(--rouge); border-radius: 7px; padding: 9px 12px; margin: 0; }
+  .succes { text-align: left; }
+  .succes .ok { color: var(--vert); font-weight: 700; margin: 0 0 8px; }
+  .succes dl { margin: 0 0 16px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; }
+  .succes dt { color: var(--gris); }
+  .succes dd { margin: 0; white-space: pre-line; }
+
+  @media (prefers-reduced-motion: reduce) { .projet { transition: none; } .projet.libre:hover { transform: none; } }
+</style>
+</head>
+<body>
+<header class="entete">
+  <div class="contenu">
+    <p class="surtitre">Travaux Avant-Projet · L3 ELN · 2026/2027</p>
+    <h1>Choix des projets Arduino</h1>
+    <p>Chaque groupe choisit <strong>un seul projet</strong>. Un projet déjà choisi par un autre groupe reste affiché en gris et ne peut plus être sélectionné.</p>
+  </div>
+</header>
+
+<main>
+  <div class="barre">
+    <div class="compteur" id="compteur" aria-live="polite">Chargement des projets…</div>
+    <div class="filtres" role="group" aria-label="Filtrer les projets">
+      <button type="button" id="filtre-tous" aria-pressed="true">Tous</button>
+      <button type="button" id="filtre-libres" aria-pressed="false">Disponibles</button>
+    </div>
+  </div>
+  <ul class="grille" id="grille"></ul>
+</main>
+
+<div class="voile" id="voile" hidden>
+  <div class="fenetre" role="dialog" aria-modal="true" aria-labelledby="fenetre-titre">
+    <div id="etape-formulaire">
+      <h3 id="fenetre-titre">Choisir ce projet</h3>
+      <p class="rappel" id="rappel"></p>
+      <form id="formulaire" novalidate>
+        <div id="champs-proposition" hidden>
+          <label for="titre-propose">Titre du projet proposé
+            <input id="titre-propose" type="text" maxlength="150" placeholder="Exemple : Poubelle intelligente">
+          </label>
+          <label for="description">Description <small>(facultatif) : but du projet et composants principaux</small>
+            <textarea id="description" maxlength="1000"></textarea>
+          </label>
+        </div>
+        <label for="membres">Membres du groupe
+          <small>Nom et prénom, un étudiant par ligne</small>
+          <textarea id="membres" required placeholder="BENALI Amine&#10;HADJ Sara"></textarea>
+        </label>
+        <label for="email">E-mail du responsable du groupe
+          <input id="email" type="email" required autocomplete="email" placeholder="prenom.nom@exemple.com">
+        </label>
+        <p class="erreur" id="erreur" hidden></p>
+        <div class="actions">
+          <button type="button" class="secondaire" id="annuler">Annuler</button>
+          <button type="submit" class="principal" id="valider">Valider mon choix</button>
+        </div>
+      </form>
+    </div>
+    <div id="etape-succes" class="succes" hidden>
+      <h3>Choix enregistré</h3>
+      <p class="ok" id="succes-texte">Le projet est réservé pour votre groupe.</p>
+      <dl>
+        <dt>Projet</dt><dd id="succes-projet"></dd>
+        <dt>Membres</dt><dd id="succes-membres"></dd>
+        <dt>Responsable</dt><dd id="succes-email"></dd>
+      </dl>
+      <p>Un e-mail de confirmation a été envoyé au responsable du groupe.</p>
+      <div class="actions"><button type="button" class="principal" id="fermer">Fermer</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Appels au serveur Apps Script (ou données de démonstration hors Apps Script)
+  const serveur = {
+    getProjets() {
+      if (window.google && google.script) {
+        return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko).getProjets());
+      }
+      return Promise.resolve(window.DEMO_PROJETS || []);
+    },
+    proposerProjet(titre, description, membres, email) {
+      if (window.google && google.script) {
+        return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)
+          .proposerProjet(titre, description, membres, email));
+      }
+      return Promise.resolve(window.DEMO_PROJETS || []);
+    },
+    choisirProjet(projet, membres, email) {
+      if (window.google && google.script) {
+        return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)
+          .choisirProjet(projet, membres, email));
+      }
+      const liste = (window.DEMO_PROJETS || []).map(p => p.titre === projet ? Object.assign({}, p, { pris: true }) : p);
+      return Promise.resolve(liste);
+    }
+  };
+
+  const grille = document.getElementById('grille');
+  const compteur = document.getElementById('compteur');
+  const voile = document.getElementById('voile');
+  const formulaire = document.getElementById('formulaire');
+  const erreur = document.getElementById('erreur');
+  const valider = document.getElementById('valider');
+  let projets = [];
+  let filtre = 'tous';
+  let selection = null;
+
+  function afficher() {
+    const libres = projets.filter(p => !p.pris).length;
+    compteur.innerHTML = '';
+    const b = document.createElement('b');
+    b.textContent = libres;
+    compteur.append(b, ' projet' + (libres > 1 ? 's' : '') + ' disponible' + (libres > 1 ? 's' : '') + ' sur ' + projets.length);
+
+    grille.innerHTML = '';
+    projets.filter(p => filtre === 'tous' || !p.pris).forEach(p => {
+      const [numero, ...reste] = p.titre.split(' - ');
+      const li = document.createElement('li');
+      li.className = 'projet ' + (p.pris ? 'pris' : 'libre');
+
+      const visuel = document.createElement('div');
+      visuel.className = 'visuel';
+      if (p.image) {
+        const img = document.createElement('img');
+        img.src = p.image; img.alt = ''; img.loading = 'lazy';
+        visuel.append(img);
+      } else {
+        const s = document.createElement('div');
+        s.className = 'sans-image'; s.textContent = numero;
+        visuel.append(s);
+      }
+      const n = document.createElement('span');
+      n.className = 'numero'; n.textContent = numero;
+      visuel.append(n);
+
+      const corps = document.createElement('div');
+      corps.className = 'corps';
+      const h2 = document.createElement('h2');
+      h2.textContent = reste.join(' - ');
+      const pied = document.createElement('div');
+      pied.className = 'pied';
+      const etat = document.createElement('span');
+      etat.className = 'etat ' + (p.pris ? 'pris' : 'libre');
+      etat.textContent = p.pris ? 'Déjà choisi' : 'Disponible';
+      pied.append(etat);
+      if (!p.pris) {
+        const bouton = document.createElement('button');
+        bouton.type = 'button'; bouton.className = 'choisir'; bouton.textContent = 'Choisir';
+        bouton.setAttribute('aria-label', 'Choisir le projet ' + p.titre);
+        bouton.addEventListener('click', () => ouvrir(p));
+        pied.append(bouton);
+      }
+      corps.append(h2, pied);
+      li.append(visuel, corps);
+      grille.append(li);
+    });
+    if (!projets.some(p => !p.pris)) {
+      const li = document.createElement('li');
+      li.className = 'message';
+      li.textContent = 'Tous les projets de la liste ont déjà été choisis.';
+      grille.append(li);
+    }
+    const carte = document.createElement('li');
+    carte.className = 'projet proposer';
+    const t = document.createElement('h2');
+    t.textContent = 'Vous avez une autre idée\u00a0?';
+    const p = document.createElement('p');
+    p.textContent = 'Proposez votre propre projet Arduino. Il sera étudié par l\'enseignant.';
+    const bouton = document.createElement('button');
+    bouton.type = 'button'; bouton.className = 'choisir'; bouton.textContent = 'Proposer un projet';
+    bouton.addEventListener('click', () => ouvrir(null));
+    carte.append(t, p, bouton);
+    grille.append(carte);
+  }
+
+  function charger() {
+    return serveur.getProjets().then(liste => { projets = liste; afficher(); })
+      .catch(() => { compteur.textContent = 'Impossible de charger les projets. Rechargez la page.'; });
+  }
+
+  function ouvrir(p) {
+    selection = p;
+    const proposition = !p;
+    document.getElementById('fenetre-titre').textContent = proposition ? 'Proposer un projet' : 'Choisir ce projet';
+    document.getElementById('rappel').textContent = proposition ? '' : p.titre;
+    document.getElementById('rappel').hidden = proposition;
+    document.getElementById('champs-proposition').hidden = !proposition;
+    document.getElementById('etape-formulaire').hidden = false;
+    document.getElementById('etape-succes').hidden = true;
+    erreur.hidden = true;
+    valider.disabled = false;
+    valider.textContent = texteBouton();
+    voile.hidden = false;
+    document.getElementById(proposition ? 'titre-propose' : 'membres').focus();
+  }
+  function texteBouton() { return selection ? 'Valider mon choix' : 'Envoyer ma proposition'; }
+  function fermer() { voile.hidden = true; selection = null; }
+
+  formulaire.addEventListener('submit', e => {
+    e.preventDefault();
+    const membres = document.getElementById('membres').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const titre = document.getElementById('titre-propose').value.trim();
+    const description = document.getElementById('description').value.trim();
+    if (!selection && titre.length < 5) return montrerErreur('Indiquez le titre du projet proposé.');
+    if (membres.length < 3) return montrerErreur('Indiquez le nom et le prénom des membres du groupe.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return montrerErreur("L'adresse e-mail du responsable n'est pas valide.");
+    erreur.hidden = true;
+    valider.disabled = true;
+    valider.textContent = 'Enregistrement…';
+    const envoi = selection
+      ? serveur.choisirProjet(selection.titre, membres, email)
+      : serveur.proposerProjet(titre, description, membres, email);
+    envoi.then(liste => {
+      projets = liste; afficher();
+      document.getElementById('succes-projet').textContent = selection ? selection.titre : titre;
+      document.getElementById('succes-texte').textContent = selection
+        ? 'Le projet est réservé pour votre groupe.'
+        : 'Votre proposition a été envoyée. L\'enseignant vous répondra par e-mail.';
+      document.getElementById('succes-membres').textContent = membres;
+      document.getElementById('succes-email').textContent = email;
+      document.getElementById('etape-formulaire').hidden = true;
+      document.getElementById('etape-succes').hidden = false;
+      formulaire.reset();
+    }).catch(err => {
+      valider.disabled = false;
+      valider.textContent = texteBouton();
+      montrerErreur((err && err.message) || "Le choix n'a pas pu être enregistré. Réessayez.");
+      charger();
+    });
+  });
+  function montrerErreur(t) { erreur.textContent = t; erreur.hidden = false; }
+
+  document.getElementById('annuler').addEventListener('click', fermer);
+  document.getElementById('fermer').addEventListener('click', fermer);
+  voile.addEventListener('click', e => { if (e.target === voile && !valider.disabled) fermer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !voile.hidden && !valider.disabled) fermer(); });
+
+  function choisirFiltre(f) {
+    filtre = f;
+    document.getElementById('filtre-tous').setAttribute('aria-pressed', f === 'tous');
+    document.getElementById('filtre-libres').setAttribute('aria-pressed', f === 'libres');
+    afficher();
+  }
+  document.getElementById('filtre-tous').addEventListener('click', () => choisirFiltre('tous'));
+  document.getElementById('filtre-libres').addEventListener('click', () => choisirFiltre('libres'));
+
+  charger();
+  // mise à jour régulière pour voir les choix des autres groupes
+  setInterval(() => { if (voile.hidden) charger(); }, 20000);
+</script>
+</body>
+</html>
