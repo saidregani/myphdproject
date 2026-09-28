@@ -38,7 +38,7 @@ const PROJETS = [
   '22 - Radar de recul avec capteur à ultrasons et buzzer',
   '23 - Arrosage automatique des plantes avec capteur d\'humidité du sol',
   '24 - Alarme anti-intrusion avec capteur PIR et buzzer',
-  '25 - Dé électronique avec LED et bouton-poussoir',
+  '25 - Distributeur automatique d\'objets avec servomoteur',
   '26 - Ventilateur automatique commandé par la température (DHT11 et relais)',
   '27 - Commande de LED et de relais par smartphone via Bluetooth (HC-05)',
   '28 - Réglage de la vitesse d\'un moteur à courant continu par potentiomètre (PWM)',
