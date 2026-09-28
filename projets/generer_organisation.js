@@ -8,11 +8,11 @@ pres.layout = 'LAYOUT_WIDE'; // 13.333 x 7.5
 pres.title = 'Travaux Avant-Projet – Organisation du module';
 
 const ETAPES = [
-  ['Cahier des charges', 'Définir le besoin et les contraintes'],
-  ['Étude des solutions', 'Chercher et comparer les solutions possibles'],
-  ['Conception et simulation', 'Dessiner le schéma et le tester sur logiciel'],
-  ['Réalisation', 'Monter le prototype'],
-  ['Tests et validation', 'Vérifier que le projet répond au besoin'],
+  ['Analyser le besoin', 'Quel problème ?'],
+  ['Écrire le cahier des charges', 'Fonctions + contraintes'],
+  ['Découper en blocs', 'Un rôle par bloc'],
+  ['Choisir les composants', 'Et le justifier'],
+  ['Réaliser et tester', 'Étape par étape'],
 ];
 
 function titre(s, texte, couleur) {
@@ -34,7 +34,7 @@ function carte(s, x, y, w, h, fond) {
 {
   const s = pres.addSlide(); s.background = { color: FOND };
   titre(s, 'Rappel de la séance précédente');
-  s.addText('Nous avons vu les cinq étapes de conception d\'un projet électronique, illustrées par l\'exemple de la lampe automatique.',
+  s.addText('Nous avons vu les cinq étapes de la conception d\'un projet, dans un ordre à respecter : chaque étape prépare la suivante. Exemple : la lampe automatique.',
     { isTextBox: true, x: 0.7, y: 1.45, w: 11.9, h: 0.8, fontFace: TEXTE, fontSize: 18, color: ENCRE, margin: 0 });
   const w = 2.25, g = 0.16, x0 = 0.7, y0 = 2.85;
   ETAPES.forEach(([t, d], i) => {
@@ -45,6 +45,8 @@ function carte(s, x, y, w, h, fond) {
       fontFace: TITRE, fontSize: 17, bold: true, color: BLEU, margin: 0 });
     s.addText(d, { isTextBox: true, x: x + 0.15, y: y0 + 2.35, w: w - 0.3, h: 1.1, align: 'center', valign: 'top',
       fontFace: TEXTE, fontSize: 14, color: GRIS, margin: 0 });
+     if (i < ETAPES.length - 1) s.addShape(pres.shapes.RIGHT_ARROW, { x: x + w + 0.01, y: y0 + 1.7, w: 0.14, h: 0.2,
+      fill: { color: BLEU2 }, line: { color: BLEU2 } });
   });
 }
 
@@ -156,7 +158,7 @@ function carte(s, x, y, w, h, fond) {
 // ---- 8. Plan du chapitre 1 ----
 {
   const s = pres.addSlide(); s.background = { color: FOND };
-  titre(s, 'Chapitre 1 : les cinq étapes de conception');
+  titre(s, 'Chapitre 1 : les 5 étapes de la conception');
   ETAPES.forEach(([t, d], i) => {
     const y = 1.6 + i * 1.1;
     carte(s, 0.7, y, 11.9, 0.9);
