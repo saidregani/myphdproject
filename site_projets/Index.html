@@ -72,6 +72,10 @@
   .projet.pris h2 { color: var(--gris); }
   :focus-visible { outline: 3px solid #F2B705; outline-offset: 2px; }
 
+  .proposer { border: 2px dashed var(--bleu-2); background: var(--bleu-pale); display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center; gap: 10px; padding: 22px 18px; min-height: 220px; }
+  .proposer h2 { font-family: var(--titre); font-size: 19px; margin: 0; color: var(--bleu); }
+  .proposer p { margin: 0; color: var(--encre); font-size: 15px; }
   .message { background: var(--carte); border: 1px solid var(--ligne); border-radius: 10px; padding: 18px; color: var(--gris); }
 
   /* Fenêtre de choix */
@@ -125,6 +129,14 @@
       <h3 id="fenetre-titre">Choisir ce projet</h3>
       <p class="rappel" id="rappel"></p>
       <form id="formulaire" novalidate>
+        <div id="champs-proposition" hidden>
+          <label for="titre-propose">Titre du projet proposé
+            <input id="titre-propose" type="text" maxlength="150" placeholder="Exemple : Poubelle intelligente">
+          </label>
+          <label for="description">Description <small>(facultatif) : but du projet et composants principaux</small>
+            <textarea id="description" maxlength="1000"></textarea>
+          </label>
+        </div>
         <label for="membres">Membres du groupe
           <small>Nom et prénom, un étudiant par ligne</small>
           <textarea id="membres" required placeholder="BENALI Amine&#10;HADJ Sara"></textarea>
@@ -141,7 +153,7 @@
     </div>
     <div id="etape-succes" class="succes" hidden>
       <h3>Choix enregistré</h3>
-      <p class="ok">Le projet est réservé pour votre groupe.</p>
+      <p class="ok" id="succes-texte">Le projet est réservé pour votre groupe.</p>
       <dl>
         <dt>Projet</dt><dd id="succes-projet"></dd>
         <dt>Membres</dt><dd id="succes-membres"></dd>
@@ -159,6 +171,13 @@
     getProjets() {
       if (window.google && google.script) {
         return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko).getProjets());
+      }
+      return Promise.resolve(window.DEMO_PROJETS || []);
+    },
+    proposerProjet(titre, description, membres, email) {
+      if (window.google && google.script) {
+        return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)
+          .proposerProjet(titre, description, membres, email));
       }
       return Promise.resolve(window.DEMO_PROJETS || []);
     },
@@ -231,12 +250,23 @@
       li.append(visuel, corps);
       grille.append(li);
     });
-    if (!grille.children.length) {
+    if (!projets.some(p => !p.pris)) {
       const li = document.createElement('li');
       li.className = 'message';
-      li.textContent = 'Tous les projets ont déjà été choisis.';
+      li.textContent = 'Tous les projets de la liste ont déjà été choisis.';
       grille.append(li);
     }
+    const carte = document.createElement('li');
+    carte.className = 'projet proposer';
+    const t = document.createElement('h2');
+    t.textContent = 'Vous avez une autre idée\u00a0?';
+    const p = document.createElement('p');
+    p.textContent = 'Proposez votre propre projet Arduino. Il sera étudié par l\'enseignant.';
+    const bouton = document.createElement('button');
+    bouton.type = 'button'; bouton.className = 'choisir'; bouton.textContent = 'Proposer un projet';
+    bouton.addEventListener('click', () => ouvrir(null));
+    carte.append(t, p, bouton);
+    grille.append(carte);
   }
 
   function charger() {
@@ -246,29 +276,43 @@
 
   function ouvrir(p) {
     selection = p;
-    document.getElementById('rappel').textContent = p.titre;
+    const proposition = !p;
+    document.getElementById('fenetre-titre').textContent = proposition ? 'Proposer un projet' : 'Choisir ce projet';
+    document.getElementById('rappel').textContent = proposition ? '' : p.titre;
+    document.getElementById('rappel').hidden = proposition;
+    document.getElementById('champs-proposition').hidden = !proposition;
     document.getElementById('etape-formulaire').hidden = false;
     document.getElementById('etape-succes').hidden = true;
     erreur.hidden = true;
     valider.disabled = false;
-    valider.textContent = 'Valider mon choix';
+    valider.textContent = texteBouton();
     voile.hidden = false;
-    document.getElementById('membres').focus();
+    document.getElementById(proposition ? 'titre-propose' : 'membres').focus();
   }
+  function texteBouton() { return selection ? 'Valider mon choix' : 'Envoyer ma proposition'; }
   function fermer() { voile.hidden = true; selection = null; }
 
   formulaire.addEventListener('submit', e => {
     e.preventDefault();
     const membres = document.getElementById('membres').value.trim();
     const email = document.getElementById('email').value.trim();
+    const titre = document.getElementById('titre-propose').value.trim();
+    const description = document.getElementById('description').value.trim();
+    if (!selection && titre.length < 5) return montrerErreur('Indiquez le titre du projet proposé.');
     if (membres.length < 3) return montrerErreur('Indiquez le nom et le prénom des membres du groupe.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return montrerErreur("L'adresse e-mail du responsable n'est pas valide.");
     erreur.hidden = true;
     valider.disabled = true;
     valider.textContent = 'Enregistrement…';
-    serveur.choisirProjet(selection.titre, membres, email).then(liste => {
+    const envoi = selection
+      ? serveur.choisirProjet(selection.titre, membres, email)
+      : serveur.proposerProjet(titre, description, membres, email);
+    envoi.then(liste => {
       projets = liste; afficher();
-      document.getElementById('succes-projet').textContent = selection.titre;
+      document.getElementById('succes-projet').textContent = selection ? selection.titre : titre;
+      document.getElementById('succes-texte').textContent = selection
+        ? 'Le projet est réservé pour votre groupe.'
+        : 'Votre proposition a été envoyée. L\'enseignant vous répondra par e-mail.';
       document.getElementById('succes-membres').textContent = membres;
       document.getElementById('succes-email').textContent = email;
       document.getElementById('etape-formulaire').hidden = true;
@@ -276,7 +320,7 @@
       formulaire.reset();
     }).catch(err => {
       valider.disabled = false;
-      valider.textContent = 'Valider mon choix';
+      valider.textContent = texteBouton();
       montrerErreur((err && err.message) || "Le choix n'a pas pu être enregistré. Réessayez.");
       charger();
     });
