@@ -3,6 +3,7 @@ const projets = require('./projets.json');
 
 const BLEU = '1B3A6B', BLEU_PALE = 'D9E9FB', FOND = 'F3F6FA', GRIS = '5C7190', BLANC = 'FFFFFF';
 const TITRE = 'Cambria', TEXTE = 'Calibri';
+const QR = '/home/user/myphdproject/projets/qr_site_projets.png';
 
 const pres = new pptxgen();
 pres.layout = 'LAYOUT_WIDE'; // 13.333 x 7.5
@@ -20,6 +21,11 @@ pres.title = 'Projets Arduino – L3 ELN';
     fontFace: TEXTE, fontSize: 22, color: BLEU_PALE, margin: 0 });
   s.addText('Chaque groupe choisit un seul projet, ou propose le sien.', { isTextBox: true, x: 0.7, y: 4.3, w: 6.0, h: 0.8,
     fontFace: TEXTE, fontSize: 16, color: BLANC, margin: 0 });
+  // QR code du site de choix
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.7, y: 5.2, w: 1.55, h: 1.55, rectRadius: 0.08, fill: { color: BLANC }, line: { color: BLANC } });
+  s.addImage({ path: QR, x: 0.78, y: 5.28, w: 1.39, h: 1.39 });
+  s.addText('Scannez pour choisir votre projet', { isTextBox: true, x: 2.45, y: 5.6, w: 4.2, h: 0.75, valign: 'middle',
+    fontFace: TEXTE, fontSize: 16, bold: true, color: BLEU_PALE, margin: 0 });
   // mosaïque de 6 projets
   const choix = [4, 6, 12, 14, 21, 28];
   const cw = 2.55, ch = 1.6, gx = 0.2, gy = 0.2, x0 = 7.3, y0 = 1.35;
@@ -54,5 +60,24 @@ projets.forEach(p => {
   s.addText(p.n + ' / 30', { isTextBox: true, x: 11.5, y: 7.08, w: 1.28, h: 0.3, align: 'right',
     fontFace: TEXTE, fontSize: 11, color: GRIS, margin: 0 });
 });
+
+// ---- Diapositive finale : QR code du site ----
+{
+  const s = pres.addSlide();
+  s.background = { color: BLEU };
+  s.addText('Choisissez votre projet', { isTextBox: true, x: 0.8, y: 1.9, w: 6.6, h: 1.0,
+    fontFace: TITRE, fontSize: 44, bold: true, color: BLANC, margin: 0 });
+  s.addText([
+    { text: 'Scannez le QR code avec votre téléphone.', options: { bullet: true, breakLine: true } },
+    { text: 'Choisissez un projet encore disponible.', options: { bullet: true, breakLine: true } },
+    { text: 'Indiquez les membres du groupe et l\'e-mail du responsable.', options: { bullet: true, breakLine: true } },
+    { text: 'Un projet déjà choisi ne peut plus être pris.', options: { bullet: true } },
+  ], { isTextBox: true, x: 0.8, y: 3.15, w: 6.6, h: 2.4, fontFace: TEXTE, fontSize: 20, color: BLANC,
+    paraSpaceAfter: 10, margin: 0 });
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.1, y: 1.25, w: 4.5, h: 4.5, rectRadius: 0.15, fill: { color: BLANC }, line: { color: BLANC } });
+  s.addImage({ path: QR, x: 8.3, y: 1.45, w: 4.1, h: 4.1 });
+  s.addText('Vous avez une autre idée ? Proposez-la sur le même site.', { isTextBox: true, x: 8.1, y: 5.95, w: 4.5, h: 0.7,
+    align: 'center', fontFace: TEXTE, fontSize: 15, color: BLEU_PALE, margin: 0 });
+}
 
 pres.writeFile({ fileName: 'Projets_Arduino_L3_ELN.pptx' }).then(f => console.log('écrit', f));
