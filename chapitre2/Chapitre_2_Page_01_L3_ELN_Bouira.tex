@@ -1,0 +1,113 @@
+% Chapitre 2 - Page 1 | Travaux Avant-Projet | L3 ELN
+% Version mise a jour avec les logos fournis par l'enseignant.
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usetikzlibrary{arrows.meta,calc,positioning}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleuclaire}{HTML}{EAF3FB}
+\definecolor{protblue}{HTML}{2D63A7}
+\definecolor{tinkblue}{HTML}{1479C9}
+\definecolor{tinkyellow}{HTML}{F7C531}
+\definecolor{tinkorange}{HTML}{F38B2C}
+\definecolor{tinkred}{HTML}{DF4D44}
+\definecolor{tinkgreen}{HTML}{7EC242}
+\definecolor{fritgreen}{HTML}{7BC043}
+\definecolor{fritorange}{HTML}{F39C12}
+\definecolor{fritturq}{HTML}{26A69A}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{17}{19}\selectfont #1}}
+\newcommand{\bodyfont}{\fontsize{10.5}{13.2}\selectfont}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+  \path[use as bounding box] (0,0) rectangle (0,0);
+  % Bordure extérieure
+  \draw[bleufonce,line width=.95pt,rounded corners=8mm]
+     ($(current page.north west)+(5mm,-5mm)$) rectangle
+     ($(current page.south east)+(-5mm,5mm)$);
+  % En-tête
+  \node[anchor=north,align=center,inner sep=0pt] at ($(current page.north)+(0,-15.2mm)$)
+    {{\color{bleufonce}\bfseries\fontsize{19}{21}\selectfont Cours : Travaux Avant-Projet}\\[-.5mm]
+     {\color{bleufonce!85}\fontsize{10.5}{12}\selectfont rédigé par M REGANI Said}};
+  \node[anchor=north,align=center,text width=181mm,inner sep=0pt]
+   at ($(current page.north)+(0,-36.8mm)$)
+    {{\color{bleufonce}\bfseries\fontsize{17.5}{21}\selectfont Chapitre 2 --- Logiciels de conception\\ et de simulation électronique}};
+
+  % Introduction
+  \pos{10mm}{62.5mm}{188mm}{\sect{Introduction}}
+  \pos{10mm}{74mm}{187mm}{{\bodyfont Les logiciels de conception électronique permettent de dessiner un circuit, d'étudier son fonctionnement et de préparer sa réalisation. Ils aident à détecter certaines erreurs avant de passer au montage réel.}}
+
+  % Objectifs pédagogiques
+  \pos{10mm}{96mm}{188mm}{\sect{Objectifs pédagogiques}}
+  \pos{10mm}{108.5mm}{187mm}{{\bodyfont À la fin de ce chapitre, l'étudiant sera capable de :}}
+  \pos{16mm}{117mm}{181mm}{{\bodyfont
+      \begin{minipage}{\linewidth}
+      \setlength{\parindent}{0pt}\setlength{\parskip}{2.1mm}
+      \textcolor{bleufonce}{\textbullet}\enspace Identifier le rôle des logiciels Proteus, Tinkercad et Fritzing.\\[1.7mm]
+      \textcolor{bleufonce}{\textbullet}\enspace Réaliser et simuler un circuit électronique simple avec Proteus.\\[1.7mm]
+      \textcolor{bleufonce}{\textbullet}\enspace Monter et simuler un circuit Arduino avec Tinkercad Circuits.\\[1.7mm]
+      \textcolor{bleufonce}{\textbullet}\enspace Représenter un câblage et découvrir le dessin d'un PCB avec Fritzing.
+      \end{minipage}}}
+
+  % Encadré exemple
+  \draw[bleufonce,line width=.8pt,rounded corners=2.8mm]
+     ($(current page.north west)+(10mm,-151mm)$) rectangle
+     ($(current page.north west)+(200mm,-182mm)$);
+  \pos{16mm}{156mm}{174mm}{{\color{bleufonce}\bfseries\fontsize{12}{14}\selectfont Exemple fil rouge}}
+  \pos{16mm}{166mm}{175mm}{{\bodyfont La \emph{lampe automatique} du chapitre 1 servira d'exemple pour étudier trois approches : simulation d'un circuit, montage Arduino virtuel et représentation du câblage.}}
+
+  % Trois logiciels
+  \pos{10mm}{188mm}{188mm}{\sect{Les trois logiciels du chapitre}}
+  \pos{10mm}{200mm}{187mm}{{\bodyfont Les trois logiciels ont des fonctions spécifiques ; ils ne suivent aucun ordre imposé :}}
+  \pos{16mm}{209mm}{181mm}{{\bodyfont
+    \textcolor{bleufonce}{\textbullet}\enspace \textbf{Proteus :} dessiner un schéma électrique, simuler le circuit et observer les résultats.\\[2.5mm]
+    \textcolor{bleufonce}{\textbullet}\enspace \textbf{Tinkercad Circuits :} réaliser un montage virtuel et simuler la programmation d'Arduino.\\[2.5mm]
+    \textcolor{bleufonce}{\textbullet}\enspace \textbf{Fritzing :} représenter le câblage, réaliser un schéma et préparer un PCB ; ce n'est pas un simulateur de circuit.
+  }}
+
+  % Logos originaux fournis par l'enseignant. Chaque visuel reste dans sa carte
+  % avec une zone distincte pour la legende, afin d'eviter tout chevauchement.
+  % Carte Proteus : pictogramme original
+  \begin{scope}[shift={($(current page.north west)+(15mm,-271mm)$)},x=1mm,y=1mm]
+    \draw[bleufonce,line width=.7pt,rounded corners=2mm,fill=bleupale!40]
+      (0,0) rectangle (54,25);
+    \node[inner sep=0pt] at (27,12.5)
+      {\includegraphics[width=23mm,height=17mm,keepaspectratio]{chapitre_2_logo_assets/logo_proteus.png}};
+  \end{scope}
+
+  % Carte Tinkercad : logotype fourni (fond transparent)
+  \begin{scope}[shift={($(current page.north west)+(78mm,-271mm)$)},x=1mm,y=1mm]
+    \draw[bleufonce,line width=.7pt,rounded corners=2mm,fill=bleupale!40]
+      (0,0) rectangle (54,25);
+    \node[inner sep=0pt] at (27,12.5)
+      {\includegraphics[width=46mm,height=14mm,keepaspectratio]{chapitre_2_logo_assets/logo_tinkercad.png}};
+  \end{scope}
+
+  % Carte Fritzing : icone fournie
+  \begin{scope}[shift={($(current page.north west)+(141mm,-271mm)$)},x=1mm,y=1mm]
+    \draw[bleufonce,line width=.7pt,rounded corners=2mm,fill=bleupale!40]
+      (0,0) rectangle (54,25);
+    \node[inner sep=0pt] at (27,12.5)
+      {\includegraphics[width=20mm,height=20mm,keepaspectratio]{chapitre_2_logo_assets/logo_fritzing.png}};
+  \end{scope}
+
+  \pos{10mm}{279mm}{189mm}{{\fontsize{9.4}{11.2}\selectfont Le choix du logiciel dépend du besoin du projet ; la simulation ne remplace pas les essais réels.}}
+
+  % Pied de page
+  \draw[bleufonce!55,line width=.45pt] ($(current page.south west)+(10mm,14.7mm)$) --
+                                     ($(current page.south east)+(-10mm,14.7mm)$);
+  \node[anchor=south west,inner sep=0pt,text=bleufonce!80] at ($(current page.south west)+(10mm,7.4mm)$)
+    {\fontsize{9.5}{11}\selectfont 2026/2027};
+  \node[anchor=south east,inner sep=0pt,text=bleufonce!80] at ($(current page.south east)+(-10mm,7.4mm)$)
+    {\fontsize{9.5}{11}\selectfont Page 1};
+\end{tikzpicture}
+\null
+\end{document}

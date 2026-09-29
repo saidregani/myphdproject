@@ -1,0 +1,231 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage[margin=16mm,bottom=20mm]{geometry}
+\usepackage{xcolor,pifont,fancyhdr}
+\usepackage[most]{tcolorbox}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleugris}{HTML}{5C7190}
+\pagestyle{fancy}\fancyhf{}\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\color{bleugris}\small Fiches enseignant --- Projets Arduino L3 ELN}
+\fancyfoot[R]{\color{bleugris}\small \thepage}
+\newcommand{\champ}[2]{\par\smallskip{\color{bleufonce}\bfseries #1 : }#2}
+\setlength{\parindent}{0pt}
+\begin{document}
+{\color{bleufonce}\bfseries\fontsize{22}{26}\selectfont Projets Arduino --- fiches enseignant\par}
+\smallskip
+{\color{bleugris} Travaux Avant-Projet · L3 ELN · 2026/2027. Document pour l'enseignant, à ne pas projeter : pour chaque projet, l'idée à expliquer, le fonctionnement, les composants principaux et le niveau de difficulté.\par}
+\bigskip
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 01 --- Système de détection et d'alerte du niveau d'eau\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Montrer en permanence le niveau d'eau d'un réservoir et prévenir quand il est plein ou vide.}
+\champ{Fonctionnement}{Des électrodes (ou un capteur de niveau) placées à plusieurs hauteurs sont lues par l'Arduino. Chaque niveau atteint allume une LED (25, 50, 75, 100 \%) ; un buzzer sonne au niveau maximal ou minimal.}
+\champ{Composants}{Arduino Uno, capteur de niveau d'eau (ou fils/électrodes), 4 LED + résistances 220 \(\Omega\), buzzer.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 02 --- Ouverture d'une serrure électrique par carte RFID\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Ouvrir une porte uniquement avec un badge autorisé.}
+\champ{Fonctionnement}{Le module RC522 lit l'identifiant (UID) du badge par liaison SPI. Si l'UID est dans la liste autorisée, l'Arduino active un relais qui alimente la serrure quelques secondes ; sinon LED rouge et bip.}
+\champ{Composants}{Arduino Uno, module RFID RC522 + badges, module relais 5 V, serrure électrique 12 V, alimentation 12 V, LED verte/rouge, buzzer.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 03 --- Ouverture d'une serrure électrique par clavier\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Ouvrir une porte en tapant un code secret.}
+\champ{Fonctionnement}{Le clavier matriciel 4\(\times\)4 est lu ligne par ligne. Le code saisi est comparé au code enregistré : s'il est juste, le relais ouvre la serrure ; après plusieurs erreurs, une alarme sonne.}
+\champ{Composants}{Arduino Uno, clavier 4\(\times\)4, module relais, serrure électrique 12 V, alimentation 12 V, écran LCD I2C (facultatif), buzzer.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 04 --- Ouverture d'une serrure électrique par empreinte digitale\hfill{\normalfont\small Difficulté : avancé}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Ouvrir une porte avec son empreinte digitale.}
+\champ{Fonctionnement}{Le capteur (R307 ou AS608) enregistre d'abord les empreintes, puis compare l'empreinte présentée. Il répond à l'Arduino par liaison série ; si l'empreinte est reconnue, le relais ouvre la serrure.}
+\champ{Composants}{Arduino Uno, capteur d'empreintes R307/AS608, module relais, serrure électrique 12 V, alimentation 12 V, LED.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 05 --- Barrière de parking automatique avec capteur à ultrasons\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Lever automatiquement une barrière quand une voiture arrive.}
+\champ{Fonctionnement}{Le capteur HC-SR04 mesure la distance. Si un véhicule est à moins de quelques centimètres, le servomoteur lève la barrière, puis la baisse après son passage. Des LED indiquent passage libre ou interdit.}
+\champ{Composants}{Arduino Uno, capteur à ultrasons HC-SR04, servomoteur SG90, LED rouge et verte, maquette.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 06 --- Horloge numérique avec écran LCD et module RTC\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Afficher l'heure et la date exactes, même après une coupure de courant.}
+\champ{Fonctionnement}{Le module RTC DS3231 compte le temps grâce à sa pile et communique en I2C. L'Arduino lit l'heure et l'affiche sur le LCD. Option : régler une alarme avec des boutons et un buzzer.}
+\champ{Composants}{Arduino Uno, module RTC DS3231 (ou DS1307), écran LCD 16\(\times\)2 I2C, boutons, buzzer (option).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 07 --- Station météo avec capteur DHT11 et affichage LCD\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Mesurer et afficher la température et l'humidité de l'air.}
+\champ{Fonctionnement}{Le capteur DHT11 envoie la température et l'humidité sur une seule broche numérique. L'Arduino les affiche sur le LCD et peut signaler un dépassement de seuil.}
+\champ{Composants}{Arduino Uno, capteur DHT11 (ou DHT22), écran LCD 16\(\times\)2 I2C.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 08 --- Système automatique de récupération de vêtements basé sur la détection de pluie\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Rentrer automatiquement le linge quand il commence à pleuvoir.}
+\champ{Fonctionnement}{Le capteur de pluie détecte les gouttes sur sa plaque. L'Arduino commande alors un moteur (ou servomoteur) qui tire le fil à linge sous un abri, puis le ressort quand il fait sec.}
+\champ{Composants}{Arduino Uno, module capteur de pluie, servomoteur ou moteur DC + module L298N, maquette (maison, fil à linge).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 09 --- Minuteur pour contrôler une lampe avec relais\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Allumer une lampe pendant une durée choisie par l'utilisateur.}
+\champ{Fonctionnement}{La durée est réglée avec des boutons et affichée sur le LCD. Au démarrage, le relais allume la lampe ; l'Arduino compte le temps avec millis() et éteint la lampe à la fin.}
+\champ{Composants}{Arduino Uno, écran LCD 16\(\times\)2 I2C, 3 boutons-poussoirs, module relais, lampe (de préférence 12 V pour la sécurité).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 10 --- Détecteur de fuite de gaz avec ventilateur d'extraction\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Détecter une fuite de gaz et évacuer l'air.}
+\champ{Fonctionnement}{Le capteur MQ-2 donne une tension qui augmente avec la concentration de gaz ou de fumée. Au-delà d'un seuil, l'Arduino déclenche le buzzer et le relais met en marche le ventilateur.}
+\champ{Composants}{Arduino Uno, capteur de gaz MQ-2, module relais, ventilateur DC, buzzer, LED, LCD (option). Le MQ-2 doit chauffer quelques minutes avant des mesures fiables.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 11 --- Système de tri automatique des déchets humides et secs\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Trier automatiquement les déchets humides et les déchets secs.}
+\champ{Fonctionnement}{Un capteur (IR ou ultrasons) détecte l'arrivée d'un déchet sur la trappe ; une sonde d'humidité teste s'il est mouillé. Le servomoteur incline la trappe vers le bac « humide » ou le bac « sec ».}
+\champ{Composants}{Arduino Uno, capteur IR ou HC-SR04, sonde d'humidité, servomoteur SG90, maquette avec deux bacs.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 12 --- Tirelire intelligente : compteur de pièces et affichage LCD\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Compter l'argent déposé dans une tirelire.}
+\champ{Fonctionnement}{Chaque pièce qui tombe coupe le faisceau d'un capteur infrarouge. L'Arduino compte les passages et affiche le total sur le LCD. Plusieurs capteurs, selon la taille des pièces, permettent de distinguer les valeurs.}
+\champ{Composants}{Arduino Uno, capteur(s) infrarouge(s), écran LCD 16\(\times\)2 I2C, maquette de tirelire.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 13 --- Système d'éclairage automatique à base de capteur LDR\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Allumer automatiquement une lampe quand la lumière du jour diminue (exemple fil rouge du cours).}
+\champ{Fonctionnement}{La photorésistance forme un pont diviseur avec une résistance ; la tension sur A0 baisse quand il fait sombre. Sous un seuil, l'Arduino allume la LED ou active le relais de la lampe.}
+\champ{Composants}{Arduino Uno, photorésistance (LDR), résistance 10 k\(\Omega\), LED + 220 \(\Omega\) ou module relais + lampe.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 14 --- Compteur bidirectionnel de visiteurs avec capteurs IR\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Compter les personnes qui entrent et sortent d'une salle.}
+\champ{Fonctionnement}{Deux capteurs IR sont placés l'un après l'autre dans le passage. L'ordre dans lequel ils sont coupés indique une entrée ou une sortie ; le nombre de personnes présentes s'affiche sur le LCD. Option : lumière allumée tant que la salle n'est pas vide.}
+\champ{Composants}{Arduino Uno, 2 capteurs infrarouges, écran LCD 16\(\times\)2 I2C, module relais (option).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 15 --- Porte automatique avec capteur à ultrasons et servomoteur\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Ouvrir une porte automatiquement quand quelqu'un s'approche.}
+\champ{Fonctionnement}{Le HC-SR04 mesure la distance devant la porte. Si une personne est détectée, le servomoteur ouvre la porte puis la referme après quelques secondes sans détection.}
+\champ{Composants}{Arduino Uno, capteur à ultrasons HC-SR04, servomoteur SG90, maquette de porte.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 16 --- Calculatrice de base avec Arduino et clavier matriciel\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Réaliser une calculatrice simple (+, −, \(\times\), ÷).}
+\champ{Fonctionnement}{Le clavier 4\(\times\)4 sert à saisir les nombres ; les touches A, B, C, D choisissent l'opération, « \# » donne le résultat et « * » efface. L'Arduino calcule et affiche sur le LCD.}
+\champ{Composants}{Arduino Uno, clavier matriciel 4\(\times\)4, écran LCD 16\(\times\)2 I2C.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 17 --- Jeu de mémoire électronique\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Jeu de mémoire du type « Simon ».}
+\champ{Fonctionnement}{L'Arduino allume une séquence aléatoire de LED avec des sons. Le joueur la reproduit avec les boutons ; à chaque réussite la séquence s'allonge, à la première erreur le jeu recommence.}
+\champ{Composants}{Arduino Uno, 4 LED de couleurs + résistances, 4 boutons-poussoirs, buzzer.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 18 --- Implémentation des portes logiques fondamentales avec Arduino\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Montrer le fonctionnement des portes logiques de base.}
+\champ{Fonctionnement}{Deux boutons représentent les entrées A et B. Un troisième bouton choisit la porte (ET, OU, NON, NON-ET, NON-OU, OU exclusif) ; l'Arduino calcule la sortie et l'affiche sur une LED (et le nom de la porte sur un LCD).}
+\champ{Composants}{Arduino Uno, 3 boutons-poussoirs, LED + résistances, écran LCD (option).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 19 --- Contrôleur de feux tricolores avec afficheur 7 segments\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Commander un feu de circulation avec un compte à rebours.}
+\champ{Fonctionnement}{L'Arduino allume successivement vert, orange et rouge avec des durées fixées. L'afficheur 7 segments (module TM1637) montre le temps restant. Option : bouton piéton.}
+\champ{Composants}{Arduino Uno, 3 LED (vert, orange, rouge) + résistances, afficheur 7 segments 4 chiffres TM1637, bouton (option).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 20 --- Robinet d'eau automatique à base d'Arduino Uno\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Faire couler l'eau quand on approche les mains, sans toucher le robinet.}
+\champ{Fonctionnement}{Un capteur (ultrasons ou IR) détecte les mains sous le robinet. L'Arduino active le relais de la pompe (ou d'une électrovanne) et l'arrête dès que les mains sont retirées.}
+\champ{Composants}{Arduino Uno, capteur HC-SR04 ou IR, module relais, mini-pompe 5 V (ou électrovanne), alimentation externe, réservoir.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 21 --- Thermomètre numérique avec capteur LM35 et écran LCD\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Mesurer la température et l'afficher en degrés Celsius.}
+\champ{Fonctionnement}{Le LM35 donne 10 mV par \,°C. L'Arduino lit la tension sur une entrée analogique et calcule T = tension \(\times\) 100, puis l'affiche sur le LCD.}
+\champ{Composants}{Arduino Uno, capteur LM35, écran LCD 16\(\times\)2 I2C.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 22 --- Radar de recul avec capteur à ultrasons et buzzer\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Aider à reculer en signalant la distance d'un obstacle.}
+\champ{Fonctionnement}{Le HC-SR04 mesure la distance. Plus l'obstacle est proche, plus le buzzer bipe vite ; les LED verte, jaune et rouge indiquent la zone. Le LCD affiche la distance en cm.}
+\champ{Composants}{Arduino Uno, capteur HC-SR04, buzzer, 3 LED + résistances, écran LCD 16\(\times\)2 (option).}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 23 --- Arrosage automatique des plantes avec capteur d'humidité du sol\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Arroser une plante automatiquement quand la terre est sèche.}
+\champ{Fonctionnement}{La sonde mesure l'humidité du sol. En dessous d'un seuil, l'Arduino active le relais de la pompe jusqu'à ce que le sol soit assez humide. Le LCD affiche l'humidité et l'état de la pompe.}
+\champ{Composants}{Arduino Uno, capteur d'humidité du sol, module relais, mini-pompe à eau, alimentation externe, écran LCD 16\(\times\)2.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 24 --- Alarme anti-intrusion avec capteur PIR et buzzer\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Détecter une présence dans une pièce et déclencher une alarme.}
+\champ{Fonctionnement}{Le capteur PIR HC-SR501 détecte le rayonnement infrarouge d'une personne en mouvement et passe sa sortie à l'état haut. L'Arduino déclenche alors le buzzer et la LED. Option : bouton pour armer ou désarmer.}
+\champ{Composants}{Arduino Uno, capteur PIR HC-SR501, buzzer, LED + résistance.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 25 --- Distributeur automatique d'objets avec servomoteur\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Distribuer un objet (bonbon, pièce…) à la demande.}
+\champ{Fonctionnement}{Quand on appuie sur le bouton ou qu'une main est détectée par le capteur IR, le servomoteur ouvre brièvement la trappe : un objet tombe, puis la trappe se referme.}
+\champ{Composants}{Arduino Uno, servomoteur SG90, capteur infrarouge, bouton-poussoir, alimentation externe 5 V, maquette en carton.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 26 --- Ventilateur automatique commandé par la température (DHT11 et relais)\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Mettre en marche un ventilateur quand il fait trop chaud.}
+\champ{Fonctionnement}{Le DHT11 mesure la température. Au-dessus d'un seuil (par exemple 30 \,°C), l'Arduino active le relais qui alimente le ventilateur ; le LCD affiche la température et l'état du ventilateur.}
+\champ{Composants}{Arduino Uno, capteur DHT11, module relais 5 V, ventilateur DC 12 V, alimentation 12 V, écran LCD 16\(\times\)2.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 27 --- Commande de LED et de relais par smartphone via Bluetooth (HC-05)\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Commander une LED et une lampe depuis son smartphone.}
+\champ{Fonctionnement}{Une application Bluetooth du téléphone envoie des caractères au module HC-05 ; l'Arduino les lit sur la liaison série et allume ou éteint la LED et le relais de la lampe. La broche RX du HC-05 est en 3,3 V : prévoir un pont diviseur.}
+\champ{Composants}{Arduino Uno, module Bluetooth HC-05, module relais, lampe, LED + 220 \(\Omega\), résistances du pont diviseur, smartphone.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 28 --- Réglage de la vitesse d'un moteur à courant continu par potentiomètre (PWM)\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Régler la vitesse d'un moteur avec un potentiomètre.}
+\champ{Fonctionnement}{L'Arduino lit le potentiomètre (0 à 1023), le convertit en 0 à 255 avec map(), puis envoie un signal PWM sur la grille du MOSFET qui commande le moteur. La diode de roue libre protège le MOSFET.}
+\champ{Composants}{Arduino Uno, potentiomètre 10 k\(\Omega\), MOSFET IRLZ44N (ou transistor), diode 1N4007, moteur DC, alimentation externe 6-12 V.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 29 --- Suiveur de lumière avec deux LDR et un servomoteur\hfill{\normalfont\small Difficulté : moyen}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Orienter un panneau vers la source de lumière.}
+\champ{Fonctionnement}{Deux LDR, chacune en pont diviseur, sont placées de part et d'autre du panneau. L'Arduino compare les deux tensions et fait tourner le servomoteur vers le côté le plus éclairé jusqu'à l'équilibre.}
+\champ{Composants}{Arduino Uno, 2 photorésistances, 2 résistances 10 k\(\Omega\), servomoteur SG90, maquette de panneau, lampe.}
+\end{tcolorbox}
+\begin{tcolorbox}[enhanced,breakable=false,colback=white,colframe=bleufonce!35,boxrule=0.6pt,arc=2mm,
+left=4mm,right=4mm,top=3mm,bottom=3mm,before skip=0pt,after skip=4mm,
+title={\bfseries 30 --- Détecteur de flamme avec alarme sonore\hfill{\normalfont\small Difficulté : facile}},coltitle=white,colbacktitle=bleufonce,fonttitle=\large]
+\champ{Idée}{Détecter une flamme et donner l'alerte.}
+\champ{Fonctionnement}{Le capteur de flamme est sensible à l'infrarouge émis par le feu ; sa sortie change d'état quand une flamme est proche (seuil réglable par potentiomètre). L'Arduino déclenche le buzzer et la LED.}
+\champ{Composants}{Arduino Uno, capteur de flamme, buzzer, LED + résistance, relais + pompe (option).}
+\end{tcolorbox}
+\end{document}

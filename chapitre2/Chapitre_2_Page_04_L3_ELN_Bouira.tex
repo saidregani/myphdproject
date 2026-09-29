@@ -1,0 +1,71 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeXGyrePagella}
+\usepackage[french]{babel}
+\usepackage{tikz,graphicx,xcolor,geometry,hyperref}
+\usetikzlibrary{calc}
+\geometry{margin=0pt}
+\pagestyle{empty}
+\definecolor{bleufonce}{HTML}{1B3A6B}
+\definecolor{bleupale}{HTML}{D9E9FB}
+\definecolor{bleugris}{HTML}{5C7190}
+\definecolor{bleuclair}{HTML}{EAF3FB}
+\hypersetup{colorlinks=true,urlcolor=bleufonce}
+\newcommand{\pos}[4]{\node[anchor=north west,inner sep=0pt,outer sep=0pt,text width=#3,align=left] at ($(current page.north west)+(#1,-#2)$) {#4};}
+\newcommand{\sect}[1]{{\color{bleufonce}\bfseries\fontsize{16.5}{19}\selectfont #1}}
+\newcommand{\subsect}[1]{{\color{bleufonce}\bfseries\fontsize{12.5}{15}\selectfont #1}}
+\newcommand{\bodyfont}{\fontsize{10.5}{13.1}\selectfont}
+\newcommand{\smallfont}{\fontsize{9.7}{12.0}\selectfont}
+\begin{document}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[bleufonce,line width=.95pt,rounded corners=8mm]
+ ($(current page.north west)+(5mm,-5mm)$) rectangle ($(current page.south east)+(-5mm,5mm)$);
+
+\pos{10mm}{13mm}{187mm}{\subsect{Téléchargement du logiciel Proteus}}
+\fill[bleupale!55,rounded corners=2mm]
+ ($(current page.north west)+(11mm,-25mm)$) rectangle
+ ($(current page.north west)+(199mm,-56mm)$);
+\pos{16mm}{30mm}{145mm}{{\fontsize{11.5}{13.4}\selectfont\color{bleufonce}\bfseries
+ \href{https://drive.google.com/drive/folders/1wBPlZqGdT-9srv2nFiinSxOPbo5Fc2q2}{Proteus Software -- Google Drive}}}
+\pos{16mm}{41mm}{140mm}{{\smallfont Dossier de téléchargement communiqué par l'enseignant. Cliquer sur le lien ou scanner le QR code.}}
+\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(170mm,-28mm)$)
+ {\href{https://drive.google.com/drive/folders/1wBPlZqGdT-9srv2nFiinSxOPbo5Fc2q2}{\includegraphics[width=24mm]{assets/qr_proteus_drive.png}}};
+
+\pos{10mm}{62mm}{190mm}{\sect{3. Ajouter une bibliothèque dans Proteus}}
+\pos{10mm}{74mm}{188mm}{{\bodyfont Les bibliothèques regroupent des composants électroniques utilisables dans les schémas. Quand un composant est introuvable dans Proteus, on peut chercher une bibliothèque compatible et l'importer.}}
+
+\pos{10mm}{96mm}{187mm}{\subsect{Où trouver de nouveaux composants ?}}
+\fill[bleupale!55,rounded corners=2mm]
+ ($(current page.north west)+(11mm,-108mm)$) rectangle
+ ($(current page.north west)+(199mm,-135mm)$);
+\pos{16mm}{111mm}{177mm}{{\fontsize{11.4}{13.2}\selectfont\color{bleufonce}\bfseries Labcenter Electronics --- Site officiel de Proteus}}
+\pos{16mm}{119mm}{177mm}{{\smallfont Présentation des bibliothèques et de la recherche de composants en ligne intégrée au logiciel (selon la version et la licence).}}
+\pos{16mm}{129mm}{177mm}{{\fontsize{9.4}{11.2}\selectfont\href{https://www.labcenter.com/libraries/}{\textbf{www.labcenter.com/libraries/}}}}
+
+\fill[bleupale!55,rounded corners=2mm]
+ ($(current page.north west)+(11mm,-140mm)$) rectangle
+ ($(current page.north west)+(199mm,-167mm)$);
+\pos{16mm}{143mm}{177mm}{{\fontsize{11.4}{13.2}\selectfont\color{bleufonce}\bfseries SnapMagic Search (SnapEDA) --- Bibliothèques CAO}}
+\pos{16mm}{151mm}{177mm}{{\smallfont Recherche et téléchargement de symboles et d'empreintes de composants. Choisir un format d'importation adapté à Proteus.}}
+\pos{16mm}{161mm}{177mm}{{\fontsize{9.4}{11.2}\selectfont\href{https://www.snapeda.com/}{\textbf{www.snapeda.com/}}}}
+
+\pos{10mm}{174mm}{189mm}{\subsect{Tutoriel vidéo : installer une bibliothèque}}
+\fill[bleuclair,rounded corners=2.5mm]
+ ($(current page.north west)+(11mm,-186mm)$) rectangle
+ ($(current page.north west)+(199mm,-248mm)$);
+\pos{16mm}{193mm}{119mm}{{\fontsize{11.0}{13.5}\selectfont\color{bleufonce}\bfseries How to add any library in Proteus 8 | 2024}}
+\pos{16mm}{210mm}{117mm}{{\smallfont Vidéo choisie pour illustrer l'ajout d'une bibliothèque externe à Proteus 8. Les manipulations peuvent varier avec la version installée.}}
+\pos{16mm}{234mm}{114mm}{{\fontsize{9.4}{11.1}\selectfont\color{bleufonce}\href{https://www.youtube.com/watch?v=vDSsKWEL0Ck}{\textbf{Ouvrir la vidéo sur YouTube}}}}
+\node[anchor=north west,inner sep=0pt,outer sep=0pt] at ($(current page.north west)+(147mm,-191mm)$)
+ {\href{https://www.youtube.com/watch?v=vDSsKWEL0Ck}{\includegraphics[width=47mm]{assets/qr_video_proteus.png}}};
+\pos{147mm}{239mm}{47mm}{{\fontsize{8.7}{10.3}\selectfont\color{bleugris}\centering Scanner le QR code}}
+
+\draw[bleufonce!55,line width=.45pt]
+ ($(current page.south west)+(10mm,14.7mm)$)--($(current page.south east)+(-10mm,14.7mm)$);
+\node[anchor=south west,inner sep=0pt,text=bleufonce!80]
+ at ($(current page.south west)+(10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont 2026/2027};
+\node[anchor=south east,inner sep=0pt,text=bleufonce!80]
+ at ($(current page.south east)+(-10mm,7.4mm)$) {\fontsize{9.5}{11}\selectfont Page 4};
+\end{tikzpicture}
+\null
+\end{document}
