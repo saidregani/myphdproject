@@ -15,25 +15,77 @@ run_part1 = 1;     % bifurcation diagram takes 10-30 min
 run_part2 = 1;
 run_part3 = 1;     % about 10 min
 
+%% ============================ PARAMETERS ============================
+% --- DFIG, 2 MW class, stator-referred (Table I)
+Rs  = 2.6e-3;      % stator resistance (Ohm)
+Rr  = 2.9e-3;      % rotor resistance (Ohm)
+Lm  = 2.5e-3;      % magnetizing inductance (H)
+Ls  = 2.587e-3;    % stator inductance (H)   Ls > Lm
+Lr  = 2.587e-3;    % rotor inductance (H)    Lr > Lm
+p   = 2;           % pole pairs
+J   = 127;         % total inertia, generator side (kg.m^2)
+D   = 1e-3;        % viscous damping (N.m.s/rad)
+Vll = 690;         % stator line voltage, rms (V)
+fs  = 50;          % grid frequency (Hz)
+
+% --- turbine
+rho  = 1.225;      % air density (kg/m^3)
+Rb   = 40;         % blade radius (m)
+G    = 80;         % gearbox ratio
+lopt = 8.1;        % optimal tip-speed ratio
+
+% --- dimensionless chaotic model, Eq. (5)
+g_ch = -1;             % gamma
+s_ch = 8;              % s = tau*D/J
+e_ch = [0; -85; 0];    % [eps1; eps2; eps3]
+z0   = [0.3; 0.6; 1];  % initial condition
+
+% --- part 1 : chaos analysis
+dt_ch  = 1e-3;                     % RK4 step
+T_trans = 200;  T_lyap = 500;      % transient / averaging time (Lyapunov)
+E2_grid = linspace(-100, 0, 401);  % eps2 values for bifurcation diagram
+T_trans_bif = 150;  T_bif = 300;
+
+% --- part 2 : chaos suppression
+tau_e  = 0.0321;       % electrical time constant tau = -1/a1 (s)
+Umax_A = 120;          % input limit |u_i|
+Tsim_A = 16;           % simulation time (normalized)
+t_on   = 6;            % control activation time
+Ts_A   = 0.01;         % sampling period
+N_A    = 15;           % MPC horizon
+Q_A    = diag([1 10]); r_A = 1e-4;     % MPC weights
+mism   = [0 -0.2 0.2];                 % plant mismatch tested
+
+% --- part 3 : MPPT tracking
+tf_wind  = 2;          % low-pass filter of the wind for MPPT (s)
+dUr_max  = 200;        % rotor voltage limit (V)
+dT_max   = 2000;       % auxiliary torque limit (N.m)
+N_B      = 10;         % MPC horizon
+Q_B      = diag([1 3]); r_B = 1e-6;    % MPC weights
+sc       = [1e3; 1e3; 100];            % error scaling (A, A, rad/s)
+fac = [1   1   1   1;                  % nominal plant
+       1.2 1.2 0.9 1.2;                % M1 : factors on Rs, Rr, Lm, J
+       0.8 0.8 1.1 0.8];               % M2
+
 
 %% ===================== PART 1 : chaos =====================
 if run_part1
-g = -1; s = 8; e = [0; -85; 0];
+g = g_ch; s = s_ch; e = e_ch;
 f = @(z) [-z(1) - z(3)*z(2) + g*z(3) + e(1);
           -z(2) + z(3)*z(1) + e(2);
            s*z(1) - s*z(3) + e(3)];
 Jac = @(z) [-1, -z(3), -z(2)+g;  z(3), -1, z(1);  s, 0, -s];
 
 % --- Lyapunov exponents (QR method)
-dt = 1e-3;
-z = [0.3; 0.6; 1];
-for k = 1:200/dt            % transient
+dt = dt_ch;
+z = z0;
+for k = 1:T_trans/dt            % transient
     z = rk4(f, z, dt);
 end
 Q = eye(3); S = zeros(3,1);
 fz = @(y) [f(y(1:3)); reshape(Jac(y(1:3))*reshape(y(4:12),3,3), 9, 1)];
 y = [z; Q(:)];
-for k = 1:500/dt
+for k = 1:T_lyap/dt
     y = rk4(fz, y, dt);
     if mod(k,100) == 0
         [Q, R] = qr(reshape(y(4:12),3,3));
@@ -41,19 +93,19 @@ for k = 1:500/dt
         y(4:12) = reshape(Q*diag(sign(diag(R))), 9, 1);
     end
 end
-LE = sort(S/500, 'descend');
+LE = sort(S/T_lyap, 'descend');
 fprintf('Lyapunov exponents : %.4f  %.4f  %.4f\n', LE);
 fprintf('sum = %.3f   (divergence = %.3f)\n', sum(LE), -(2+s));
 fprintf('Kaplan-Yorke dim   : %.3f\n\n', 2 + LE(1)/abs(LE(3)));
 
 % --- attractor
-[~, Z] = ode45(@(t,z) f(z), [0 300], [0.3 0.6 1], odeset('RelTol',1e-9,'AbsTol',1e-9,'MaxStep',0.002));
+[~, Z] = ode45(@(t,z) f(z), [0 300], z0', odeset('RelTol',1e-9,'AbsTol',1e-9,'MaxStep',0.002));
 Z = Z(round(end/3):end, :);
 
 % --- bifurcation diagram + largest Lyapunov exponent vs eps2
-E2 = linspace(-100, 0, 401);
+E2 = E2_grid;
 M = length(E2);
-x = repmat([0.3; 0.6; 1], 1, M);
+x = repmat(z0, 1, M);
 w = ones(3, M)/sqrt(3);
 Fv = @(x) [-x(1,:) - x(3,:).*x(2,:) + g*x(3,:);
            -x(2,:) + x(3,:).*x(1,:) + E2;
@@ -61,7 +113,7 @@ Fv = @(x) [-x(1,:) - x(3,:).*x(2,:) + g*x(3,:);
 Jv = @(x,w) [-w(1,:) - x(3,:).*w(2,:) + (g - x(2,:)).*w(3,:);
               x(3,:).*w(1,:) - w(2,:) + x(1,:).*w(3,:);
               s*w(1,:) - s*w(3,:)];
-ntr = 150/dt; nb = 300/dt;
+ntr = T_trans_bif/dt; nb = T_bif/dt;
 lam = zeros(1, M);
 peaks = cell(1, M);
 z3_old2 = []; z3_old1 = [];
@@ -104,17 +156,17 @@ end
 
 %% ============ PART 2 : chaos suppression (dimensionless model) ============
 if run_part2
-g = -1; s = 8; e = [0; -85; 0];
-tau = 0.0321; ws = 2*pi*50;
-z3s = 0.2*ws*tau;                                  % wr = 1.2 ws
+g = g_ch; s = s_ch; e = e_ch;
+ws = 2*pi*fs;
+z3s = 0.2*ws*tau_e;                                % wr = 1.2 ws
 zref = [z3s; (-z3s + g*z3s + e(1))/z3s; z3s];      % target (u1 = u3 = 0)
-Umax = 120; Tsim = 16; t_on = 6; Ts = 0.01; nsub = 5;
+Umax = Umax_A; Tsim = Tsim_A; Ts = Ts_A; nsub = 5;
 
-[mpcA, K] = mpc_init(Ts, 15, diag([1 10]), 1e-4);
+[mpcA, K] = mpc_init(Ts, N_A, Q_A, r_A);
 ke = -K(1); ki = -K(2);
 
 names = {'FL-MPC', 'FL only', 'PI'};
-dlist = [0 -0.2 0.2];
+dlist = mism;
 res = cell(3,3);
 fprintf('Table II : chaos suppression\n');
 fprintf('%-8s %-8s %8s %8s %10s\n', 'plant', 'ctrl', 'IAE', 't_s', 'e_f');
@@ -122,7 +174,7 @@ for j = 1:3
     d = dlist(j);
     gp = g*(1+d); sp = s*(1+d); ep = e*(1+d); cp = 1+d;     % real plant
     for c = 1:3
-        z = [0.3; 0.6; 1]; I = zeros(3,1);
+        z = z0; I = zeros(3,1);
         N = round(Tsim/Ts);
         tt = zeros(N,1); zz = zeros(N,3);
         for k = 1:N
@@ -183,12 +235,6 @@ end
 
 %% ================= PART 3 : MPPT tracking (2 MW DFIG) =================
 if run_part3
-% machine (Table I)
-Rs = 2.6e-3; Rr = 2.9e-3; Lm = 2.5e-3; Ls = 2.587e-3; Lr = 2.587e-3;
-p = 2; J = 127; D = 1e-3; Vll = 690; fs = 50;
-% turbine
-rho = 1.225; Rb = 40; G = 80; lopt = 8.1;
-
 nom = [Rs Rr Lm Ls Lr p J D Vll fs rho Rb G lopt];
 an = dfig_coef(nom);                    % model used by the controller
 
@@ -196,20 +242,17 @@ an = dfig_coef(nom);                    % model used by the controller
 W = csvread('wind_profile.csv', 1, 0);
 t = W(:,1); v = W(:,2); Ts = t(2) - t(1);
 vf = v;
-for k = 2:length(v), vf(k) = vf(k-1) + Ts/2*(v(k) - vf(k-1)); end     % low-pass, 2 s
+for k = 2:length(v), vf(k) = vf(k-1) + Ts/tf_wind*(v(k) - vf(k-1)); end
 wr_ref  = p*G*lopt*vf/Rb;
 idr_ref = (gradient(wr_ref,Ts) + an.a7*wr_ref - p*aero(v, wr_ref, an)/J)/an.a6;
 iqr_ref = an.psi/Lm*ones(size(t));
 xr  = [idr_ref iqr_ref wr_ref];
 dxr = [gradient(idr_ref,Ts) gradient(iqr_ref,Ts) gradient(wr_ref,Ts)];
 
-Umax = [200*an.a4; 200*an.a4; 2000*p/J];     % 200 V on rotor voltages, 2 kNm on torque
-sc = [1e3; 1e3; 100];
-[mpcB, K] = mpc_init(Ts, 10, diag([1 3]), 1e-6);
+Umax = [dUr_max*an.a4; dUr_max*an.a4; dT_max*p/J];
+[mpcB, K] = mpc_init(Ts, N_B, Q_B, r_B);
 ke = -K(1); ki = -K(2);
 
-% plants: nominal, M1, M2  (factors on Rs, Rr, Lm, J)
-fac = [1 1 1 1; 1.2 1.2 0.9 1.2; 0.8 0.8 1.1 0.8];
 pname = {'nom', 'M1', 'M2'};
 Ps = @(i) -1.5*an.ws*an.psi*Lm/Ls*i;
 
