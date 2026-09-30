@@ -56,6 +56,18 @@ N_A    = 15;           % MPC horizon
 Q_A    = diag([1 10]); r_A = 1e-4;     % MPC weights
 mism   = [0 -0.2 0.2];                 % plant mismatch tested
 
+% --- wind, Eq. (7): v = Vmean + sum Ak sin(2 pi fk t + phik) + v_turb
+use_wind_file = 1;     % 1: wind_profile.csv (exact wind of the paper)
+                       % 0: generate the wind from the equation below
+Vmean  = 9;                    % mean wind speed (m/s)
+Ak     = [1.3 0.7 0.4];        % amplitudes (m/s)
+fk     = [0.05 0.13 0.31];     % frequencies (Hz)
+phik   = [0 1 2];              % phases (rad)
+sig_t  = 0.9;                  % turbulence intensity (m/s)
+tau_t  = 0.5;                  % turbulence filter time constant (s)
+dt_w   = 1e-3;  T_w = 30;      % sampling step and duration (s)
+seed   = 3;                    % random seed for the turbulence
+
 % --- part 3 : MPPT tracking
 tf_wind  = 2;          % low-pass filter of the wind for MPPT (s)
 dUr_max  = 200;        % rotor voltage limit (V)
@@ -239,8 +251,24 @@ nom = [Rs Rr Lm Ls Lr p J D Vll fs rho Rb G lopt];
 an = dfig_coef(nom);                    % model used by the controller
 
 % wind and references
-W = csvread('wind_profile.csv', 1, 0);
-t = W(:,1); v = W(:,2); Ts = t(2) - t(1);
+if use_wind_file
+    W = csvread('wind_profile.csv', 1, 0);
+    t = W(:,1); v = W(:,2);
+else
+    t = (0:dt_w:T_w)';
+    rng(seed);
+    wn = randn(size(t));
+    vt = zeros(size(t));                          % turbulence: filtered white noise
+    for k = 2:length(t)
+        vt(k) = vt(k-1) + dt_w/tau_t*(-vt(k-1) + sig_t*sqrt(2*tau_t/dt_w)*wn(k));
+    end
+    v = Vmean*ones(size(t));
+    for i = 1:3
+        v = v + Ak(i)*sin(2*pi*fk(i)*t + phik(i));
+    end
+    v = v + vt;
+end
+Ts = t(2) - t(1);
 vf = v;
 for k = 2:length(v), vf(k) = vf(k-1) + Ts/tf_wind*(v(k) - vf(k-1)); end
 wr_ref  = p*G*lopt*vf/Rb;
