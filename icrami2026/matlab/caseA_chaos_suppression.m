@@ -22,7 +22,7 @@ for c = [1 3 2]
     o = R{c,3};  m = o.t >= 6;
     semilogy(o.t(m) - 6, sqrt(sum((o.z(m,:) - zt').^2, 2)), sty{c}, 'LineWidth', 1); hold on;
 end
-xlim([0 3]); ylim([1e-4 1e2]); grid on; legend('FL-MPC (proposed)','PI','FL only');
+set(gca, 'YScale', 'log'); xlim([0 3]); ylim([1e-4 1e2]); set(gca, 'YTick', 10.^(-4:2:2)); grid on; legend('FL-MPC (proposed)','PI','FL only');
 xlabel('normalized time after activation'); ylabel('||z - z^*||');
 text(0.05, 3e-4, '(b) +20 % mismatch');
 print('-dpng', '-r300', 'fig4_matlab.png');
