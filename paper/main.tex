@@ -1,0 +1,929 @@
+%  LaTeX support: latex@mdpi.com
+%  For support, please attach all files needed for compiling as well as the log file, and specify your operating system, LaTeX version, and LaTeX editor.
+
+%=================================================================
+\documentclass[mathematics,article,submit,pdftex,moreauthors]{Definitions/mdpi}
+
+%=================================================================
+% MDPI internal commands - do not modify
+\firstpage{1}
+\makeatletter
+\setcounter{page}{\@firstpage}
+\makeatother
+\pubvolume{1}
+\issuenum{1}
+\articlenumber{0}
+\pubyear{2026}
+\copyrightyear{2026}
+%\externaleditor{Firstname Lastname} % More than 1 editor, please add `` and '' before the last editor name
+\datereceived{8 September 2026}
+\daterevised{ } % Comment out if no revised date
+\dateaccepted{ }
+\datepublished{ }
+%\datecorrected{} % For corrected papers: "Corrected: XXX" date in the original paper.
+%\dateretracted{} % For retracted papers: "Retracted: XXX" date in the original paper.
+\hreflink{https://doi.org/} % If needed use \linebreak
+%\doinum{}
+%\pdfoutput=1 % Uncomment this line if you use pdfLaTeX.
+
+%=================================================================
+% Add packages and commands here. The following packages are loaded in our class file: fontenc, inputenc, calc, indentfirst, fancyhdr, graphicx, epstopdf, lastpage, ifthen, float, amsmath, amssymb, lineno, setspace, enumitem, mathpazo, booktabs, titlesec, etoolbox, tabto, xcolor, colortbl, soul, multirow, microtype, tikz, totcount, changepage, attrib, upgreek, array, tabularx, pbox, ragged2e, tocloft, marginnote, marginfix, enotez, amsthm, natbib, hyperref, cleveref, scrextend, url, geometry, newfloat, caption, draftwatermark, seqsplit
+% cleveref: load \crefname definitions after \begin{document}
+
+%=================================================================
+% Full title of the paper (Capitalized)
+\Title{A Novel Chaos Control Approach with Adaptive ANN Compensation for a DFIG-Based Wind Turbine}
+
+% MDPI internal command: Title for citation in the left column
+\TitleCitation{A Novel Chaos Control Approach with Adaptive ANN Compensation for a DFIG-Based Wind Turbine}
+
+% Author Orchid ID: enter ID or remove command
+%\newcommand{\orcidauthorA}{0000-0000-0000-000X} % Add \orcidA{} behind the author's name
+
+% Authors, for the paper (add full first names)
+\Author{Said Regani $^{1}$, Manal Messadi $^{1}$ and Karim Kemih $^{1,}$*}
+
+%\longauthorlist{yes}
+
+% MDPI internal command: Authors, for metadata in PDF
+\AuthorNames{Said Regani, Manal Messadi and Karim Kemih}
+
+% MDPI internal command: Authors, for citation in the left column
+\AuthorCitation{Regani, S.; Messadi, M.; Kemih, K.}
+
+% Affiliations / Addresses (Add [1] after \address if there is only one affiliation in order to remove the superscript 1)
+\address[1]{%
+$^{1}$ \quad L2EI Laboratory, Jijel University, BP 98 Ouled Aissa, Jijel 18000, Algeria; said.regani@univ-jijel.dz (S.R.); manal.messadi@univ-jijel.dz (M.M.)}
+
+% Contact information of the corresponding author
+\corres{Correspondence: karim\_kemih@univ-jijel.dz}
+
+%=================================================================
+% Abstract
+\abstract{This paper proposes a novel chaos control approach with adaptive artificial neural network (ANN) compensation for a DFIG-based wind turbine. First, a nonlinear third-order DFIG model is established to characterize the complex dynamic and chaotic behavior of the system. Subsequently, a novel state-feedback control law is developed to stabilize the closed-loop system, suppress the chaotic dynamics, and ensure accurate electrical-speed tracking. To further enhance the tracking performance, an adaptive ANN is introduced as an auxiliary compensation mechanism to learn and compensate online for residual tracking errors without modifying the nominal feedback gains. A Lyapunov-based adaptation law is formulated to guarantee the boundedness of the adaptive parameters and the uniform ultimate boundedness of the tracking error. Simulation results demonstrate that the proposed control scheme effectively suppresses the chaotic dynamics of the DFIG while achieving accurate electrical-speed tracking. Moreover, the integration of the adaptive ANN significantly reduces the residual tracking error compared with the nominal controller, while maintaining the stability and robustness of the closed-loop system.}
+
+% Keywords
+\keyword{wind energy conversion systems; adaptive artificial neural network (ANN); DFIG; chaotic control}
+
+% The fields PACS, MSC, and JEL may be left empty or commented out if not applicable
+%\PACS{J0101}
+%\MSC{}
+%\JEL{}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+The increasing demand for clean energy and the need to reduce greenhouse-gas emissions have promoted wind energy as an important renewable energy source in modern power systems. Barthelmie and Pryor~\cite{ref-1} discussed the potential contribution of wind energy to climate-change mitigation, highlighting its importance in the transition toward low-carbon electricity generation. Kara and {\c{S}}ahin~\cite{ref-2} further investigated the implications of climate change for wind-energy potential, emphasizing the relevance of wind-resource variability in the planning and operation of wind-energy systems. In parallel, the development of wind-energy technologies has been supported by technological and policy developments. Matti et al.~\cite{ref-3} analyzed the role of policy mixes in the emergence of the wind-energy industry, while Lin and Chen~\cite{ref-4} investigated the development of wind-energy technologies and their implications for power-system applications.
+
+Among the different generator technologies used in variable-speed wind turbines, the doubly-fed induction generator (DFIG) has been widely adopted because it allows variable-speed operation while requiring a partially rated power converter. Edrah et al.~\cite{ref-5} investigated the impact of a high penetration of DFIG-based wind turbines on the rotor-angle stability of power systems, illustrating the importance of accurately representing DFIG dynamics in system-level studies. Yang et al.~\cite{ref-6} developed a nonlinear maximum-power-point-tracking strategy for DFIG-based wind turbines and analyzed the associated system modes. These studies demonstrate the importance of nonlinear modeling and control for achieving satisfactory performance in DFIG-based wind-energy conversion systems.
+
+The practical advantages of the DFIG are also closely related to its converter configuration. Pena et al.~\cite{ref-7} introduced the back-to-back PWM converter configuration for DFIG-based variable-speed wind-energy generation, which allows the rotor-side power converter to control the generator while the converter rating remains lower than the total generator rating. Farret and Sim{\~o}es~\cite{ref-8} discussed the integration and control of renewable energy sources, including converter-based wind-energy systems. M{\"u}ller et al.~\cite{ref-9} presented the operating principles and control characteristics of DFIG systems for wind turbines, including the decoupled regulation of active and reactive power. More recently, Chhipa et al.~\cite{ref-10} investigated the modeling and control of a grid-connected DFIG-based wind-energy conversion system, further demonstrating the importance of appropriate control strategies for maintaining satisfactory dynamic performance.
+
+Considerable research has subsequently been devoted to the modeling and control of DFIG-based wind turbines under different operating conditions. Xu and Wang~\cite{ref-11} investigated the dynamic modeling and control of DFIG-based wind turbines under unbalanced network conditions, showing the importance of accounting for electrical disturbances in the system model. Tapia et al.~\cite{ref-12} developed a mathematical model and control strategy for a wind turbine driven by a DFIG, providing a basis for the analysis of the coupled electrical and mechanical dynamics. Lei et al.~\cite{ref-13} addressed DFIG modeling for wind-turbine grid-integration studies and demonstrated the importance of an adequate dynamic representation for power-system analysis. Rahimi and Parniani~\cite{ref-14} investigated the dynamic behavior and transient stability of wind turbines, highlighting the influence of nonlinear electromechanical interactions on the system response. Qiao et al.~\cite{ref-15} considered the real-time implementation of a STATCOM in a wind farm equipped with DFIGs, illustrating the importance of coordinated control and power-quality support in wind-energy systems.
+
+Nonlinear control techniques have also been investigated to improve the robustness and dynamic performance of wind turbines. Mechter et al.~\cite{ref-16} developed a backstepping control strategy for a wind turbine operating at low wind speeds, demonstrating the applicability of nonlinear control techniques to wind-energy conversion systems. Xiang et al.~\cite{ref-17} investigated the control of a DFIG during grid-fault ride-through conditions, addressing the need for appropriate control actions during severe electrical disturbances. Rahimi and Parniani~\cite{ref-18} proposed an efficient control scheme for improving the low-voltage ride-through capability of DFIG-based wind turbines. Morren and de Haan~\cite{ref-19} studied the ride-through behavior of DFIG wind turbines during voltage dips and analyzed the corresponding transient response. Tsili and Papathanassiou~\cite{ref-20} provided a review of grid-code requirements for wind farms and discussed the technical challenges associated with the integration of wind generation into modern power systems.
+
+Although these studies have significantly advanced DFIG modeling and control, the nonlinear and time-varying nature of DFIG-based wind-energy systems remains an important research issue. In particular, variations in machine parameters, operating conditions, and wind speed can modify the system dynamics and may lead to complex oscillatory behavior. Zhang et al.~\cite{ref-21} investigated chaos suppression in a DFIG using a fractional-order model, demonstrating that chaotic dynamics can arise in DFIG systems and that dedicated control mechanisms can be used to modify such behavior. Chen et al.~\cite{ref-22} analyzed the Hopf bifurcation criterion and the pathway to chaos in DFIG systems, providing a theoretical characterization of the transition from regular to complex nonlinear dynamics. Van et al.~\cite{ref-23} investigated chaos control of a DFIG using delayed feedback control, demonstrating another approach for modifying chaotic dynamics in DFIG-based wind-energy systems.
+
+Recent research has also investigated Lyapunov-based adaptive control strategies for nonlinear systems subject to uncertainties, disturbances, and adverse operating conditions. Bounar et al.~\cite{ref-28} proposed a disturbance-observer-based finite-time adaptive neural control scheme for a DFIG wind turbine, further demonstrating the potential of adaptive neural compensation for improving robustness and tracking performance. Van et al.~\cite{ref-29} investigated the possibility of chaotic behavior in DFIG-based wind-power generation systems, providing additional analysis of the nonlinear dynamic regimes that may occur in such systems. Zhang et al.~\cite{ref-30} proposed a prescribed-time resilient attitude control method for multi-UAV systems under unknown false-data-injection attacks, combining Lyapunov-based adaptation with a dynamic memory event-triggered mechanism to improve control performance under uncertain and adverse conditions. Although this study addresses a different application, it further illustrates the applicability of Lyapunov-based adaptive mechanisms for nonlinear systems subject to uncertainties and disturbances.
+
+These studies demonstrate that nonlinear, adaptive, and neural control methods can effectively address several challenges associated with DFIG-based wind-energy systems. However, the existing literature generally addresses either nonlinear tracking and robustness or the analysis and suppression of chaotic dynamics. A specific control framework that combines nominal nonlinear stabilization with adaptive neural compensation while explicitly evaluating the suppression of the considered irregular/chaotic regime and the resulting tracking improvement remains less explored. In particular, increasing the feedback gains alone may not be the most appropriate way to reduce residual tracking errors because higher gains can increase control effort and sensitivity to measurement noise, actuator limitations, and unmodeled dynamics. This motivates the use of an adaptive compensation mechanism that can complement the nominal stabilizing controller without modifying its basic feedback structure.
+
+Motivated by this research gap, the present study proposes a chaos-control framework for a variable-speed DFIG-based wind turbine using a nonlinear state-feedback controller augmented by an adaptive artificial neural network (ANN). The proposed approach is based on a nonlinear third-order DFIG model subject to parameter perturbations and variable wind conditions. The nominal controller is designed using a local linearization of the nonlinear model, and its local stability is established through a Lyapunov-based analysis. An adaptive ANN is then introduced as a complementary compensation mechanism to address residual nonlinear effects and uncertainties while preserving the nominal feedback gains. The proposed method is evaluated both in terms of electrical-speed tracking performance and suppression of the considered irregular/chaotic dynamic regime.
+
+The main contributions of this work are summarized as follows:
+\begin{itemize}
+\item \textbf{Nonlinear chaos-control formulation:} A nonlinear state-feedback control law is developed for the third-order DFIG model, with the feedback gains selected such that the resulting locally linearized closed-loop error dynamics are Hurwitz. The associated Lyapunov analysis establishes local asymptotic stability around the selected operating point.
+\item \textbf{Adaptive ANN residual compensation:} An adaptive ANN compensation mechanism is integrated with the nominal controller to address residual nonlinear effects and uncertainties without retuning the nominal feedback gains. The ANN parameters are updated online using a Lyapunov-based adaptive law with a dead-zone and regularization mechanism.
+\item \textbf{Stability and boundedness analysis:} The closed-loop adaptive system is analyzed using a Lyapunov framework, and uniform ultimate boundedness of the tracking error is established under the stated assumptions on the adaptive mechanism and approximation error.
+\item \textbf{Numerical validation of chaos suppression and tracking improvement:} The proposed approach is evaluated through separate simulation cases using the same nominal feedback gains. The results compare the nominal controller with the ANN-enhanced controller and additionally consider a dedicated test in which the controller is activated after the DFIG enters the considered irregular/chaotic regime, thereby providing numerical evidence of the suppression of these dynamics and the improvement in tracking performance.
+\end{itemize}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:model} presents the mathematical modeling of the DFIG wind turbine, including the aerodynamic and electrical models and the considered nonlinear dynamic regime. Section~\ref{sec:control} describes the proposed nonlinear control law and its local stability analysis. Section~\ref{sec:ann} presents the adaptive ANN-based compensation mechanism and the corresponding uniform-ultimate-boundedness analysis. Section~\ref{sec:sim} presents the numerical simulations and discusses the tracking and chaos-suppression results. Finally, Section~\ref{sec:concl} concludes the paper and outlines possible directions for future research.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{DFIG Mathematical Modeling}\label{sec:model}
+
+\subsection{Wind Turbine Aerodynamic Modeling}
+
+The wind turbine converts the kinetic energy available in the wind into mechanical energy transmitted to the generator through the turbine shaft. The aerodynamic power extracted from the wind is expressed as~\cite{ref-31,ref-32,ref-33}:
+\begin{equation}
+P_a = \frac{1}{2}\pi\rho R^2 C_p(\lambda) v^3,
+\label{eq:Pa}
+\end{equation}
+where $\rho$ denotes the air density, $R$ is the turbine radius, $v$ represents the wind speed, and $C_p(\lambda)$ is the power coefficient. The power coefficient is represented by the following empirical characteristic:
+\begin{equation}
+C_p(\lambda) = c_1\left(\frac{c_2}{\lambda_i} - c_3\right)\exp\left(-\frac{c_4}{\lambda_i}\right) + c_5\lambda,
+\label{eq:Cp}
+\end{equation}
+where
+\begin{equation}
+\frac{1}{\lambda_i} = \frac{1}{\lambda + 0.08\beta} - \frac{0.035}{\beta^3 + 1},
+\label{eq:lambdai}
+\end{equation}
+where $\beta$ denotes the blade pitch angle and $c_1,\ldots,c_5$ are empirical coefficients determined from the turbine characteristic.
+
+The tip-speed ratio is defined as:
+\begin{equation}
+\lambda = \frac{R\omega_r}{v},
+\label{eq:tsr}
+\end{equation}
+where $\omega_r$ denotes the rotor angular speed. Accordingly, the aerodynamic torque developed by the wind turbine is obtained as~\cite{ref-34}:
+\begin{equation}
+T_a = \frac{P_a}{\omega_r} = \frac{1}{2}\pi\rho R^2 C_p(\lambda)\frac{v^3}{\omega_r}.
+\label{eq:Ta}
+\end{equation}
+Thus, $T_a$ represents the aerodynamic torque delivered by the wind turbine to the generator shaft.
+
+\subsection{Electrical Modeling of the DFIG}
+
+The electrical dynamics of the doubly-fed induction generator (DFIG) are formulated in the synchronous $dq$ reference frame. The stator and rotor voltage equations are given by~\cite{ref-35}
+\begin{equation}
+\begin{cases}
+u_{sd} = R_s i_{sd} + \dfrac{d\psi_{sd}}{dt} - \omega_s\psi_{sq},\\[2mm]
+u_{sq} = R_s i_{sq} + \dfrac{d\psi_{sq}}{dt} + \omega_s\psi_{sd},\\[2mm]
+u_{rd} = R_r i_{rd} + \dfrac{d\psi_{rd}}{dt} - \omega_{\mathrm{e}}\psi_{qr},\\[2mm]
+u_{qr} = R_r i_{rq} + \dfrac{d\psi_{rq}}{dt} + \omega_{\mathrm{e}}\psi_{rd},
+\end{cases}
+\label{eq:volt}
+\end{equation}
+where $\omega_{\mathrm{e}}$ denotes the electrical slip angular frequency, defined by
+\begin{equation}
+\omega_{\mathrm{e}} = \omega_s - \omega_r,
+\label{eq:slip0}
+\end{equation}
+with $\omega_s$ and $\omega_r$ denoting the synchronous and electrical rotor angular frequencies, respectively.
+
+The flux-current relationships are expressed as~\cite{ref-36}:
+\begin{equation}
+\begin{cases}
+\psi_{sd} = L_s i_{sd} + L_m i_{rd},\\
+\psi_{sq} = L_s i_{sq} + L_m i_{rq},\\
+\psi_{rd} = L_r i_{rd} + L_m i_{sd},\\
+\psi_{rq} = L_r i_{rq} + L_m i_{sq}.
+\end{cases}
+\label{eq:flux}
+\end{equation}
+where $L_s$, $L_r$, and $L_m$ denote the stator, rotor, and mutual inductances, respectively.
+
+The synchronous reference frame is aligned with the stator flux. Consequently,
+\begin{equation}
+\psi_{sq} = 0, \qquad \psi_{sd} = \psi_s.
+\label{eq:orient}
+\end{equation}
+
+For a balanced grid with constant voltage and frequency, the stator flux magnitude is approximated by
+\begin{equation}
+\psi_s = \frac{V_s}{\omega_s}.
+\label{eq:psis}
+\end{equation}
+
+Using the flux-current relationships and eliminating the stator current components gives~\cite{ref-38}:
+\begin{equation}
+\begin{cases}
+\psi_{rd} = \sigma L_r i_{rd} + \dfrac{L_m V_s}{L_s\omega_s},\\[2mm]
+\psi_{rq} = \sigma L_r i_{rq},
+\end{cases}
+\label{eq:rotorflux}
+\end{equation}
+where the leakage coefficient is defined as
+\begin{equation}
+\sigma = 1 - \frac{L_m^2}{L_s L_r}.
+\label{eq:sigma}
+\end{equation}
+
+Substitution of \eqref{eq:rotorflux} into the rotor voltage equations, while retaining the stator resistance $R_s$, yields the following rotor-current dynamics:
+\begin{equation}
+\begin{aligned}
+\frac{di_{rd}}{dt} = {} & -\frac{1}{\sigma}\left(\frac{R_r}{L_r} + \frac{R_s(1-\sigma)}{L_s}\right) i_{rd} + \omega_{\mathrm{sl}} i_{rq}\\
+& + \frac{(1-\sigma)R_s V_s}{\sigma L_s L_m\omega_s} + \frac{u_{rd}}{\sigma L_r}.
+\end{aligned}
+\label{eq:ird}
+\end{equation}
+
+Similarly, the $q$-axis rotor-current dynamics are obtained as
+\begin{equation}
+\begin{aligned}
+\frac{di_{rq}}{dt} = {} & -\frac{1}{\sigma}\left(\frac{R_r}{L_r} + \frac{R_s(1-\sigma)}{L_s}\right) i_{rq} - \omega_{\mathrm{sl}} i_{rd}\\
+& - \frac{(1-\sigma)V_s}{\sigma L_s L_m\omega_s}\omega_{\mathrm{sl}} + \frac{u_{rq}}{\sigma L_r}.
+\end{aligned}
+\label{eq:irq}
+\end{equation}
+
+The electromagnetic torque developed by the DFIG is expressed as:
+\begin{equation}
+T_e = \frac{3}{2}n_p\left(\psi_{sd} i_{sq} - \psi_{sq} i_{sd}\right).
+\label{eq:Te0}
+\end{equation}
+where $n_p$ denotes the number of pole pairs. Under stator-flux orientation, $\psi_{sq} = 0$, and substitution of the corresponding stator-flux and current relationships yields:
+\begin{equation}
+T_e = -\frac{3 n_p L_m V_s}{2 L_s\omega_s} i_{rq}.
+\label{eq:Te}
+\end{equation}
+Therefore, the electromagnetic torque is directly related to the $q$-axis rotor current $i_{rq}$. This relation links the mechanical dynamics to the rotor-current dynamics and highlights the nonlinear coupling between the $d$- and $q$-axis rotor currents through the rotor slip angular speed.
+
+\subsection{Mechanical Dynamics of the DFIG}
+
+To avoid ambiguity between mechanical and electrical angular speeds, the following notation is adopted throughout this paper: $\Omega_m$ denotes the mechanical rotor angular speed, $\omega_r$ denotes the corresponding electrical rotor angular speed, $\omega_s$ denotes the synchronous electrical angular speed, and $\omega_e$ denotes the electrical slip angular speed. They are related by:
+\begin{equation}
+\omega_e = \omega_s - n_p\Omega_m.
+\label{eq:slip}
+\end{equation}
+
+The mechanical dynamics of the generator are governed by the balance between the aerodynamic torque supplied by the wind turbine, the electromagnetic torque developed by the DFIG, and the viscous-friction torque:
+\begin{equation}
+\frac{d\Omega_m}{dt} = \frac{1}{J}\left(T_a - T_e - D\Omega_m\right),
+\label{eq:mech}
+\end{equation}
+where $J$ represents the total moment of inertia, and $D$ is the viscous-friction coefficient.
+
+To obtain a compact nonlinear representation, the electrical slip angular speed is introduced as:
+\begin{equation}
+\frac{d\omega_e}{dt} = -n_p\frac{d\Omega_m}{dt},
+\label{eq:dslip}
+\end{equation}
+
+Substituting the electromagnetic torque expression and the mechanical relationship gives the slip-speed dynamics as:
+\begin{equation}
+\frac{d\omega_e}{dt} = -\frac{D}{J}\omega_e - \frac{3n_p^2 L_m V_s}{2 J L_s\omega_s} i_{rq} + \frac{D\omega_s - n_p T_a}{J}.
+\label{eq:slipdyn}
+\end{equation}
+
+Furthermore, using the relation $\omega_s - \omega_r = \omega_e$ in the rotor-current equations, the electrical dynamics can be expressed directly in terms of the slip angular speed. Combining the mechanical and electrical dynamics yields the following third-order nonlinear model:
+\begin{equation}
+\begin{cases}
+\dfrac{d\omega_e}{dt} = -\dfrac{D}{J}\omega_e - \dfrac{3n_p^2 L_m V_s}{2 J L_s\omega_s} i_{rq} + \dfrac{D\omega_s - n_p T_a}{J},\\[3mm]
+\dfrac{di_{rq}}{dt} = -\dfrac{1}{\sigma}\left(\dfrac{R_r}{L_r} + \dfrac{R_s(1-\sigma)}{L_s}\right) i_{rq} - \omega_e i_{rd} - \dfrac{(1-\sigma)V_s}{\sigma L_s L_m\omega_s}\omega_e + \dfrac{u_{rq}}{\sigma L_r},\\[3mm]
+\dfrac{di_{rd}}{dt} = -\dfrac{1}{\sigma}\left(\dfrac{R_r}{L_r} + \dfrac{R_s(1-\sigma)}{L_s}\right) i_{rd} + \omega_e i_{rq} + \dfrac{(1-\sigma)R_s V_s}{\sigma L_s L_m\omega_s} + \dfrac{u_{rd}}{\sigma L_r}.
+\end{cases}
+\label{eq:model}
+\end{equation}
+
+To establish the connection between the nonlinear DFIG model and the proposed control design, the third-order system in \eqref{eq:model} is rewritten in the standard state-space form
+\begin{equation}
+\dot{x} = f(x) + Bu,
+\label{eq:ss}
+\end{equation}
+where the state vector and control input vector are defined as
+\begin{equation}
+x = \begin{bmatrix}\omega_e\\ i_{rq}\\ i_{rd}\end{bmatrix}, \qquad
+u = \begin{bmatrix}u_{rq}\\ u_{rd}\end{bmatrix}.
+\label{eq:xu}
+\end{equation}
+
+The nonlinear drift vector $f(x)$ is given by
+\begin{equation}
+f(x) = \begin{bmatrix}
+-\dfrac{D}{J}x_1 - \dfrac{3n_p^2 L_m V_s}{2 J L_s\omega_s}x_2 + \dfrac{D\omega_s - n_p T_a}{J}\\[3mm]
+-\dfrac{1}{\sigma}\left(\dfrac{R_r}{L_r} + \dfrac{R_s(1-\sigma)}{L_s}\right)x_2 - x_1x_3 - \dfrac{(1-\sigma)V_s}{\sigma L_s L_m\omega_s}x_1\\[3mm]
+-\dfrac{1}{\sigma}\left(\dfrac{R_r}{L_r} + \dfrac{R_s(1-\sigma)}{L_s}\right)x_3 + x_1x_2 + \dfrac{(1-\sigma)R_s V_s}{\sigma L_s L_m\omega_s}
+\end{bmatrix},
+\label{eq:fx}
+\end{equation}
+and the input matrix is
+\begin{equation}
+B = \begin{bmatrix}
+0 & 0\\[1mm]
+\dfrac{1}{\sigma L_r} & 0\\[3mm]
+0 & \dfrac{1}{\sigma L_r}
+\end{bmatrix}.
+\label{eq:B}
+\end{equation}
+
+Therefore, the control inputs $u_{rq}$ and $u_{rd}$ act directly on the second and third state equations, respectively, while the nonlinear coupling terms $x_1x_2$ and $x_1x_3$ are contained in $f(x)$.
+
+\begin{table}[H]
+\caption{Values of the main parameters~\cite{ref-21}.\label{tab1}}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\begin{tabularx}{0.75\textwidth}{CC}
+\toprule
+\textbf{Parameter} & \textbf{Value}\\
+\midrule
+Moment of inertia $J$ & $0.01~\mathrm{kg\cdot m^2}$\\
+Drive torque $T_d$ & $3.14~\mathrm{N\cdot m}$\\
+Damping coefficient $D$ & $0.02~\mathrm{N\cdot m\cdot (rad/s)^{-1}}$\\
+Number of pole pairs $n_p$ & 2\\
+Stator resistance $R_s$ & $0.02~\Omega$\\
+Rotor resistance $R_r$ & $0.02~\Omega$\\
+Stator inductance $L_s$ & $0.083~\mathrm{H}$\\
+Rotor inductance $L_r$ & $0.08~\mathrm{H}$\\
+Mutual inductance $L_m$ & $0.0515~\mathrm{H}$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+When the machine parameters are subjected to perturbations and take the values listed in Table~\ref{tab1}, the resulting dynamical system exhibits complex nonlinear behavior. The corresponding chaotic attractors generated from the initial condition $x(0) = [0.3, 0.6, 3.6]^{\mathrm{T}}$ are illustrated in Figure~\ref{fig1}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=13cm]{figures/fig1.pdf}
+\caption{Chaotic dynamic behavior of the DFIG under parameter perturbations. Left: 2D projection on the $(\omega_e, i_{rq})$ plane. Right: 3D view in the $(\omega_e, i_{rd}, i_{rq})$ space.\label{fig1}}
+\end{figure}
+
+Figure~\ref{fig1} (left and right) illustrates the nonlinear dynamic behavior of the DFIG under the considered parameter perturbations. The left panel of Figure~\ref{fig1} presents the two-dimensional projection of the system trajectory in the $(\omega_e, i_{rq})$ plane. The trajectory exhibits a bounded and irregular oscillatory behavior, characterized by a non-periodic evolution and the absence of convergence toward a single equilibrium point. This behavior indicates the presence of complex nonlinear dynamics in the electrical speed and rotor $q$-axis current.
+
+The right panel of Figure~\ref{fig1} provides the corresponding three-dimensional representation of the trajectory in the $(\omega_e, i_{rd}, i_{rq})$ state space. Therefore, an appropriate nonlinear control strategy is required to regulate the system states and achieve accurate electrical-speed tracking under varying operating conditions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proposed Nonlinear Control Law}\label{sec:control}
+
+In this article, a nonlinear state-feedback control law is proposed for the third-order DFIG model. The formulation is inspired by the predictive feedback concept used in chaos-control studies~\cite{ref-39,ref-41} and is combined with a nonlinear state-feedback structure~\cite{ref-42}. The objective of this combination is to exploit the complementary advantages of both control approaches to enhance the tracking performance, robustness, and adaptability of the wind turbine system under variable wind conditions. The architecture of the proposed control method for the DFIG-based wind turbine is presented in Figure~\ref{fig2}.
+
+The nonlinear structure of the DFIG model described by \eqref{eq:model} provides the basis for the proposed control strategy. In particular, the rotor-voltage components $u_{rd}$ and $u_{rq}$ appear explicitly in the corresponding rotor-current dynamics. This property provides two direct electrical control channels for regulating the DFIG states and, consequently, the electrical slip speed.
+
+Unlike control strategies based on a linearized representation of the machine, the proposed approach directly exploits the nonlinear coupling between the electrical slip speed and the rotor currents. The objective is to force the system states to follow the desired reference trajectory while ensuring stable closed-loop error dynamics.
+
+The nominal feedback gain matrices $K_1$ and $K_2$ were determined using an LMI-based, stability-oriented design procedure for the considered DFIG model. The resulting gain matrices were subsequently verified by evaluating the closed-loop matrix $A_c$ in \eqref{eq:Ac}, which satisfies the Hurwitz stability condition required by Theorem~\ref{thm1}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=13cm]{figures/fig2.pdf}
+\caption{Flowchart of the proposed nonlinear state-feedback control with adaptive ANN compensation.\label{fig2}}
+\end{figure}
+
+\begin{Theorem}\label{thm1}
+Consider the nonlinear DFIG system in a neighborhood of an equilibrium point $(x_e, u_e)$, described by
+\begin{equation}
+\dot{x} = f(x) + Bu,
+\end{equation}
+where $x \in \mathbb{R}^3$ is the state vector and $u \in \mathbb{R}^2$ is the control input. The equilibrium point $(x_e, u_e)$ satisfies
+\begin{equation}
+f(x_e) + Bu_e = 0.
+\end{equation}
+
+Define the state and control deviations from the equilibrium point as
+\begin{equation}
+\delta x = x - x_e, \qquad \delta u = u - u_e.
+\end{equation}
+
+The state vector and the desired trajectory are defined as
+\begin{equation}
+x = \begin{bmatrix}\omega_e & i_{rq} & i_{rd}\end{bmatrix}^T,
+\end{equation}
+and
+\begin{equation}
+x^* = \begin{bmatrix}\omega_e^* & i_{rq}^* & i_{rd}^*\end{bmatrix}^T.
+\end{equation}
+
+The tracking error is defined as
+\begin{equation}
+e = x - x^*.
+\end{equation}
+
+Using a first-order Taylor expansion of $f(x)$ around the equilibrium point $x_e$, the local dynamics are approximated by
+\begin{equation}
+\delta\dot{x} = A_e\delta x + B\delta u,
+\end{equation}
+where
+\begin{equation}
+A_e = \left.\frac{\partial f(x)}{\partial x}\right|_{x = x_e}
+\end{equation}
+is the Jacobian matrix evaluated at the selected equilibrium point.
+
+For the local tracking-error dynamics, the proposed nominal nonlinear control law is given by
+\begin{equation}
+u_N = K_1(\dot{e} - e) + K_2 e,
+\label{eq:uN}
+\end{equation}
+where
+\begin{equation}
+u_N = \begin{bmatrix}u_{rq}\\ u_{rd}\end{bmatrix},
+\end{equation}
+and $K_1, K_2 \in \mathbb{R}^{2\times 3}$ are constant feedback gain matrices.
+
+Assume that $I - BK_1$ is nonsingular and that the resulting local closed-loop error matrix
+\begin{equation}
+A_c = (I - BK_1)^{-1}\left[A_e + B(K_2 - K_1)\right]
+\label{eq:Ac}
+\end{equation}
+is Hurwitz. Then, the equilibrium point $e = 0$ of the locally linearized nominal closed-loop tracking-error dynamics is asymptotically stable.
+\end{Theorem}
+
+\begin{proof}
+Let $(x_e, u_e)$ be an equilibrium point satisfying $f(x_e) + Bu_e = 0$. Introducing the deviation variables
+\begin{equation*}
+\delta x = x - x_e, \qquad \delta u = u - u_e,
+\end{equation*}
+and applying a first-order Taylor expansion of $f(x)$ around $x_e$ gives the local approximation
+\begin{equation}
+\delta\dot{x} = A_e\delta x + B\delta u,
+\end{equation}
+where
+\begin{equation}
+A_e = \left.\frac{\partial f(x)}{\partial x}\right|_{x = x_e}.
+\end{equation}
+
+For the tracking problem, the desired trajectory is considered as the reference operating point, and the tracking error is defined as
+\begin{equation*}
+e = x - x^*.
+\end{equation*}
+Consequently, in the neighborhood of the selected operating point, the local nominal error dynamics can be written as
+\begin{equation}
+\dot{e} = A_e e + Bu_N.
+\label{eq:errdyn}
+\end{equation}
+
+Substituting the proposed nominal control law
+\begin{equation}
+u_N = K_1(\dot{e} - e) + K_2 e
+\end{equation}
+into \eqref{eq:errdyn} yields
+\begin{equation}
+\dot{e} = A_e e + BK_1(\dot{e} - e) + BK_2 e.
+\end{equation}
+
+Rearranging the above expression gives
+\begin{equation}
+(I - BK_1)\dot{e} = \left[A_e + B(K_2 - K_1)\right]e.
+\end{equation}
+
+Since $I - BK_1$ is nonsingular, the closed-loop error dynamics become
+\begin{equation}
+\dot{e} = A_c e,
+\end{equation}
+where
+\begin{equation}
+A_c = (I - BK_1)^{-1}\left[A_e + B(K_2 - K_1)\right].
+\end{equation}
+
+By assumption, $A_c$ is Hurwitz. Therefore, for any symmetric positive-definite matrix $Q = Q^T > 0$, there exists a symmetric positive-definite matrix $P = P^T > 0$ satisfying the Lyapunov equation
+\begin{equation}
+A_c^T P + PA_c = -Q.
+\end{equation}
+
+Consider the quadratic Lyapunov function
+\begin{equation}
+V(e) = e^T P e.
+\end{equation}
+
+Since $P > 0$, $V(e)$ is positive definite. Its time derivative along the closed-loop trajectories is
+\begin{equation}
+\begin{aligned}
+\dot{V} &= \dot{e}^T P e + e^T P\dot{e}\\
+&= e^T\left(A_c^T P + PA_c\right)e\\
+&= -e^T Q e < 0, \qquad e \neq 0.
+\end{aligned}
+\end{equation}
+
+Hence, the equilibrium point $e = 0$ of the locally linearized closed-loop error dynamics is asymptotically stable. Therefore, the original nonlinear DFIG system is locally asymptotically stable in a neighborhood of the considered equilibrium point.
+\end{proof}
+
+Although the nominal controller provides the required stability property around the selected operating point, further reduction of the residual tracking error by simply increasing the feedback gains may require higher control effort and may increase sensitivity to actuator limitations, measurement noise, and unmodeled high-frequency dynamics. Therefore, instead of further increasing or retuning the nominal feedback gains $K_1$ and $K_2$, an adaptive ANN compensation mechanism is introduced to address the residual nonlinear effects and uncertainties. This architecture separates the nominal stabilization task from the online compensation task while preserving the nominal controller structure.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Adaptive ANN-Based Compensation}\label{sec:ann}
+
+Although the nominal nonlinear state-feedback controller provides the required local stability property, residual tracking errors may remain because of the nonlinear coupling of the DFIG states, parameter variations, and time-varying wind conditions. Therefore, an adaptive artificial neural network (ANN) is introduced as a complementary compensation mechanism. The ANN does not replace the nominal controller; instead, it generates an additional control signal $u_{\mathrm{AI}}$ that is added to the nominal control input.
+
+The total control input is defined as
+\begin{equation}
+u = u_N + u_{\mathrm{AI}},
+\label{eq:utot}
+\end{equation}
+where $u_N$ denotes the nominal nonlinear state-feedback control law and $u_{\mathrm{AI}}$ denotes the adaptive ANN compensation signal.
+
+\subsection{ANN Input Vector}
+
+The ANN uses the instantaneous tracking error and its time derivative. Accordingly, the six-dimensional ANN input vector is defined as
+\begin{equation}
+z = \begin{bmatrix}e\\ \dot{e}\end{bmatrix} = \begin{bmatrix}e_1 & e_2 & e_3 & \dot{e}_1 & \dot{e}_2 & \dot{e}_3\end{bmatrix}^T.
+\label{eq:z}
+\end{equation}
+
+To improve numerical conditioning during online adaptation, the ANN input is normalized according to
+\begin{equation}
+z_n = S_{\mathrm{in}}^{-1} z,
+\label{eq:zn}
+\end{equation}
+where $S_{\mathrm{in}}$ is a diagonal scaling matrix containing the normalization factors used for the six ANN input signals.
+
+\subsection{ANN Structure and Compensation Signal}
+
+The implemented ANN consists of six input signals, one hidden layer with ten neurons, and two output signals. The hidden-layer activation function is the hyperbolic tangent. The ANN output is calculated as
+\begin{align}
+h &= \tanh(W_1 z_n + b_1), \label{eq:h}\\
+y &= W_2 h + b_2, \label{eq:y}\\
+u_{\mathrm{AI}} &= K_{\mathrm{AI}}\, y, \label{eq:uAI}
+\end{align}
+where
+\begin{equation}
+W_1 \in \mathbb{R}^{10\times 6}, \qquad b_1 \in \mathbb{R}^{10},
+\end{equation}
+and
+\begin{equation}
+W_2 \in \mathbb{R}^{2\times 10}, \qquad b_2 \in \mathbb{R}^{2}.
+\end{equation}
+
+The scalar $K_{\mathrm{AI}} > 0$ determines the scaling of the ANN compensation signal. Therefore, the implemented ANN architecture is 6--10--2. Unlike an offline-trained neural network with fixed parameters, the ANN parameters are treated as adaptive states of the closed-loop system. The augmented state vector is therefore defined as
+\begin{equation}
+X_a = \begin{bmatrix}x^T & \operatorname{vec}(W_1)^T & b_1^T & \operatorname{vec}(W_2)^T & b_2^T\end{bmatrix}^T.
+\label{eq:Xa}
+\end{equation}
+
+Thus, $W_1$, $b_1$, $W_2$, and $b_2$ are updated online and integrated directly together with the DFIG state variables by the numerical solver.
+
+\subsection{Online Adaptive Law}
+
+The online adaptation uses the control-direction error signal associated with the input matrix $B$. Accordingly, the learning signal is defined as
+\begin{equation}
+r = B^T e = \begin{bmatrix}d e_2\\ d e_3\end{bmatrix}.
+\label{eq:r}
+\end{equation}
+
+A dead-zone is introduced to prevent unnecessary adaptation when the tracking error is sufficiently small. Thus, the effective learning signal is
+\begin{equation}
+r_a = \begin{cases}
+B^T e, & \|e\| > \delta,\\
+0, & \|e\| \leq \delta,
+\end{cases}
+\label{eq:deadzone}
+\end{equation}
+where $\delta > 0$ is the dead-zone threshold.
+
+For the implemented algorithm, the derivative of the ANN output with respect to the adaptive correction signal is represented by
+\begin{equation}
+\dot{y}_a = r_a.
+\label{eq:ya}
+\end{equation}
+
+The output-layer parameters are updated according to
+\begin{align}
+\dot{W}_2 &= -\Gamma_{W_2} r_a h^T - \sigma_{W_2} W_2, \label{eq:W2}\\
+\dot{b}_2 &= -\Gamma_{b_2} r_a - \sigma_{b_2} b_2, \label{eq:b2}
+\end{align}
+where $\Gamma_{W_2} > 0$ and $\Gamma_{b_2} > 0$ are adaptation gains and $\sigma_{W_2} > 0$ and $\sigma_{b_2} > 0$ are regularization coefficients.
+
+The hidden-layer correction signal is obtained by back-propagating the learning signal through the output layer:
+\begin{equation}
+\delta_h = (1 - h^2) \odot \left(W_2^T r_a\right),
+\label{eq:deltah}
+\end{equation}
+where $\odot$ denotes element-wise multiplication.
+
+The hidden-layer parameters are then updated according to
+\begin{align}
+\dot{W}_1 &= -\Gamma_{W_1}\delta_h z_n^T - \sigma_{W_1} W_1, \label{eq:W1}\\
+\dot{b}_1 &= -\Gamma_{b_1}\delta_h - \sigma_{b_1} b_1, \label{eq:b1}
+\end{align}
+where $\Gamma_{W_1} > 0$ and $\Gamma_{b_1} > 0$ are the corresponding adaptation gains, while $\sigma_{W_1} > 0$ and $\sigma_{b_1} > 0$ are regularization coefficients.
+
+Equations~\eqref{eq:W2}--\eqref{eq:b1} show explicitly that all four parameter groups,
+\begin{equation*}
+W_1, \quad b_1, \quad W_2, \quad b_2,
+\end{equation*}
+are adaptive states of the closed-loop system. They are not fixed offline-trained parameters.
+
+\subsection{Bounded Adaptive Compensation}
+
+The regularization terms in \eqref{eq:W2}--\eqref{eq:b1} provide a damping mechanism that limits excessive parameter drift, while the dead-zone prevents continuous adaptation when the tracking error is sufficiently small.
+
+Define the complete adaptive parameter vector as
+\begin{equation}
+\Theta = \operatorname{col}\left(\operatorname{vec}(W_1), b_1, \operatorname{vec}(W_2), b_2\right).
+\label{eq:Theta}
+\end{equation}
+
+Let $\Theta^*$ denote an ideal parameter vector associated with the best available approximation of the required residual compensation over the considered operating region. The parameter estimation error is defined by
+\begin{equation}
+\widetilde{\Theta} = \Theta - \Theta^*.
+\label{eq:Thetatilde}
+\end{equation}
+
+Assume that the residual nonlinear effects to be compensated by the ANN can be approximated over a compact operating region $\Omega_z$ with a bounded approximation error:
+\begin{equation}
+\|\varepsilon(z)\| \leq \bar{\varepsilon}, \qquad z \in \Omega_z,
+\label{eq:epsbound}
+\end{equation}
+where $\bar{\varepsilon}$ is a finite positive constant.
+
+Under this assumption, the ANN acts as an online residual-compensation mechanism rather than as the primary stabilizing controller. The nominal state-feedback controller remains responsible for the nominal local stabilization, whereas the adaptive ANN compensates residual effects associated with nonlinear coupling, parameter variations, and time-varying operating conditions.
+
+\begin{Theorem}\label{thm2}
+Consider the nonlinear DFIG closed-loop system controlled by
+\begin{equation}
+u = u_N + u_{\mathrm{AI}},
+\end{equation}
+where the nominal controller yields a Hurwitz local closed-loop matrix $A_c$. Assume that the ANN approximation error is bounded as in \eqref{eq:epsbound}, that the adaptation gains and regularization coefficients are positive, and that the considered closed-loop trajectories remain in the operating region $\Omega_z$.
+
+Then, under the adaptive laws \eqref{eq:W2}--\eqref{eq:b1} and the dead-zone condition \eqref{eq:deadzone}, the tracking error is uniformly ultimately bounded provided that the adaptive parameters remain bounded. In particular, there exists a finite constant $\varepsilon > 0$ such that
+\begin{equation}
+\limsup_{t\to\infty}\|e(t)\| \leq \varepsilon.
+\end{equation}
+The ultimate bound depends on the ANN approximation residual, dead-zone threshold, adaptation gains, regularization coefficients, and the nominal closed-loop dynamics.
+\end{Theorem}
+
+\begin{proof}
+Since $A_c$ is Hurwitz, for any symmetric positive-definite matrix $Q = Q^T > 0$, there exists a symmetric positive-definite matrix $P = P^T > 0$ satisfying
+\begin{equation}
+A_c^T P + PA_c = -Q.
+\label{eq:lyap2}
+\end{equation}
+
+Consider the composite Lyapunov function
+\begin{equation}
+V = e^T P e + \frac{1}{\Gamma_\Theta}\|\widetilde{\Theta}\|^2,
+\end{equation}
+where $\Gamma_\Theta > 0$ is a positive adaptation scaling factor.
+
+Along the closed-loop trajectories, the derivative of $V$ contains the nominal stabilizing contribution, the ANN compensation term, the bounded approximation residual, and the adaptive parameter terms. Using \eqref{eq:lyap2}, the nominal contribution is
+\begin{equation}
+-e^T Q e.
+\end{equation}
+
+The adaptive laws \eqref{eq:W2}--\eqref{eq:b1} are constructed according to the negative-gradient direction of the control-direction error. Consequently, the parameter-dependent terms are compensated by the adaptation mechanism, while the remaining terms are associated with the bounded ANN approximation residual, the dead-zone, and the regularization terms.
+
+Under the boundedness assumption on the adaptive parameters, these terms can be bounded by finite constants. Hence, there exist positive constants $\alpha$ and $c_\varepsilon$ such that
+\begin{equation}
+\dot{V} \leq -\alpha\|e\|^2 + c_\varepsilon\|e\|.
+\end{equation}
+
+Therefore,
+\begin{equation}
+\dot{V} < 0 \qquad \text{for} \qquad \|e\| > \frac{c_\varepsilon}{\alpha}.
+\end{equation}
+
+Thus, the tracking error ultimately enters a bounded neighborhood of the origin. When $\|e\| \leq \delta$, the dead-zone sets the learning signal to zero and prevents unnecessary adaptation near the desired trajectory. The regularization terms simultaneously limit parameter drift.
+
+Consequently, under the stated assumptions, the tracking error is uniformly ultimately bounded, which yields
+\begin{equation}
+\limsup_{t\to\infty}\|e(t)\| \leq \varepsilon
+\end{equation}
+for some finite $\varepsilon$ determined by the approximation residual, dead-zone threshold, adaptation gains, regularization coefficients, and nominal closed-loop dynamics.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Numerical Simulations}\label{sec:sim}
+
+This section presents the numerical results obtained for the proposed DFIG control strategy under time-varying wind conditions. Two cases are considered in order to assess the contribution of the adaptive ANN. The first case uses the proposed nominal controller, which constitutes the main control contribution of this work. The second case adds the adaptive ANN compensation to the same controller. The nominal gains $K_1$ and $K_2$ are kept unchanged in both cases, so that any improvement in the second case can be attributed to the ANN compensation.
+
+A variable turbulent wind profile is applied to the DFIG to reproduce changing operating conditions. The electrical-speed reference is obtained from the optimal tip-speed-ratio condition. The wind speed is defined as
+\begin{equation}
+v(t) = V_{\mathrm{mean}} + \sum_{k=1}^{3} A_k\sin(2\pi f_k t) + v_{\mathrm{turb}}(t),
+\label{eq:wind}
+\end{equation}
+where $V_{\mathrm{mean}}$ is the mean wind speed, and $A_k$ and $f_k$ are the amplitude and frequency of the $k$th harmonic component, respectively. The term $v_{\mathrm{turb}}(t)$ represents a smoothed Gaussian stochastic component used to reproduce wind turbulence. A mean wind speed of $V_{\mathrm{mean}} = 8~\mathrm{m/s}$ is considered in the simulations. Three low-frequency harmonic components are added to the stochastic component, resulting in the wind profile shown in Figure~\ref{fig3}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=11cm]{figures/fig3.pdf}
+\caption{Applied turbulent wind-speed profile.\label{fig3}}
+\end{figure}
+
+For the numerical evaluation, the parameters of the proposed controller are kept fixed throughout the simulations. The nominal control gains $K_1$ and $K_2$, together with the parameters of the adaptive ANN, are reported in Table~\ref{tab2}. The same nominal gains are used in both simulation cases, namely the proposed nominal controller and its ANN-enhanced version. Therefore, the performance improvement obtained with the ANN is evaluated without retuning the nominal controller.
+
+The speed-tracking performance is evaluated using the electrical-speed error, defined as
+\begin{equation}
+e_\omega(t) = \omega_e(t) - \omega_{e,\mathrm{ref}}(t).
+\label{eq:ew}
+\end{equation}
+
+The root-mean-square error (RMSE) is used to quantify the tracking accuracy:
+\begin{equation}
+\mathrm{RMSE}_\omega = \sqrt{\frac{1}{N}\sum_{k=1}^{N} e_\omega^2(k)}.
+\label{eq:rmse}
+\end{equation}
+
+\begin{table}[H]
+\caption{Controller and adaptive ANN parameters used in the simulations.\label{tab2}}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\begin{tabularx}{0.85\textwidth}{lC}
+\toprule
+\textbf{Parameter} & \textbf{Value}\\
+\midrule
+$K_1$ & $\begin{bmatrix} -0.0300 & -0.0400 & -0.0006\\ 0.0200 & -0.0015 & -0.0040\end{bmatrix}$\\[4mm]
+$K_2$ & $\begin{bmatrix} 1.8006 & -8.8097 & -0.0054\\ 0.0601 & 5.1900 & -0.4004\end{bmatrix}$\\[4mm]
+ANN architecture & 6--10--2\\
+Learning rate $\Gamma$ & 0.0011\\
+ANN coefficient $\alpha_{\mathrm{AI}}$ & 1.9\\
+Dead-zone threshold & $0.2~\mathrm{rad/s}$\\
+Output saturation $u_{\mathrm{AI,max}}$ & $[1.80~~1.80]^T$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=11cm]{figures/fig4.pdf}
+\caption{Evolution of the rotor slip angular speed before and after activation of the proposed controller.\label{fig4}}
+\end{figure}
+
+To explicitly assess the capability of the proposed control scheme to suppress the considered chaotic dynamics, an additional simulation is conducted in which the DFIG operates in the uncontrolled chaotic regime under the parameter perturbations listed in Table~\ref{tab1} for $t < 15~\mathrm{s}$. At $t = 15~\mathrm{s}$, the proposed ANN-enhanced controller is activated. Figure~\ref{fig4} illustrates the time-domain evolution of the DFIG state variables before and after controller activation. Prior to $t = 15~\mathrm{s}$, the system exhibits irregular oscillatory behavior associated with the considered chaotic regime. Following controller activation, these oscillations progressively decay, and the chaotic behavior is no longer observed after approximately $t = 15.2~\mathrm{s}$, with the state variables subsequently converging toward the desired operating regime.
+
+Figure~\ref{fig5} shows the rotor slip angular speed (rad/s) response for the two proposed control configurations. The proposed nominal controller provides good tracking of the time-varying reference. When the adaptive ANN compensation is added, the response remains close to the reference while the residual tracking error is further reduced. Because the two responses are close when viewed over the complete simulation interval, an enlarged view is included to make this improvement more visible.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=11cm]{figures/fig5.pdf}
+\caption{The rotor slip angular speed tracking with the proposed nominal controller and its ANN-enhanced version.\label{fig5}}
+\end{figure}
+
+The obtained results are summarized in Table~\ref{tab3}. The proposed nominal controller gives an RMSE of $0.3379~\mathrm{rad/s}$. With the addition of the adaptive ANN, the RMSE decreases to approximately $0.2003~\mathrm{rad/s}$, while the nominal gains remain unchanged. This corresponds to a reduction of about 40.73\% in the RMSE. The results therefore show that the proposed nominal controller is already able to provide accurate speed tracking, while the adaptive ANN offers an additional compensation capability for reducing the remaining tracking error.
+
+\begin{table}[H]
+\caption{Speed-tracking performance comparison between the nominal controller and the proposed adaptive ANN scheme.\label{tab3}}
+\begin{adjustwidth}{-\extralength}{0cm}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\begin{tabularx}{\fulllength}{lCCC}
+\toprule
+\textbf{Performance Metric} & \textbf{Nominal Controller (Without ANN)} & \textbf{Proposed Adaptive ANN (Optimized)} & \textbf{Improvement (\%)}\\
+\midrule
+$\mathrm{RMSE}_\omega$ (rad/s) & 0.3379 & \textbf{0.2003} & \textbf{40.73\%}\\
+$\mathrm{MAE}_\omega$ (rad/s) & 0.2825 & \textbf{0.1788} & \textbf{36.71\%}\\
+$e_{\max,\omega}$ (rad/s) & 0.9758 & \textbf{0.8525} & \textbf{12.63\%}\\
+$\mathrm{IAE}_\omega$ & 2.7902 & \textbf{1.7879} & \textbf{35.92\%}\\
+$\mathrm{ISE}_\omega$ & 1.1140 & \textbf{0.4012} & \textbf{63.99\%}\\
+\bottomrule
+\end{tabularx}
+\end{adjustwidth}
+\end{table}
+
+A comparison between the theoretical electrical power and the power obtained with the proposed ANN controller is shown in Figure~\ref{fig6}. The results demonstrate excellent tracking performance, with the generated power closely following the theoretical reference under varying wind speed conditions and confirming the dynamic efficiency of the DFIG. These results confirm that the proposed ANN controller provides high-accuracy power tracking and improved dynamic performance under variable wind conditions, making it a viable solution for real-time DFIG control under fluctuating wind conditions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=11cm]{figures/fig6.pdf}
+\caption{Electrical power response of the DFIG under variable wind conditions.\label{fig6}}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}\label{sec:concl}
+
+This paper presented a nonlinear state-feedback control strategy with adaptive artificial neural network (ANN) compensation for a doubly-fed induction generator (DFIG)-based wind energy conversion system under variable wind conditions. The proposed approach combines nonlinear control with online ANN compensation to improve tracking performance and attenuate the considered chaotic/irregular dynamics. Simulation results demonstrate improved rotor-speed tracking and effective attenuation of the considered irregular oscillations, highlighting the potential of the proposed strategy for DFIG wind turbine control.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{6pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TODO (authors): please check and complete the back-matter statements below before submission.
+\authorcontributions{\textcolor{red}{Conceptualization, X.X.; methodology, X.X.; software, X.X.; validation, X.X.; formal analysis, X.X.; investigation, X.X.; writing---original draft preparation, X.X.; writing---review and editing, X.X.; supervision, X.X. (Please complete using the initials S.R., M.M. and K.K.)} All authors have read and agreed to the published version of the manuscript.}
+
+\funding{This research received no external funding.}
+
+\institutionalreview{Not applicable.}
+
+\informedconsent{Not applicable.}
+
+\dataavailability{The data presented in this study are available on request from the corresponding author.}
+
+\conflictsofinterest{The authors declare no conflicts of interest.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\abbreviations{Abbreviations}{
+The following abbreviations are used in this manuscript:\\
+
+\noindent
+\begin{tabular}{@{}ll}
+ANN & Artificial neural network\\
+DFIG & Doubly-fed induction generator\\
+IAE & Integral absolute error\\
+ISE & Integral squared error\\
+LMI & Linear matrix inequality\\
+MAE & Mean absolute error\\
+MPPT & Maximum power point tracking\\
+PWM & Pulse-width modulation\\
+RMSE & Root-mean-square error\\
+STATCOM & Static synchronous compensator\\
+UUB & Uniform ultimate boundedness
+\end{tabular}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{adjustwidth}{-\extralength}{0cm}
+
+\reftitle{References}
+
+\begin{thebibliography}{999}
+
+\bibitem[Barthelmie and Pryor(2021)]{ref-1}
+Barthelmie, R.J.; Pryor, S.C. Climate Change Mitigation Potential of Wind Energy. \emph{Climate} \textbf{2021}, \emph{9}, 136. \url{https://doi.org/10.3390/cli9090136}.
+
+\bibitem[Kara and {\c{S}}ahin(2023)]{ref-2}
+Kara, T.; {\c{S}}ahin, A.D. Implications of Climate Change on Wind Energy Potential. \emph{Sustainability} \textbf{2023}, \emph{15}, 14822. \url{https://doi.org/10.3390/su152014822}.
+
+\bibitem[Matti et~al.(2017)]{ref-3}
+Matti, C.; Consoli, D.; Uyarra, E. Multi Level Policy Mixes and Industry Emergence: The Case of Wind Energy in Spain. \emph{Environ. Plan. C Polit. Space} \textbf{2017}, \emph{35}, 661--683. \url{https://doi.org/10.1177/0263774X16663933}.
+
+\bibitem[Shahzad and Jasi{\'n}ska(2024)]{ref-4}
+Shahzad, S.; Jasi{\'n}ska, E. Renewable Revolution: A Review of Strategic Flexibility in Future Power Systems. \emph{Sustainability} \textbf{2024}, \emph{16}, 5454. \url{https://doi.org/10.3390/su16135454}.
+
+\bibitem[Edrah et~al.(2015)]{ref-5}
+Edrah, M.; Lo, K.L.; Anaya-Lara, O. Impacts of High Penetration of DFIG Wind Turbines on Rotor Angle Stability of Power Systems. \emph{IEEE Trans. Sustain. Energy} \textbf{2015}, \emph{6}, 759--766. \url{https://doi.org/10.1109/TSTE.2015.2412176}.
+
+\bibitem[Yang et~al.(2016)]{ref-6}
+Yang, B.; Jiang, L.; Wang, L.; Yao, W.; Wu, Q.H. Nonlinear Maximum Power Point Tracking Control and Modal Analysis of DFIG Based Wind Turbine. \emph{Int. J. Electr. Power Energy Syst.} \textbf{2016}, \emph{74}, 429--436. \url{https://doi.org/10.1016/j.ijepes.2015.07.036}.
+
+\bibitem[Pena et~al.(1996)]{ref-7}
+Pena, R.; Clare, J.C.; Asher, G.M. Doubly Fed Induction Generator Using Back-to-Back PWM Converters and Its Application to Variable-Speed Wind-Energy Generation. \emph{IEE Proc. Electr. Power Appl.} \textbf{1996}, \emph{143}, 231--241. \url{https://doi.org/10.1049/ip-epa:19960288}.
+
+\bibitem[Farret and Sim{\~o}es(2017)]{ref-8}
+Farret, F.A.; Sim{\~o}es, M.G. \emph{Integration of Renewable Sources of Energy}, 2nd ed.; John Wiley \& Sons: Hoboken, NJ, USA, 2017.
+
+\bibitem[M{\"u}ller et~al.(2002)]{ref-9}
+M{\"u}ller, S.; Deicke, M.; De Doncker, R.W. Doubly Fed Induction Generator Systems for Wind Turbines. \emph{IEEE Ind. Appl. Mag.} \textbf{2002}, \emph{8}, 26--33. \url{https://doi.org/10.1109/2943.999610}.
+
+\bibitem[Chhipa et~al.(2022)]{ref-10}
+Chhipa, A.A.; Chakrabarti, P.; Bolshev, V.; Chakrabarti, T.; Samarin, G.N.; Vasilyev, A.N.; Ghosh, S.; Kudryavtsev, A. Modeling and Control Strategy of Wind Energy Conversion System with Grid-Connected Doubly-Fed Induction Generator. \emph{Energies} \textbf{2022}, \emph{15}, 6694. \url{https://doi.org/10.3390/en15186694}.
+
+\bibitem[Xu and Wang(2007)]{ref-11}
+Xu, L.; Wang, Y. Dynamic Modeling and Control of DFIG-Based Wind Turbines under Unbalanced Network Conditions. \emph{IEEE Trans. Power Syst.} \textbf{2007}, \emph{22}, 314--323. \url{https://doi.org/10.1109/TPWRS.2006.889113}.
+
+\bibitem[Tapia et~al.(2003)]{ref-12}
+Tapia, A.; Tapia, G.; Ostolaza, J.X.; Saenz, J.R. Modeling and Control of a Wind Turbine Driven Doubly Fed Induction Generator. \emph{IEEE Trans. Energy Convers.} \textbf{2003}, \emph{18}, 194--204. \url{https://doi.org/10.1109/TEC.2003.811727}.
+
+\bibitem[Lei et~al.(2006)]{ref-13}
+Lei, Y.; Mullane, A.; Lightbody, G.; Yacamini, R. Modeling of the Wind Turbine with a Doubly Fed Induction Generator for Grid Integration Studies. \emph{IEEE Trans. Energy Convers.} \textbf{2006}, \emph{21}, 257--264. \url{https://doi.org/10.1109/TEC.2005.847958}.
+
+\bibitem[Rahimi and Parniani(2009)]{ref-14}
+Rahimi, M.; Parniani, M. Dynamic Behavior and Transient Stability Analysis of Fixed Speed Wind Turbines. \emph{Renew. Energy} \textbf{2009}, \emph{34}, 2613--2624. \url{https://doi.org/10.1016/j.renene.2009.06.019}.
+
+\bibitem[Qiao et~al.(2009)]{ref-15}
+Qiao, W.; Venayagamoorthy, G.K.; Harley, R.G. Real-Time Implementation of a STATCOM on a Wind Farm Equipped with Doubly Fed Induction Generators. \emph{IEEE Trans. Ind. Appl.} \textbf{2009}, \emph{45}, 98--107. \url{https://doi.org/10.1109/TIA.2008.2009377}.
+
+\bibitem[Mechter et~al.(2016)]{ref-16}
+Mechter, A.; Kemih, K.; Ghanes, M. Backstepping Control of a Wind Turbine for Low Wind Speeds. \emph{Nonlinear Dyn.} \textbf{2016}, \emph{84}, 2435--2445. \url{https://doi.org/10.1007/s11071-016-2655-y}.
+
+\bibitem[Xiang et~al.(2006)]{ref-17}
+Xiang, D.; Ran, L.; Tavner, P.J.; Yang, S. Control of a Doubly Fed Induction Generator in a Wind Turbine During Grid Fault Ride-Through. \emph{IEEE Trans. Energy Convers.} \textbf{2006}, \emph{21}, 652--662. \url{https://doi.org/10.1109/TEC.2006.875783}.
+
+\bibitem[Rahimi and Parniani(2010)]{ref-18}
+Rahimi, M.; Parniani, M. Efficient Control Scheme of Wind Turbines with Doubly Fed Induction Generators for Low-Voltage Ride-Through Capability Enhancement. \emph{IET Renew. Power Gener.} \textbf{2010}, \emph{4}, 242--252. \url{https://doi.org/10.1049/iet-rpg.2009.0072}.
+
+\bibitem[Morren and de~Haan(2005)]{ref-19}
+Morren, J.; de Haan, S.W.H. Ridethrough of Wind Turbines with Doubly-Fed Induction Generator During a Voltage Dip. \emph{IEEE Trans. Energy Convers.} \textbf{2005}, \emph{20}, 435--441. \url{https://doi.org/10.1109/TEC.2005.845526}.
+
+\bibitem[Tsili and Papathanassiou(2009)]{ref-20}
+Tsili, M.; Papathanassiou, S. A Review of Grid Code Technical Requirements for Wind Farms. \emph{IET Renew. Power Gener.} \textbf{2009}, \emph{3}, 308--332. \url{https://doi.org/10.1049/iet-rpg.2008.0070}.
+
+\bibitem[Zhang et~al.(2026)]{ref-21}
+Zhang, Y.; Lyu, Y.; Huang, Z. Chaos Suppression Based on Fractional-Order Model in a Doubly-Fed Induction Generator. \emph{IEEE Trans. Ind. Electron.} \textbf{2026}, \emph{73}, 13709--13721. \url{https://doi.org/10.1109/TIE.2026.3675235}.
+
+\bibitem[Chen et~al.(2023)]{ref-22}
+Chen, W.; Li, Q.; Wei, Z.; Li, J.; Wang, K. A Criterion for the Hopf Bifurcation and the Pathway to Chaos of Doubly Fed Induction Generators. \emph{Electr. Eng.} \textbf{2023}, \emph{105}, 2595--2605. \url{https://doi.org/10.1007/s00202-023-01819-1}.
+
+\bibitem[Van et~al.(2023a)]{ref-23}
+Van, C.N.; Hai, N.T.; Quang, N.P. Chaos Control of Doubly-Fed Induction Generator via Delayed Feedback Control. \emph{Eng. Technol. Appl. Sci. Res.} \textbf{2023}, \emph{13}, 10588--10594. \url{https://doi.org/10.48084/etasr.5812}.
+
+\bibitem[Lakshmanan and Joo(2023)]{ref-24}
+Lakshmanan, S.; Joo, Y.H. Decentralized Observer-Based Integral Sliding Mode Control Design of Large-Scale Interconnected Systems and Its Application to Doubly Fed Induction Generator-Based Wind Farm Model. \emph{Int. J. Robust Nonlinear Control} \textbf{2023}, \emph{33}, 5758--5774. \url{https://doi.org/10.1002/rnc.6673}.
+
+\bibitem[Bounar et~al.(2024)]{ref-25}
+Bounar, N.; Boulkroune, A.; Labdai, S.; Chrifi-Alaoui, L. Fixed-Time Fuzzy Adaptive Control Scheme for Doubly Fed Induction Generator-Based Wind Turbine. \emph{Trans. Inst. Meas. Control} \textbf{2024}, \emph{46}, 1579--1589. \url{https://doi.org/10.1177/01423312231197443}.
+
+\bibitem[Li et~al.(2024)]{ref-26}
+Li, Y.; Sun, W.; Yu, D. RBFNN-Based Global Fast Terminal Sliding Mode Control for Fully Controlled Doubly Fed Induction Generator. \emph{J. Franklin Inst.} \textbf{2024}, \emph{361}, 107196. \url{https://doi.org/10.1016/j.jfranklin.2024.107196}.
+
+\bibitem[Dardabi et~al.(2024)]{ref-27}
+Dardabi, C.; Djebli, A.; Chojaa, H. Enhancing the Control of Doubly Fed Induction Generators Using Artificial Neural Networks in the Presence of Real Wind Profiles. \emph{PLoS ONE} \textbf{2024}, \emph{19}, e0300527. \url{https://doi.org/10.1371/journal.pone.0300527}.
+
+\bibitem[Bounar et~al.(2025)]{ref-28}
+Bounar, N.; Boulkroune, A.; Labdai, S.; Chrifi-Alaoui, L.; Khebbache, H. Disturbance Observer-Based Finite-Time Adaptive Neural Control Scheme of DFIG-Wind Turbine. \emph{Wind Eng.} \textbf{2025}, \emph{49}, 271--289. \url{https://doi.org/10.1177/0309524X241263517}.
+
+\bibitem[Van et~al.(2023b)]{ref-29}
+Van, C.N.; Quang, N.P.; Hai, N.T. Evaluation of the Possibility of Chaos for Doubly-Fed Induction Generator in Wind Power Generation System. \emph{Int. J. Power Electron. Drive Syst.} \textbf{2023}, \emph{14}, 1965--1975. \url{https://doi.org/10.11591/ijpeds.v14.i4.pp1965-1975}.
+
+\bibitem[Zhang et~al.(2026b)]{ref-30}
+Zhang, H.; Yang, W.; Pan, Y.; Du, P. Prescribed-Time Resilient Attitude Control of Multi-UAVs under Unknown FDI Attacks via Dynamic Memory Event-Triggered Mechanism. \emph{J. Franklin Inst.} \textbf{2026}, \emph{363}, 109055. \url{https://doi.org/10.1016/j.jfranklin.2026.109055}.
+
+\bibitem[Mechter et~al.(2015)]{ref-31}
+Mechter, A.; Kemih, K.; Ghanes, M. Sliding Mode Control of a Wind Turbine with Exponential Reaching Law. \emph{Acta Polytech. Hung.} \textbf{2015}, \emph{12}, 167--183.
+
+\bibitem[Bouguettah et~al.(2024)]{ref-32}
+Bouguettah, I.; Messadi, M.; Kemih, K.; et~al. Adaptive Passive Fault Tolerant Control of DFIG-Based Wind Turbine Using a Self-Tuning Fractional Integral Sliding Mode Control. \emph{Front. Energy Res.} \textbf{2024}, \emph{12}, 1429877.
+
+\bibitem[Benabdeeseelam et~al.(2025)]{ref-33}
+Benabdeeseelam, A.; Messadi, M.; Kemih, K.; et~al. Chattering-Free Terminal Sliding Mode Control Based on Adaptive Exponential Reaching Barrier Function for a Chaotic Permanent Magnet Synchronous Generator in Offshore Wind Turbine System. \emph{Chin. Phys. B} \textbf{2025}, \emph{34}, 090501.
+
+\bibitem[Ekanayake et~al.(2003)]{ref-34}
+Ekanayake, J.; Holdsworth, L.; Jenkins, N. Control of DFIG Wind Turbines. \emph{Power Eng.} \textbf{2003}, \emph{17}, 28--32.
+
+\bibitem[Rahimi(2014)]{ref-35}
+Rahimi, M. Dynamic Performance Assessment of DFIG-Based Wind Turbines: A Review. \emph{Renew. Sustain. Energy Rev.} \textbf{2014}, \emph{37}, 852--866.
+
+\bibitem[Li et~al.(2012)]{ref-36}
+Li, S.; Haskew, T.A.; Williams, K.A.; Swain, E. Control of DFIG Wind Turbine with Direct-Current Vector Control Configuration. \emph{IEEE Trans. Sustain. Energy} \textbf{2012}, \emph{3}, 1--11.
+
+\bibitem[Abdeddaim and Betka(2013)]{ref-37}
+Abdeddaim, S.; Betka, A. Optimal Tracking and Robust Power Control of the DFIG Wind Turbine. \emph{Int. J. Electr. Power Energy Syst.} \textbf{2013}, \emph{49}, 234--242.
+
+\bibitem[Yang et~al.(2012)]{ref-38}
+Yang, L.; Xu, Z.; Ostergaard, J.; Dong, Z.Y.; Wong, K.P. Advanced Control Strategy of DFIG Wind Turbines for Power System Fault Ride Through. \emph{IEEE Trans. Power Syst.} \textbf{2012}, \emph{27}, 713--722.
+
+\bibitem[Messadi et~al.(2015)]{ref-39}
+Messadi, M.; Mellit, A.; Kemih, K.; et~al. Predictive Control of a Chaotic Permanent Magnet Synchronous Generator in a Wind Turbine System. \emph{Chin. Phys. B} \textbf{2015}, \emph{24}, 010502.
+
+\bibitem[Messadi and Mellit(2017)]{ref-40}
+Messadi, M.; Mellit, A. Control of Chaos in an Induction Motor System with LMI Predictive Control and Experimental Circuit Validation. \emph{Chaos Solitons Fractals} \textbf{2017}, \emph{97}, 51--58.
+
+\bibitem[Sadaoui et~al.(2011)]{ref-41}
+Sadaoui, D.; Boukabou, A.; Merabtine, N.; et~al. Predictive Synchronization of Chaotic Satellites Systems. \emph{Expert Syst. Appl.} \textbf{2011}, \emph{38}, 9041--9045.
+
+\bibitem[Yang et~al.(2021)]{ref-42}
+Yang, L.; Yang, F.; Sheng, W.; Zhou, K.; Huang, T. Fuzzy Chaos Control of Fractional Order D-PMSG for Wind Turbine with Uncertain Parameters by State Feedback Design. \emph{Energies} \textbf{2021}, \emph{14}, 7369.
+
+\end{thebibliography}
+
+\PublishersNote{}
+\end{adjustwidth}
+\end{document}
