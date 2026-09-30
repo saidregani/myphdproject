@@ -1,0 +1,330 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{booktabs,longtable,array}
+\geometry{margin=2.2cm}
+\setlength{\parskip}{0.4em}
+\newcommand{\R}{\mathbb{R}}
+
+\title{Théorie de la loi de commande hybride\\ \large Linéarisation par retour d'état + commande prédictive (MPC) contrainte\\ appliquée à la GADA (DFIG) chaotique et au MPPT}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Modèle à commander}
+
+\subsection{Modèle physique de la GADA}
+Avec l'orientation du flux statorique sur l'axe $q$ ($\psi_{qs}=\psi_s$, $\psi_{ds}=0$), $u_{ds}=-V_s$, $u_{qs}=0$ et $\psi_s=V_s/\omega_s$, le vecteur d'état est
+\[
+x=\begin{bmatrix}x_1\\x_2\\x_3\end{bmatrix}=\begin{bmatrix}i_{dr}\\ i_{qr}\\ \omega_r\end{bmatrix},
+\]
+et la dynamique s'écrit
+\begin{equation}
+\left\{\begin{aligned}
+\dot x_1 &= a_1x_1+(\omega_s-x_3)x_2+a_2x_3+c_1+u_1\\
+\dot x_2 &= -(\omega_s-x_3)x_1+a_1x_2+c_2+u_2\\
+\dot x_3 &= a_6x_1-a_7x_3-a_8+u_3
+\end{aligned}\right.
+\label{eq:modele}
+\end{equation}
+avec $\sigma=1-L_m^2/(L_sL_r)$ et
+\begin{align*}
+a_1&=-\frac{R_sL_m^2}{\sigma L_s^2L_r}-\frac{R_r}{\sigma L_r}, &
+a_2&=-\frac{L_m\psi_s}{\sigma L_rL_s}, &
+a_3&=-\frac{L_m}{\sigma L_sL_r}, &
+a_4&=\frac{1}{\sigma L_r},\\
+a_5&=\frac{R_sL_m\psi_s}{\sigma L_s^2L_r}, &
+a_6&=\frac{3p^2L_m\psi_s}{2JL_s}, &
+a_7&=\frac{D}{J}, &
+a_8&=\frac{p}{J}T_L,\\
+c_1&=a_3u_{ds}, & c_2&=a_5+a_3u_{qs}. & &
+\end{align*}
+Le couple de charge est l'opposé du couple aérodynamique ramené à l'arbre de la génératrice, $T_L=-T_a$, avec
+\[
+T_a=\frac{\tfrac12\rho\pi R^2C_p(\lambda)v^3}{\Omega_m},\qquad \Omega_m=\frac{\omega_r}{p},\qquad
+\lambda=\frac{R\,\Omega_m}{G\,v},
+\]
+\[
+C_p=0.5176\Big(\frac{116}{\lambda_i}-5\Big)e^{-21/\lambda_i}+0.0068\lambda,\qquad \frac1{\lambda_i}=\frac1\lambda-0.035 .
+\]
+
+Les entrées de commande ont un sens physique :
+\begin{itemize}
+\item $u_1=a_4\,\Delta u_{dr}$ et $u_2=a_4\,\Delta u_{qr}$ sont les tensions rotoriques imposées par le convertisseur côté rotor ;
+\item $u_3=(p/J)\,\Delta T$ est un canal de correction de couple borné (par exemple un couple aérodynamique modulé par le calage des pales).
+\end{itemize}
+
+On écrit le système sous forme compacte :
+\begin{equation}
+\dot x = F(x,t)+u .
+\label{eq:compact}
+\end{equation}
+
+\subsection{Modèle adimensionnel (étude du chaos)}
+Avec $\tau=-1/a_1$, $\tilde t=t/\tau$, $k=a_7/(\tau a_6)$, $z_1=x_1/k$, $z_2=x_2/k$ et $z_3=\tau(x_3-\omega_s)$ :
+\begin{equation}
+\left\{\begin{aligned}
+z_1'&=-z_1-z_3z_2+\gamma z_3+\varepsilon_1\\
+z_2'&=-z_2+z_3z_1+\varepsilon_2\\
+z_3'&=s(z_1-z_3)+\varepsilon_3
+\end{aligned}\right.
+\qquad
+\gamma=\frac{a_2a_6\tau}{a_7}<0,\quad s=\frac{\tau D}{J}.
+\label{eq:adim}
+\end{equation}
+Ce modèle a la même structure que \eqref{eq:compact} : $z'=F(z)+u$. La loi de commande ci-dessous s'applique donc aux deux cas sans modification.
+
+\section{Étape 1 : linéarisation par retour d'état}
+
+Soit $x_d(t)$ la trajectoire de référence et $e=x-x_d$ l'erreur de poursuite. On choisit
+\begin{equation}
+\boxed{u = -\hat F(x,t)+\dot x_d+v}
+\label{eq:FL}
+\end{equation}
+où $\hat F$ est le modèle nominal (paramètres nominaux) et $v\in\R^3$ une nouvelle entrée. En remplaçant \eqref{eq:FL} dans \eqref{eq:compact} :
+\begin{equation}
+\dot e = \dot x-\dot x_d = F-\hat F+v = v+\Delta(x,t),\qquad \Delta=F-\hat F .
+\label{eq:erreur}
+\end{equation}
+\begin{itemize}
+\item \textbf{Cas nominal ($\Delta=0$).} On obtient trois intégrateurs découplés $\dot e_i=v_i$. Les termes bilinéaires $(\omega_s-x_3)x_{1,2}$, responsables du chaos, sont compensés exactement.
+\item \textbf{Avec erreur de modèle ($\Delta\neq0$).} $\Delta$ agit comme une perturbation. Une loi purement proportionnelle $v=-k_e e$ laisse alors une erreur statique, ce qui justifie l'action intégrale de la section suivante.
+\end{itemize}
+
+\section{Étape 2 : modèle d'erreur augmenté et discrétisé}
+
+Pour chaque canal $i\in\{1,2,3\}$, on ajoute l'intégrale de l'erreur $\sigma_i=\int e_i\,dt$ :
+\[
+\xi_i=\begin{bmatrix}e_i\\ \sigma_i\end{bmatrix},\qquad
+\dot\xi_i=\underbrace{\begin{bmatrix}0&0\\1&0\end{bmatrix}}_{A_c}\xi_i+\underbrace{\begin{bmatrix}1\\0\end{bmatrix}}_{B_c}v_i .
+\]
+On discrétise exactement, avec un bloqueur d'ordre zéro de période $T_s$ :
+\[
+A=e^{A_cT_s}=I+A_cT_s=\begin{bmatrix}1&0\\T_s&1\end{bmatrix},\qquad
+B=\int_0^{T_s}e^{A_c\eta}B_c\,d\eta=\begin{bmatrix}T_s\\T_s^2/2\end{bmatrix}.
+\]
+Le développement est exact car $A_c^2=0$. On obtient :
+\begin{equation}
+\boxed{\xi_i(k+1)=A\,\xi_i(k)+B\,v_i(k)}
+\label{eq:discret}
+\end{equation}
+
+\section{Étape 3 : commande prédictive (MPC) contrainte}
+
+\subsection{Prédiction}
+Sur un horizon de $N$ pas, avec $V=[v(k|k),\dots,v(k+N-1|k)]^T$, la prédiction s'écrit
+\[
+\xi(k+j|k)=A^j\xi(k)+\sum_{l=0}^{j-1}A^{j-1-l}B\,v(k+l|k),\qquad j=1,\dots,N .
+\]
+Sous forme matricielle :
+\[
+\Xi=\Phi\,\xi(k)+\Gamma V,\quad
+\Phi=\begin{bmatrix}A\\A^2\\ \vdots\\ A^N\end{bmatrix},\quad
+\Gamma=\begin{bmatrix}B&0&\cdots&0\\ AB&B&\cdots&0\\ \vdots&&\ddots&\\ A^{N-1}B&A^{N-2}B&\cdots&B\end{bmatrix}.
+\]
+
+\subsection{Critère}
+\begin{equation}
+J(V)=\sum_{j=1}^{N}\|\xi(k+j|k)\|_Q^2+\|\xi(k+N|k)\|_P^2+r\sum_{j=0}^{N-1}v(k+j|k)^2 ,
+\label{eq:cout}
+\end{equation}
+où :
+\begin{itemize}
+\item $Q=\mathrm{diag}(q_e,q_I)>0$ pondère l'erreur et son intégrale ;
+\item $r>0$ pénalise l'effort de commande ;
+\item $P$ est le poids terminal donné par la LMI (section~\ref{sec:lmi}).
+\end{itemize}
+Avec $Q=W^TW$ (Cholesky) et $\bar W=\mathrm{blkdiag}(W,\dots,W,\mathrm{chol}(Q+P))$, le critère s'écrit comme un problème de moindres carrés :
+\[
+J=\big\|\,\underbrace{\begin{bmatrix}\bar W\Gamma\\ \sqrt r I_N\end{bmatrix}}_{W_G}V+\underbrace{\begin{bmatrix}\bar W\Phi\\0\end{bmatrix}}_{W_P}\xi(k)\big\|^2
+= V^TH V+2g^TV+\text{cte},\quad H=W_G^TW_G,\ g=W_G^TW_P\,\xi(k).
+\]
+
+\subsection{Contraintes}
+L'actionneur est borné : $|u_i|\le\bar u_i$. D'après \eqref{eq:FL}, $u_i=h_i+v_i$ avec $h=-\hat F(x,t)+\dot x_d$, d'où
+\begin{equation}
+\underline v_i=-\bar u_i-h_i\ \le\ v_i\ \le\ \bar u_i-h_i=\overline v_i .
+\label{eq:contraintes}
+\end{equation}
+La valeur de $h_i$ est gelée sur l'horizon (elle est mesurée à l'instant $k$).
+
+\subsection{Problème QP et horizon glissant}
+\begin{equation}
+\boxed{V^\ast=\arg\min_V\ V^THV+2g^TV\quad\text{s.c.}\quad \underline v\le V\le\overline v},\qquad v(k)=V^\ast_1 .
+\label{eq:qp}
+\end{equation}
+Seul le premier élément $V^\ast_1$ est appliqué, puis le problème est résolu à nouveau à l'instant $k+1$ (horizon glissant). Comme les contraintes sont des bornes simples (boîte), le QP est résolu par une méthode d'ensemble actif. Le résultat est identique à celui de \texttt{quadprog}.
+
+\subsection{Anti-emballement (anti-windup)}
+L'intégrale n'est mise à jour que si la commande n'est pas saturée :
+\[
+\sigma_i(k+1)=\sigma_i(k)+T_s\,e_i(k)\quad\text{si } |u_i(k)|<\bar u_i,\qquad \sigma_i(k+1)=\sigma_i(k)\ \text{sinon}.
+\]
+
+\section{Étape 4 : poids terminal et gain par LMI (stabilité)}\label{sec:lmi}
+
+\textbf{Théorème.} S'il existe $X=X^T>0$ et $Y$ tels que
+\begin{equation}
+\begin{bmatrix}
+X & (AX+BY)^T & XQ^{1/2} & \sqrt r\,Y^T\\
+AX+BY & X & 0 & 0\\
+Q^{1/2}X & 0 & I & 0\\
+\sqrt r\,Y & 0 & 0 & 1
+\end{bmatrix}\succeq0,
+\label{eq:lmi}
+\end{equation}
+alors, avec $P=X^{-1}$ et $K=YX^{-1}$,
+\begin{equation}
+(A+BK)^TP(A+BK)-P+Q+rK^TK\preceq0 .
+\label{eq:lyap}
+\end{equation}
+
+\textbf{Démonstration.}
+\begin{enumerate}
+\item Le complément de Schur de \eqref{eq:lmi} par rapport au bloc diagonal $\mathrm{diag}(X,I,1)$ donne
+\[
+X-(AX+BY)^TX^{-1}(AX+BY)-XQX-rY^TY\succeq0 .
+\]
+\item On multiplie à gauche et à droite par $P=X^{-1}$ et on pose $Y=KX$ ; on obtient \eqref{eq:lyap}.
+\item $V_f(\xi)=\xi^TP\xi$ est donc une fonction de Lyapunov pour la loi locale $v=K\xi$ :
+\[
+V_f(\xi^+)-V_f(\xi)\le-\|\xi\|_Q^2-r\,v^2 .
+\]
+\item L'ensemble $\Omega=\{\xi^TP\xi\le\alpha\}$, avec $\alpha$ tel que $K\xi$ respecte les bornes dans $\Omega$, est invariant.
+\item Par l'argument classique coût terminal / ensemble terminal (Mayne \emph{et al.}, 2000), le coût optimal $V_N^\ast$ décroît :
+\[
+V_N^\ast(k+1)-V_N^\ast(k)\le-\|\xi(k)\|_Q^2-r\,v(k)^2 .
+\]
+Le MPC est donc récursivement faisable, et $\xi=0$ (c'est-à-dire $x\to x_d$) est asymptotiquement stable dans le cas nominal. \hfill$\square$
+\end{enumerate}
+
+\textbf{Calcul pratique.} La solution de volume maximal de \eqref{eq:lmi} rend \eqref{eq:lyap} égale à zéro : $P$ est la solution de l'équation de Riccati discrète (DARE)
+\[
+P=A^TPA-A^TPB(r+B^TPB)^{-1}B^TPA+Q,\qquad K=-(r+B^TPB)^{-1}B^TPA .
+\]
+Dans le programme, $P$ est calculée par l'algorithme de doublement, et la LMI \eqref{eq:lmi} est vérifiée numériquement. La plus petite valeur propre obtenue vaut environ $10^{-16}$, soit $\approx0$ : la LMI est satisfaite à la limite, comme prévu.
+
+\textbf{Conséquences.}
+\begin{itemize}
+\item Sans contrainte active, le MPC donne exactement $v=K\xi=k_e e+k_I\int e$, c'est-à-dire un PI appliqué au système linéarisé.
+\item Un seul gain $K=[k_e,\ k_I]$ est commun aux trois canaux.
+\end{itemize}
+
+\section{Loi de commande complète et lois de comparaison}
+\begin{center}
+\begin{tabular}{lp{6.2cm}p{5.2cm}}
+\toprule
+Loi & Expression & Rôle\\
+\midrule
+FL--MPC (proposée) & $u=\mathrm{sat}\big(-\hat F+\dot x_d+v_{MPC}\big)$ & compensation + optimisation sous contraintes + intégrale\\
+FL seule & $u=\mathrm{sat}\big(-\hat F+\dot x_d-k_e e\big)$ & loi de la version soumise (sans intégrale)\\
+PI & $u=\mathrm{sat}\big(-k_e e-k_I\!\int e\big)$ & sans modèle, avec anti-windup\\
+\bottomrule
+\end{tabular}
+\end{center}
+Les trois lois utilisent les mêmes gains $k_e$ et $k_I$ issus de la LMI. La comparaison est donc équitable : elle isole l'apport de la linéarisation, puis celui du MPC.
+
+\section{Références de poursuite (MPPT)}
+\begin{align*}
+\omega_{r,ref}&=pG\lambda_{opt}\,\bar v/R && \text{(vitesse optimale, vent filtré } \bar v)\\
+i_{dr,ref}&=\big(\dot\omega_{r,ref}+a_7\omega_{r,ref}+(p/J)\,T_L(v,\omega_{r,ref})\big)/a_6 && \text{(équilibre des couples)}\\
+i_{qr,ref}&=\psi_s/L_m && (Q_s=0,\ \text{facteur de puissance unitaire})\\
+P_s&=-\tfrac32V_s\frac{L_m}{L_s}\,i_{dr} && \text{(puissance active statorique)}
+\end{align*}
+Le vent est modélisé par
+\[
+v(t)=V_{mean}+\sum_{k=1}^3A_k\sin(2\pi f_kt+\phi_k)+v_{turb}(t),
+\]
+où la turbulence est un bruit blanc filtré au premier ordre :
+\[
+v_{turb}(k)=v_{turb}(k-1)+\frac{\Delta t}{\tau_t}\Big(-v_{turb}(k-1)+\sigma_t\sqrt{2\tau_t/\Delta t}\;w(k)\Big),\qquad w(k)\sim\mathcal N(0,1).
+\]
+
+\section{Cible de la suppression du chaos}
+La cible $z^\ast$ est choisie comme un point d'équilibre réalisable. On impose $\omega_r=1.2\,\omega_s$ (fonctionnement hypersynchrone, vitesse positive), soit
+\[
+z_3^\ast=0.2\,\omega_s\tau=2.02 .
+\]
+Deux conditions complètent le choix :
+\begin{itemize}
+\item $z_3'=0$ avec $u_3=0$ donne $z_1^\ast=z_3^\ast$ ;
+\item $z_1'=0$ avec $u_1=0$ donne $z_2^\ast=(-z_3^\ast+\gamma z_3^\ast+\varepsilon_1)/z_3^\ast=-2.00$.
+\end{itemize}
+Cet équilibre est maintenu par $u_2$ seule :
+\[
+u_2^\ast=-(-z_2^\ast+z_3^\ast z_1^\ast+\varepsilon_2)=78.9 ,
+\]
+ce qui compense l'excitation anormale $\varepsilon_2$.
+
+\section{Justification des valeurs du programme}
+
+\small
+\begin{longtable}{>{\raggedright}p{3.3cm}p{2.3cm}p{9.6cm}}
+\toprule
+Paramètre & Valeur & Justification\\
+\midrule
+\endhead
+\multicolumn{3}{l}{\textbf{Génératrice (tableau I)}}\\
+$R_s$, $R_r$ & 2.6, 2.9 m$\Omega$ & Ordres de grandeur d'une GADA de classe 2 MW, grandeurs ramenées au stator. À vérifier ou remplacer par une fiche technique réelle si disponible.\\
+$L_m$ ; $L_s=L_r$ & 2.5 ; 2.587 mH & Inductances de fuite de 87 $\mu$H, d'où $L_s,L_r>L_m$ et $\sigma=0.0661\in(0,1)$ : condition physique exigée par les relecteurs.\\
+$p$ & 2 & Machine à 4 pôles, cas usuel des GADA de forte puissance.\\
+$V_{ll}$, $f_s$ & 690 V, 50 Hz & Tension standard des éoliennes MW ; réseau algérien et européen à 50 Hz. On en déduit $\psi_s=1.793$ Wb et $V_s=563$ V (crête par phase).\\
+$J$ & 127 kg$\cdot$m$^2$ & Inertie totale (rotor et turbine) ramenée côté génératrice, ordre de grandeur réaliste pour 2 MW.\\
+$D$ & $10^{-3}$ N$\cdot$m$\cdot$s/rad & Frottement visqueux faible, cas normal.\\
+$\tau=-1/a_1$ & 32.1 ms & Calculée à partir des paramètres ; c'est la constante de temps électrique rotorique.\\
+\midrule
+\multicolumn{3}{l}{\textbf{Turbine}}\\
+$\rho$ & 1.225 kg/m$^3$ & Air standard (15 °C, niveau de la mer).\\
+$R$ & 40 m & Diamètre de 80 m, typique d'une éolienne de 2 MW ; $P_a\approx1.5$ MW à 10 m/s.\\
+$G$ & 80 & Choisi pour que la vitesse synchrone soit atteinte vers 9.7 m/s : la vitesse reste entre $0.82\omega_s$ et $1.12\omega_s$, dans la plage usuelle de glissement ($\pm30$ \%).\\
+$\lambda_{opt}$, $C_{p,max}$ & 8.1 ; 0.48 & Maximum de la courbe $C_p(\lambda)$ utilisée (formule classique de Heier).\\
+\midrule
+\multicolumn{3}{l}{\textbf{Chaos (modèle adimensionnel)}}\\
+$\gamma$, $s$ & $-1$ ; 8 & $\gamma<0$ est imposé par la physique ($\sigma>0$). $s=8$ place le système dans la zone chaotique (mode mécanique plus rapide que $\tau$).\\
+$\varepsilon=(0,-85,0)$ & & D'après le diagramme de bifurcation, le chaos apparaît pour $\varepsilon_2<-15$. La valeur $-85$ est au cœur de la zone chaotique, loin des fenêtres périodiques ($-50.5$, $-41.8$, $-28.5$).\\
+$z_0$ & (0.3, 0.6, 1) & Condition initiale quelconque, conservée de la version soumise.\\
+$\Delta t$ (RK4) & $10^{-3}$ & Pas petit devant le temps caractéristique du chaos ($1/\lambda_{max}\approx0.7$).\\
+$T_{trans}$, $T_{lyap}$ & 200 ; 500 & Élimination du transitoire, puis moyenne longue pour faire converger les exposants de Lyapunov. Contrôle : la somme des exposants vaut $-(2+s)=-10$.\\
+Grille $\varepsilon_2$ & 401 points & Pas de 0.25, suffisant pour localiser le seuil ($\approx-15$) et les fenêtres périodiques.\\
+\midrule
+\multicolumn{3}{l}{\textbf{Suppression du chaos (partie 2)}}\\
+$T_s$ & 0.01 & En unités de $\tau$, soit 0.32 ms réelles, période typique d'une commande de convertisseur (quelques kHz).\\
+$N$ & 15 & Horizon de $0.15\tau$, plus long que la constante de temps rapide en boucle fermée ($\approx0.01$).\\
+$Q=\mathrm{diag}(1,10)$, $r=10^{-4}$ & & On obtient $k_e=-63.9$ et $k_I=-192.4$. Les pôles en boucle fermée valent 0.38 et 0.969, ce qui donne une convergence en $\approx0.3$ unité de temps. Le poids 10 sur l'intégrale élimine rapidement l'erreur statique.\\
+$\bar u$ & 120 & Supérieur à $u_2^\ast=78.9$ (l'équilibre reste atteignable, marge de 50 \%) mais inférieur aux commandes demandées au départ du chaos : les contraintes sont actives, ce qui teste le MPC.\\
+$\tilde t_{on}$ & 6 & Laisse voir clairement le régime chaotique avant l'activation.\\
+Désadaptation & 0, $\pm20$ \% & Incertitude paramétrique usuelle (résistances avec la température, inductances avec la saturation, inertie mal connue).\\
+\midrule
+\multicolumn{3}{l}{\textbf{Vent}}\\
+$V_{mean}$ & 9 m/s & Sous la vitesse nominale ($\approx11$ m/s), donc zone MPPT (sans action du calage).\\
+$A_k$, $f_k$ & (1.3, 0.7, 0.4), (0.05, 0.13, 0.31) Hz & Variations lentes, de période 3 à 20 s.\\
+$\sigma_t$, $\tau_t$ & 0.9 m/s ; 0.5 s & Intensité de turbulence $\approx10$ \% ; turbulence rapide, de l'ordre de la seconde.\\
+Filtre MPPT & 2 s & La turbine (grande inertie) ne peut pas suivre les rafales rapides : la vitesse de référence suit le vent filtré.\\
+\midrule
+\multicolumn{3}{l}{\textbf{Poursuite MPPT (partie 3)}}\\
+$T_s$ & 1 ms & Commande à 1 kHz, soit $T_s\ll\tau=32$ ms.\\
+$N$ & 10 & Horizon de 10 ms $\approx\tau/3$.\\
+$Q=\mathrm{diag}(1,3)$, $r=10^{-6}$ & & On obtient $k_e=-619$ et $k_I=-1070$. La bande passante de la boucle de courant est $\approx620$ rad/s ($\approx100$ Hz), valeur classique pour une boucle de courant de GADA.\\
+$|\Delta u_{dr,qr}|$ & 200 V & $\approx0.35\,V_s$ : tension rotorique d'un convertisseur dimensionné pour un glissement de $\pm30$ \% ($0.3\times563=169$ V), plus une marge.\\
+$|\Delta T|$ & 2 kN$\cdot$m & $\approx16$ \% du couple nominal (12.7 kN$\cdot$m) : canal auxiliaire limité. Sa valeur efficace réelle est de 83 N$\cdot$m (0.7 \%).\\
+Mise à l'échelle & (1 kA, 1 kA, 100 rad/s) & Améliore le conditionnement numérique du QP. Elle ne change pas le gain $K$ (invariance d'échelle).\\
+M1 / M2 & $\pm20$ \% ($R$, $J$), $\mp10$ \% ($L_m$) & Même logique d'incertitude. Les inductances de fuite sont conservées, donc $L_s,L_r>L_m$ reste vrai.\\
+Pas d'intégration & $T_s/4$, $T_s/5$ & Précision de RK4 face à la rotation à $\omega_s=314$ rad/s (période de 20 ms).\\
+Métriques & $t\ge5$ s & Exclut le transitoire initial (mise en vitesse, $\approx0.9$ s).\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\paragraph{Remarque honnête sur le choix des réglages.}
+\begin{itemize}
+\item Les valeurs de $Q$, $r$ et $N$ sont des choix de conception : ce sont des compromis entre rapidité et effort de commande, et non des valeurs uniques.
+\item Pour que la comparaison soit juste, les trois lois (FL--MPC, FL seule, PI) utilisent exactement le même gain $K$ issu de la LMI.
+\item Les paramètres de la machine sont représentatifs d'une classe 2 MW, et non tirés de la fiche technique d'une machine précise.
+\end{itemize}
+
+\end{document}
