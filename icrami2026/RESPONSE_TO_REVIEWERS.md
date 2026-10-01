@@ -39,6 +39,10 @@ Equation, figure and table numbers below refer to the revised paper.
 
 Only the beginning of Reviewer 3's comment was available when preparing this revision ("…requires substantial technical corrections. The parameters in Table I violate the physical inductance condition L_m^2 …"). The inductance and sigma issues are addressed as for Reviewer 1. **Please check the full comment on Sciencesconf and make sure every remaining point is covered.**
 
+## Additional change (requested by the supervisor)
+
+The control now acts **only on the rotor voltages** $u_1=a_4\Delta u_{dr}$ and $u_2=a_4\Delta u_{qr}$, the only inputs of the rotor-side converter. The fictitious input $u_3$ on the speed equation was removed. The speed is now controlled by an outer loop, Eq. (12), that generates the torque-current reference $i^*_{dr}$; FL–MPC acts on the two current loops. All simulations, Tables II–III and Figs. 3–6 were recomputed with this structure. The PI baseline is now the classical cascaded PI vector control.
+
 ## Organizing committee: references
 
 - All 40 references follow IEEE style, are numbered by first citation, and each one is cited in the text (and vice versa). The submitted version cited [33] nowhere; that is fixed.

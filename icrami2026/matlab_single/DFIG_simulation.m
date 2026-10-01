@@ -46,9 +46,13 @@ T_trans = 200;  T_lyap = 500;      % transient / averaging time (Lyapunov)
 E2_grid = linspace(-100, 0, 401);  % eps2 values for bifurcation diagram
 T_trans_bif = 150;  T_bif = 300;
 
+% --- outer speed loop (cascade): poles of s^2 + lam*s + lamI
+lam  = 10;             % (part 2: normalized units, part 3: 1/s)
+lamI = 25;
+
 % --- part 2 : chaos suppression
 tau_e  = 0.0321;       % electrical time constant tau = -1/a1 (s)
-Umax_A = 120;          % input limit |u_i|
+Umax_A = 120;          % input limit |u1|, |u2| (no input on the speed equation)
 Tsim_A = 16;           % simulation time (normalized)
 t_on   = 6;            % control activation time
 Ts_A   = 0.01;         % sampling period
@@ -71,10 +75,9 @@ seed   = 3;                    % random seed for the turbulence
 % --- part 3 : MPPT tracking
 tf_wind  = 2;          % low-pass filter of the wind for MPPT (s)
 dUr_max  = 200;        % rotor voltage limit (V)
-dT_max   = 2000;       % auxiliary torque limit (N.m)
 N_B      = 10;         % MPC horizon
 Q_B      = diag([1 3]); r_B = 1e-6;    % MPC weights
-sc       = [1e3; 1e3; 100];            % error scaling (A, A, rad/s)
+sc       = [1e3; 1e3];                 % error scaling (A)
 fac = [1   1   1   1;                  % nominal plant
        1.2 1.2 0.9 1.2;                % M1 : factors on Rs, Rr, Lm, J
        0.8 0.8 1.1 0.8];               % M2
@@ -171,7 +174,7 @@ if run_part2
 g = g_ch; s = s_ch; e = e_ch;
 ws = 2*pi*fs;
 z3s = 0.2*ws*tau_e;                                % wr = 1.2 ws
-zref = [z3s; (-z3s + g*z3s + e(1))/z3s; z3s];      % target (u1 = u3 = 0)
+zref = [z3s; (-z3s + g*z3s + e(1))/z3s; z3s];      % target (u1 = 0, sustained by u2)
 Umax = Umax_A; Tsim = Tsim_A; Ts = Ts_A; nsub = 5;
 
 [mpcA, K] = mpc_init(Ts, N_A, Q_A, r_A);
@@ -186,19 +189,28 @@ for j = 1:3
     d = dlist(j);
     gp = g*(1+d); sp = s*(1+d); ep = e*(1+d); cp = 1+d;     % real plant
     for c = 1:3
-        z = z0; I = zeros(3,1);
+        z = z0; I = zeros(2,1); I3 = 0;
         N = round(Tsim/Ts);
         tt = zeros(N,1); zz = zeros(N,3);
         for k = 1:N
             t = (k-1)*Ts;
             if t < t_on
-                u = zeros(3,1);
+                u = zeros(2,1);
             else
-                er = z - zref;
-                ff = -chaos_f(z, g, s, e, 1);               % cancel nonlinearities
+                Fn = chaos_f(z, g, s, e, 1);
+                e3 = z(3) - zref(3);
+                % outer loop: reference of z1 (torque current) from the speed error
+                if c == 3
+                    z1d = zref(1) - (lam*e3 + lamI*I3)/s;  dz1d = 0;         % classical PI
+                else
+                    z1d = z(3) - e(3)/s - (lam*e3 + lamI*I3)/s;              % gives z3' = -lam*e3 - lamI*I3
+                    dz1d = Fn(3) - (lam*Fn(3) + lamI*e3)/s;
+                end
+                er = [z(1) - z1d; z(2) - zref(2)];
+                ff = [-Fn(1) + dz1d; -Fn(2)];                                % cancel nonlinearities
                 if c == 1           % FL-MPC
-                    v = zeros(3,1);
-                    for i = 1:3
+                    v = zeros(2,1);
+                    for i = 1:2
                         v(i) = mpc_step(mpcA, [er(i); I(i)], -Umax-ff(i), Umax-ff(i));
                     end
                     u = ff + v;
@@ -210,9 +222,11 @@ for j = 1:3
                     u = min(max(uc, -Umax), Umax);
                     I = I + (uc == u).*er*Ts;
                 end
+                I3 = I3 + e3*Ts;
             end
+            uu = [u; 0];                                                 % u3 = 0
             for jj = 1:nsub
-                z = rk4(@(zz_) chaos_f(zz_, gp, sp, ep, cp) + u, z, Ts/nsub);
+                z = rk4(@(zz_) chaos_f(zz_, gp, sp, ep, cp) + uu, z, Ts/nsub);
             end
             tt(k) = t + Ts; zz(k,:) = z';
         end
@@ -277,7 +291,9 @@ iqr_ref = an.psi/Lm*ones(size(t));
 xr  = [idr_ref iqr_ref wr_ref];
 dxr = [gradient(idr_ref,Ts) gradient(iqr_ref,Ts) gradient(wr_ref,Ts)];
 
-Umax = [dUr_max*an.a4; dUr_max*an.a4; dT_max*p/J];
+Umax = [dUr_max*an.a4; dUr_max*an.a4];            % rotor voltage limits
+dv    = gradient(v, Ts);
+ddwr  = gradient(dxr(:,3), Ts);
 [mpcB, K] = mpc_init(Ts, N_B, Q_B, r_B);
 ke = -K(1); ki = -K(2);
 
@@ -293,15 +309,28 @@ for j = 1:3
     pp(7) = J*fac(j,4);
     ap = dfig_coef(pp);                                       % real plant
     for c = 1:3
-        x = [0; 0; 0.9*wr_ref(1)]; I = zeros(3,1);
+        x = [0; 0; 0.9*wr_ref(1)]; I = zeros(2,1); I3 = 0;
         N = length(t) - 1;
-        X = zeros(N,3); U = zeros(N,3);
+        X = zeros(N,3); U = zeros(N,2);
         for k = 1:N
-            er = x - xr(k,:)';
-            ff = -dfig_f(x, an, v(k)) + dxr(k,:)';
+            Fn = dfig_f(x, an, v(k));
+            ew = x(3) - wr_ref(k);
+            % outer speed loop: i_dr reference (generator torque)
+            if c == 3
+                idr_d = -(lam*ew + lamI*I3)/an.a6;  didr_d = 0;              % classical PI
+            else
+                a8 = -p*aero(v(k), x(3), an)/J;
+                idr_d = (dxr(k,3) + an.a7*x(3) + a8 - lam*ew - lamI*I3)/an.a6;
+                hx = 1e-3*max(abs(x(3)),1); hv = 1e-4*max(abs(v(k)),1);
+                dTa = (aero(v(k), x(3)+hx, an) - aero(v(k), x(3)-hx, an))/(2*hx)*Fn(3) ...
+                    + (aero(v(k)+hv, x(3), an) - aero(v(k)-hv, x(3), an))/(2*hv)*dv(k);
+                didr_d = (ddwr(k) + an.a7*Fn(3) - p*dTa/J - lam*(Fn(3) - dxr(k,3)) - lamI*ew)/an.a6;
+            end
+            er = [x(1) - idr_d; x(2) - iqr_ref(k)];
+            ff = [-Fn(1) + didr_d; -Fn(2) + dxr(k,2)];
             if c == 1
-                vv = zeros(3,1);
-                for i = 1:3
+                vv = zeros(2,1);
+                for i = 1:2
                     vv(i) = sc(i)*mpc_step(mpcB, [er(i); I(i)]/sc(i), (-Umax(i)-ff(i))/sc(i), (Umax(i)-ff(i))/sc(i));
                 end
                 u = min(max(ff + vv, -Umax), Umax);
@@ -313,8 +342,10 @@ for j = 1:3
                 u = min(max(uc, -Umax), Umax);
                 I = I + (uc == u).*er*Ts;
             end
+            I3 = I3 + ew*Ts;
+            uu = [u; 0];                                                 % u3 = 0
             for jj = 1:4
-                x = rk4(@(xx) dfig_f(xx, ap, v(k)) + u, x, Ts/4);
+                x = rk4(@(xx) dfig_f(xx, ap, v(k)) + uu, x, Ts/4);
             end
             X(k,:) = x'; U(k,:) = u';
         end

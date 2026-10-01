@@ -31,7 +31,7 @@ BP 98 Ouled Aissa, Jijel 18000, Algeria}
 \maketitle
 
 \begin{abstract}
-Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that may exhibit irregular, and even chaotic, oscillations under abnormal operating conditions. This paper revisits the third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, derives an equivalent dimensionless form, and shows by Lyapunov exponents and bifurcation analysis that chaotic motion appears only for strongly detuned mechanical damping and abnormal rotor excitation. A hybrid controller is then proposed in which nonlinear feedback linearization cancels the coupled dynamics and a constrained, receding-horizon model predictive controller (MPC) with integral action handles actuator limits; the MPC terminal weight and local gain are obtained from a linear matrix inequality (LMI) that guarantees nominal closed-loop stability. The controller is evaluated on chaos suppression and on maximum power point tracking (MPPT) of a 2-MW-class DFIG under turbulent wind and $\pm 20\,\%$ parameter mismatch, and compared with a feedback-linearization-only law and a PI law using the same gains. It suppresses chaos without steady-state error in all mismatch cases, reduces the recovery integral absolute error by 19--47\,\% with respect to PI, and tracks the MPPT power reference with a root-mean-square error below 0.9\,\% of rated power, five to eight times lower than with PI.
+Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that may exhibit irregular, and even chaotic, oscillations under abnormal operating conditions. This paper revisits the third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, derives an equivalent dimensionless form, and shows by Lyapunov exponents and bifurcation analysis that chaotic motion appears only for strongly detuned mechanical damping and abnormal rotor excitation. A hybrid controller acting only on the rotor voltages is then proposed. An outer speed loop generates the torque-current reference, nonlinear feedback linearization cancels the coupled current dynamics, and a constrained, receding-horizon model predictive controller (MPC) with integral action handles the converter voltage limits; the MPC terminal weight and local gain are obtained from a linear matrix inequality (LMI) that guarantees nominal closed-loop stability. The controller is evaluated on chaos suppression and on maximum power point tracking (MPPT) of a 2-MW-class DFIG under turbulent wind and $\pm 20\,\%$ parameter mismatch, and compared with a feedback-linearization-only law and a PI law using the same gains. Using only the rotor voltages, with a cascaded speed loop, it suppresses chaos without steady-state error in all mismatch cases and settles 35--43\,\% faster than PI. It tracks the MPPT references with a speed error 5--140 times lower than PI and a power root-mean-square error of 0.6--1.7\,\% of rated power, three to eight times lower than with PI.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -71,7 +71,7 @@ The stator flux is aligned with the $q$ axis ($\psi_{qs}=\psi_s$, $\psi_{ds}=0$)
 \left\{ \begin{aligned}
 \dot{x}_{1} &= a_{1}x_{1} + ( \omega_{s} - x_{3})x_{2} + a_{2}x_{3} + c_1 + u_1, \\
 \dot{x}_{2} &= - ( \omega_{s} - x_{3})x_{1} + a_{1}x_{2} + c_2 + u_2, \\
-\dot{x}_{3} &= a_{6}x_{1} - a_{7}x_{3} - a_{8} + u_3,
+\dot{x}_{3} &= a_{6}x_{1} - a_{7}x_{3} - a_{8},
 \end{aligned} \right.
 \label{eq3}
 \end{equation}
@@ -85,7 +85,7 @@ c_1 = a_3u_{ds}+a_4u_{dr}^0,\quad c_2 = a_5 + a_3u_{qs}+a_4u_{qr}^0 .
 \end{gathered}
 \label{eq4}
 \end{equation}
-Here $u_{dr}^0,u_{qr}^0$ are constant (open-loop) rotor voltages and $u=[u_1,u_2,u_3]^T$ is the control input: $u_{1,2}=a_4\Delta u_{dr,qr}$ are the rotor-voltage actions of the rotor-side converter, and $u_3=(n_p/J)\Delta T$ is a bounded auxiliary torque-correction channel (e.g., pitch-induced aerodynamic torque). Without control, $u=0$.
+Here $u_{dr}^0,u_{qr}^0$ are constant (open-loop) rotor voltages and $u_{1,2}=a_4\Delta u_{dr,qr}$ are the control actions of the rotor-side converter, which are the only available inputs: the speed equation has no actuator and is governed through the electromagnetic torque, i.e., through $i_{dr}$. Without control, $u_1=u_2=0$.
 
 Table~\ref{tab1} lists the nominal parameters of a representative 2-MW-class DFIG (stator-referred). They satisfy $L_s,L_r>L_m$ and $\sigma=0.0661\in(0,1)$. The resulting coefficients are $a_1=-31.14$~s$^{-1}$, $a_2=-1.013\times10^{4}$~A/rad, $a_3=-5.649\times10^{3}$ and $a_4=5.845\times10^{3}$~A/(V$\cdot$s), $a_5=1.018\times10^{4}$~A/s, $a_6=8.19\times10^{-2}$~rad/(A$\cdot$s$^2$) and $a_7=7.87\times10^{-6}$~s$^{-1}$. Because $u_{ds}=-\omega_s\psi_s$, $c_1+a_2\omega_s=a_4u_{dr}^0$: the constant $a_3u_{ds}=3.18\times10^{6}$~A/s exactly compensates $a_2\omega_s$, and $c_2=1.018\times10^4+a_4u_{qr}^0$~A/s. Every constant of \eqref{eq3} is therefore obtained from Table~\ref{tab1}.
 
@@ -176,14 +176,27 @@ The reference trajectory is $x_d=[i_{dr,ref},\,i_{qr,ref},\,\omega_{r,ref}]^T$ a
 
 \section{Hybrid Feedback-Linearization/MPC Design}
 
-\subsection{Feedback Linearization}
+\subsection{Outer Speed Loop}
 
-Write \eqref{eq3} as $\dot x=F(x,t)+u$ and let $\hat F$ be its nominal model. The control law
+Since $T_e\propto i_{dr}$, the speed is controlled through the reference of $i_{dr}$ (cascade structure). With $e_\omega=\omega_r-\omega_{r,ref}$ and the nominal model,
 \begin{equation}
-u = -\hat F(x,t) + \dot x_d + v
+i^\ast_{dr}=\frac{\dot\omega_{r,ref}+a_7\omega_r+\hat a_8(v,\omega_r)-\lambda e_\omega-\lambda_I\!\int\! e_\omega dt}{a_6},
+\label{eqspd}
+\end{equation}
+which reduces to \eqref{eq9} when $e_\omega=0$. Substituting into the third line of \eqref{eq3} gives
+\[
+\dot e_\omega=-\lambda e_\omega-\lambda_I\!\int\! e_\omega dt+a_6\,(i_{dr}-i^\ast_{dr}).
+\]
+This is an exponentially stable linear system (poles: roots of $p^2+\lambda p+\lambda_I$) driven by the inner tracking error. It is therefore input-to-state stable, and $e_\omega\to0$ once $i_{dr}\to i^\ast_{dr}$ (cascade argument). The inner reference is $x_d=[i^\ast_{dr},\,i_{qr,ref}]^T$, and $\dot x_d$ is computed analytically from \eqref{eq3} and \eqref{eqspd}.
+
+\subsection{Inner Loop: Feedback Linearization}
+
+Write the first two lines of \eqref{eq3} as $\dot x_{1,2}=F_{1,2}(x,t)+u_{1,2}$ and let $\hat F_{1,2}$ be their nominal model. The control law
+\begin{equation}
+u_{1,2} = -\hat F_{1,2}(x,t) + \dot x_d + v
 \label{eq12}
 \end{equation}
-gives the error dynamics $\dot e = v + \Delta(x,t)$ with $\Delta=F-\hat F$ ($\Delta=0$ nominally). This cancels the bilinear couplings $(\omega_s-x_3)x_{1,2}$ responsible for chaos, and leaves three decoupled integrators driven by the new input $v$.
+gives the error dynamics $\dot e = v + \Delta(x,t)$, $e=[i_{dr}-i^\ast_{dr},\,i_{qr}-i_{qr,ref}]^T$, with $\Delta=F_{1,2}-\hat F_{1,2}$ ($\Delta=0$ nominally). This cancels the bilinear couplings $(\omega_s-x_3)x_{1,2}$ responsible for chaos, and leaves two decoupled integrators driven by the new input $v$.
 
 \subsection{Constrained MPC with Integral Action}
 
@@ -218,15 +231,15 @@ and set $P=X^{-1}$, $K=YX^{-1}$. Then
 (A+BK)^TP(A+BK)-P+Q+rK^TK\preceq 0 .
 \label{eq16}
 \end{equation}
-Let $\Omega=\{\xi:\xi^TP\xi\le\alpha\}$, with $\alpha>0$ small enough that $K\xi$ satisfies the input bounds in $\Omega$. If $\Delta=0$ and \eqref{eq14}, augmented with the terminal constraint $\xi_i(k+N|k)\in\Omega$, is feasible at $k=0$, then it remains feasible for all $k$ and $\xi_i=0$ is asymptotically stable, i.e., $x\to x_d$.
+Let $\Omega=\{\xi:\xi^TP\xi\le\alpha\}$, with $\alpha>0$ small enough that $K\xi$ satisfies the input bounds in $\Omega$. If $\Delta=0$ and \eqref{eq14}, augmented with the terminal constraint $\xi_i(k+N|k)\in\Omega$, is feasible at $k=0$, then it remains feasible for all $k$ and $\xi_i=0$ is asymptotically stable, i.e., $x_{1,2}\to x_d$ and, with the outer loop, $\omega_r\to\omega_{r,ref}$.
 
 \textit{Proof:} Applying the Schur complement to \eqref{eq15} with respect to its last three block rows gives $X-(AX+BY)^TX^{-1}(AX+BY)-XQX-rY^TY\succeq0$. Pre- and post-multiplying by $P=X^{-1}$ and substituting $Y=KX$ yields \eqref{eq16}. Hence $\Omega$ is positively invariant under $v=K\xi$, and $\xi^TP\xi$ is a control Lyapunov function in $\Omega$. By the standard terminal-cost/terminal-set argument \cite{r39}, the optimal cost $V_N^\ast$ of \eqref{eq14} then satisfies $V_N^\ast(k+1)-V_N^\ast(k)\le-\|\xi_i(k)\|_Q^2-r\,v_i(k)^2$ and the shifted solution completed by $K\xi$ is feasible, which proves recursive feasibility and asymptotic stability. \hfill$\blacksquare$
 
-\textit{Remarks:} (i) The maximal-volume solution of \eqref{eq15} satisfies \eqref{eq16} with equality, i.e., $P$ is the solution of the discrete algebraic Riccati equation \cite{r40}. Consequently, when no constraint is active, \eqref{eq14} returns exactly $v_i=K\xi_i$. A single gain $K=[k_e,\,k_I]$, common to the three channels, is therefore obtained from the LMI and used in the implementation. (ii) Setting $k_I=0$ and ignoring constraints recovers the pure feedback-linearization law $v=-k_e e$ (``FL only''), and applying $v=K\xi$ without the model terms $-\hat F+\dot x_d$ gives a PI law. These two baselines use the same gains as the proposed controller, so the comparison isolates the effect of feedback linearization and of constrained MPC. (iii) The terminal constraint is not imposed explicitly in the simulations; convergence was verified a posteriori.
+\textit{Remarks:} (i) The maximal-volume solution of \eqref{eq15} satisfies \eqref{eq16} with equality, i.e., $P$ is the solution of the discrete algebraic Riccati equation \cite{r40}. Consequently, when no constraint is active, \eqref{eq14} returns exactly $v_i=K\xi_i$. A single gain $K=[k_e,\,k_I]$, common to the two channels, is therefore obtained from the LMI and used in the implementation. (ii) Setting $k_I=0$ and ignoring constraints recovers the pure feedback-linearization law $v=-k_e e$ (``FL only''). Removing all model terms gives the classical cascaded PI vector control: a speed PI $i^\ast_{dr}=-(\lambda e_\omega+\lambda_I\!\int\! e_\omega)/a_6$ and current PIs $v=K\xi$. These two baselines use the same gains as the proposed controller, so the comparison isolates the effect of feedback linearization and of constrained MPC. (iii) The terminal constraint is not imposed explicitly in the simulations; convergence was verified a posteriori.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.46\textwidth]{fig3.png}}
-\caption{Proposed hybrid feedback-linearization/MPC architecture.}
+\caption{Proposed cascaded architecture: outer speed loop, inner feedback-linearization/MPC current loops acting on the rotor voltages.}
 \label{fig3}
 \end{figure}
 
@@ -238,7 +251,7 @@ All simulations integrate the plant with a fourth-order Runge--Kutta scheme (4--
 
 \subsection{Chaos Suppression}
 
-System \eqref{eq5} is started in the chaotic regime and the controller is switched on at $\tilde t_{on}=6$ with $T_s=0.01$, $N=15$, $Q=\text{diag}(1,10)$, $r=10^{-4}$ and $|u_i|\le120$. The LMI gives $K=[-63.9,\,-192.4]$. The target $z^\ast=(2.02,\,-2.00,\,2.02)$ corresponds to $\omega_r=1.2\,\omega_s$ (super-synchronous operation with positive speed) and is sustained by $u_2^\ast=78.9$ alone, which compensates the abnormal excitation $\varepsilon_2$. Robustness is tested by scaling all coefficients of the plant by $0.8$ and $1.2$.
+System \eqref{eq5} is started in the chaotic regime and the controller is switched on at $\tilde t_{on}=6$ with $T_s=0.01$, $N=15$, $Q=\text{diag}(1,10)$, $r=10^{-4}$ and $|u_{1,2}|\le120$ (no input on the speed equation). The LMI gives $K=[-63.9,\,-192.4]$, and the outer loop on $z_3$ uses $\lambda=10$, $\lambda_I=25$ (double pole at $-5$). The target $z^\ast=(2.02,\,-2.00,\,2.02)$ corresponds to $\omega_r=1.2\,\omega_s$ (super-synchronous operation with positive speed). It is an equilibrium with $u_1^\ast=0$, sustained by $u_2^\ast=78.9$ alone, which compensates the abnormal excitation $\varepsilon_2$. Robustness is tested by scaling all coefficients of the plant by $0.8$ and $1.2$.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.48\textwidth]{fig4.png}}
@@ -247,22 +260,22 @@ System \eqref{eq5} is started in the chaotic regime and the controller is switch
 \end{figure}
 
 \begin{table}[htbp]
-\caption{Chaos Suppression Performance (IAE of $\|z-z^\ast\|$, Settling Time $t_s$ to a 2\,\% Band, Final Error $e_f$; Normalized Time)}
+\caption{Chaos Suppression Performance with $u_1,u_2$ Only (IAE of $\|z-z^\ast\|$, Settling Time $t_s$ to a 2\,\% Band, Final Error $e_f$; Normalized Time)}
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|}
 \hline
 \textbf{Plant} & \textbf{Metric} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
 \hline
- & IAE & 0.37 & \textbf{0.31} & 0.69 \\
-nominal & $t_s$ & 0.37 & \textbf{0.08} & 0.95 \\
+ & IAE & 0.42 & \textbf{0.41} & 0.72 \\
+nominal & $t_s$ & 0.66 & \textbf{0.60} & 1.01 \\
  & $e_f$ & 0 & 0 & 0 \\
 \hline
- & IAE & \textbf{0.33} & 2.86 & 0.58 \\
-$-20\,\%$ & $t_s$ & \textbf{0.39} & -- & 0.89 \\
+ & IAE & 2.18 & 4.51 & \textbf{1.98} \\
+$-20\,\%$ & $t_s$ & \textbf{1.30} & -- & 2.13 \\
  & $e_f$ & 0 & 0.26 & 0 \\
 \hline
- & IAE & \textbf{1.51} & 3.94 & 1.87 \\
-$+20\,\%$ & $t_s$ & \textbf{0.65} & -- & 1.09 \\
+ & IAE & \textbf{4.55} & 6.81 & 4.56 \\
+$+20\,\%$ & $t_s$ & \textbf{1.57} & -- & 2.73 \\
  & $e_f$ & 0 & 0.26 & 0 \\
 \hline
 \end{tabular}
@@ -270,11 +283,11 @@ $+20\,\%$ & $t_s$ & \textbf{0.65} & -- & 1.09 \\
 \end{center}
 \end{table}
 
-Fig.~\ref{fig4}(a) shows that the chaotic oscillations are suppressed as soon as the controller is activated, and the states settle at $z^\ast$. Table~\ref{tab2} and Fig.~\ref{fig4}(b) compare the three controllers. With an exact model, FL only is slightly faster, because the integral action of FL--MPC adds a small tail. Under mismatch, however, FL only keeps a steady-state error (0.26), and PI, which does not cancel the nonlinear couplings, converges more slowly. FL--MPC converges without offset in all cases, with 19--47\,\% lower IAE than PI and settling times of 0.37--0.65 (12--21~ms with $\tau=32.1$~ms). All controllers reach the input limit during the first instants; the MPC accounts for it explicitly.
+Fig.~\ref{fig4}(a) shows that the chaotic oscillations are suppressed as soon as the controller is activated, using only the rotor voltages, and the states settle at $z^\ast$. Table~\ref{tab2} and Fig.~\ref{fig4}(b) compare the three controllers. With an exact model, FL--MPC and FL only behave almost identically. Under mismatch, FL only keeps a steady-state error (0.26). PI and FL--MPC both converge without offset and have similar IAE, but FL--MPC settles 35--43\,\% faster (0.66--1.57 versus 1.01--2.73, i.e., 21--50~ms versus 32--88~ms with $\tau=32.1$~ms). All controllers reach the input limit during the first instants; the MPC accounts for it explicitly.
 
 \subsection{MPPT Tracking of the 2-MW-Class DFIG}
 
-The model \eqref{eq3} with Table~\ref{tab1} is driven by the wind of Fig.~\ref{fig2} for 30~s, with $T_s=1$~ms, $N=10$, $Q=\text{diag}(1,3)$ and $r=10^{-6}$ (errors scaled by 1~kA, 1~kA and 100~rad/s). The limits are $|\Delta u_{dr}|,|\Delta u_{qr}|\le200$~V and $|\Delta T|\le2$~kN$\cdot$m. Two mismatched plants are considered: M1 ($R_s,R_r$ $+20\,\%$, $L_m$ $-10\,\%$, $J$ $+20\,\%$) and M2 ($R_s,R_r$ $-20\,\%$, $L_m$ $+10\,\%$, $J$ $-20\,\%$), with the leakage inductances kept constant so that $L_s,L_r>L_m$ still holds.
+The model \eqref{eq3} with Table~\ref{tab1} is driven by the wind of Fig.~\ref{fig2} for 30~s, with $T_s=1$~ms, $N=10$, $Q=\text{diag}(1,3)$ and $r=10^{-6}$ (errors scaled by 1~kA), and the outer speed loop uses $\lambda=10$~s$^{-1}$, $\lambda_I=25$~s$^{-2}$. The only inputs are the rotor voltages, limited to $|\Delta u_{dr}|,|\Delta u_{qr}|\le200$~V. Two mismatched plants are considered: M1 ($R_s,R_r$ $+20\,\%$, $L_m$ $-10\,\%$, $J$ $+20\,\%$) and M2 ($R_s,R_r$ $-20\,\%$, $L_m$ $+10\,\%$, $J$ $-20\,\%$), with the leakage inductances kept constant so that $L_s,L_r>L_m$ still holds.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.48\textwidth]{fig5.png}}
@@ -295,28 +308,28 @@ The model \eqref{eq3} with Table~\ref{tab1} is driven by the wind of Fig.~\ref{f
 \hline
 \textbf{Plant} & \textbf{RMSE} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
 \hline
- & $P_s$ & 0.58 & 0.58 & 4.55 \\
-nominal & $i_{dr}$ & 14.3 & 14.3 & 111.4 \\
- & $\omega_r$ & 0.0012 & 0.0012 & 0.0069 \\
+ & $P_s$ & 0.59 & 0.59 & 4.61 \\
+nominal & $i_{dr}$ & 14.3 & 14.3 & 112.9 \\
+ & $\omega_r$ & 0.008 & 0.008 & 1.157 \\
 \hline
- & $P_s$ & \textbf{0.85} & 0.86 & 4.51 \\
-M1 & $i_{dr}$ & \textbf{20.7} & 21.1 & 110.5 \\
- & $\omega_r$ & 0.0044 & 0.0044 & 0.0070 \\
+ & $P_s$ & 1.65 & 1.65 & 5.02 \\
+M1 & $i_{dr}$ & 40.5 & 40.5 & 122.8 \\
+ & $\omega_r$ & 0.184 & 0.184 & 0.973 \\
 \hline
- & $P_s$ & \textbf{0.86} & 0.88 & 4.59 \\
-M2 & $i_{dr}$ & \textbf{21.2} & 21.5 & 112.3 \\
- & $\omega_r$ & 0.0063 & 0.0064 & 0.0085 \\
+ & $P_s$ & 1.65 & 1.65 & 4.59 \\
+M2 & $i_{dr}$ & 40.3 & 40.3 & 112.4 \\
+ & $\omega_r$ & 0.183 & 0.183 & 1.345 \\
 \hline
 \end{tabular}
 \label{tab3}
 \end{center}
 \end{table}
 
-Figs.~\ref{fig5} and \ref{fig6} show that the rotor currents, the speed and the stator power follow the MPPT references despite turbulence. The speed stays in the admissible slip range (0.82--1.12\,$\omega_s$), and $P_s$ varies between 0.57 and 2.1~MW. The auxiliary torque channel is small (RMS 83~N$\cdot$m, i.e., 0.7\,\% of rated torque), so the speed is governed by the generator torque. Table~\ref{tab3} shows that the power RMS error of FL--MPC stays below 0.9\,\% of rated power for all plants, five to eight times lower than with PI. For tracking, FL--MPC and FL only perform almost identically (slight advantage of FL--MPC under mismatch), because the actuator limits are active only during the initial transient. The main benefits of the MPC are therefore its explicit, stability-preserving treatment of constraints and its offset-free behaviour, which matter in large transients such as the recovery from chaos.
+Figs.~\ref{fig5} and \ref{fig6} show that the rotor currents, the speed and the stator power follow the MPPT references despite turbulence. The speed stays in the admissible slip range (0.82--1.12\,$\omega_s$), and $P_s$ varies between 0.57 and 2.1~MW. Starting from $0.9\,\omega_{r,ref}$, the speed enters the 2\,\% band in 0.13~s with FL--MPC, versus 0.77~s with PI. Table~\ref{tab3} shows that the speed RMS error of FL--MPC is 5--140 times lower than with PI, and its power RMS error is 0.59\,\% of rated power (nominal) and 1.65\,\% (mismatch), about three to eight times lower than with PI. Under mismatch, the larger $i_{dr}$ and $P_s$ errors with respect to the nominal MPPT reference mainly reflect that the torque current actually required changes with $J$ and $L_m$, while the speed is still tracked within 0.18~rad/s. For tracking, FL--MPC and FL only perform identically: the outer integral action compensates the mismatch, and the voltage limits are never reached by FL--MPC in this scenario (maximum 185~V). The main benefits of the MPC are therefore its explicit, stability-preserving treatment of constraints and its offset-free behaviour, which matter in large transients such as the recovery from chaos.
 
 \section{Conclusion}
 
-This paper revisited the nonlinear dynamics of a DFIG-based wind turbine with a physically consistent parameter set and explicit model constants. A dimensionless model shows that chaos, confirmed by a positive Lyapunov exponent and a bifurcation diagram, arises only under severely detuned damping and abnormal rotor excitation, i.e., as a fault scenario. A hybrid controller combining feedback linearization with a constrained MPC whose terminal ingredients are obtained from an LMI was proposed, with guaranteed nominal stability. Simulations show chaos suppression without steady-state error under $\pm20\,\%$ mismatch, lower recovery IAE than PI, and MPPT power tracking with an RMS error below 0.9\,\% of rated power. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
+This paper revisited the nonlinear dynamics of a DFIG-based wind turbine with a physically consistent parameter set and explicit model constants. A dimensionless model shows that chaos, confirmed by a positive Lyapunov exponent and a bifurcation diagram, arises only under severely detuned damping and abnormal rotor excitation, i.e., as a fault scenario. A hybrid controller combining feedback linearization with a constrained MPC whose terminal ingredients are obtained from an LMI was proposed, with guaranteed nominal stability. The control acts only on the rotor voltages, the speed being governed through a cascaded torque-current loop. Simulations show chaos suppression without steady-state error under $\pm20\,\%$ mismatch with faster settling than PI, and MPPT tracking with speed and power errors several times lower than PI. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
 
 \section*{Conflict of Interest}
 The authors declare that there are no conflicts of interest.

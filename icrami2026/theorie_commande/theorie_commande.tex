@@ -28,7 +28,7 @@ et la dynamique s'écrit
 \left\{\begin{aligned}
 \dot x_1 &= a_1x_1+(\omega_s-x_3)x_2+a_2x_3+c_1+u_1\\
 \dot x_2 &= -(\omega_s-x_3)x_1+a_1x_2+c_2+u_2\\
-\dot x_3 &= a_6x_1-a_7x_3-a_8+u_3
+\dot x_3 &= a_6x_1-a_7x_3-a_8
 \end{aligned}\right.
 \label{eq:modele}
 \end{equation}
@@ -53,15 +53,11 @@ T_a=\frac{\tfrac12\rho\pi R^2C_p(\lambda)v^3}{\Omega_m},\qquad \Omega_m=\frac{\o
 C_p=0.5176\Big(\frac{116}{\lambda_i}-5\Big)e^{-21/\lambda_i}+0.0068\lambda,\qquad \frac1{\lambda_i}=\frac1\lambda-0.035 .
 \]
 
-Les entrées de commande ont un sens physique :
-\begin{itemize}
-\item $u_1=a_4\,\Delta u_{dr}$ et $u_2=a_4\,\Delta u_{qr}$ sont les tensions rotoriques imposées par le convertisseur côté rotor ;
-\item $u_3=(p/J)\,\Delta T$ est un canal de correction de couple borné (par exemple un couple aérodynamique modulé par le calage des pales).
-\end{itemize}
+Les seules entrées de commande sont $u_1=a_4\,\Delta u_{dr}$ et $u_2=a_4\,\Delta u_{qr}$, c'est-à-dire les tensions rotoriques imposées par le convertisseur côté rotor. L'équation de vitesse n'a \textbf{pas d'actionneur} : la vitesse est commandée à travers le couple électromagnétique $T_e\propto i_{dr}$, donc à travers $i_{dr}$ (structure en cascade).
 
-On écrit le système sous forme compacte :
+On écrit les deux premières équations sous forme compacte :
 \begin{equation}
-\dot x = F(x,t)+u .
+\dot x_{1,2} = F_{1,2}(x,t)+u_{1,2} .
 \label{eq:compact}
 \end{equation}
 
@@ -77,28 +73,50 @@ z_3'&=s(z_1-z_3)+\varepsilon_3
 \gamma=\frac{a_2a_6\tau}{a_7}<0,\quad s=\frac{\tau D}{J}.
 \label{eq:adim}
 \end{equation}
-Ce modèle a la même structure que \eqref{eq:compact} : $z'=F(z)+u$. La loi de commande ci-dessous s'applique donc aux deux cas sans modification.
+Ce modèle a la même structure, avec $u_1,u_2$ sur les deux premières équations et aucune entrée sur la troisième. La loi de commande ci-dessous s'applique donc aux deux cas.
 
-\section{Étape 1 : linéarisation par retour d'état}
+\section{Étape 0 : boucle externe de vitesse (cascade)}
 
-Soit $x_d(t)$ la trajectoire de référence et $e=x-x_d$ l'erreur de poursuite. On choisit
+Comme $T_e=\tfrac32p\frac{L_m}{L_s}\psi_s\,i_{dr}$, on commande la vitesse en imposant la référence de $i_{dr}$. Soit $e_\omega=\omega_r-\omega_{r,ref}$ et $I_\omega=\int e_\omega\,dt$. On choisit
 \begin{equation}
-\boxed{u = -\hat F(x,t)+\dot x_d+v}
+\boxed{i^\ast_{dr}=\frac{\dot\omega_{r,ref}+a_7\omega_r+\hat a_8(v,\omega_r)-\lambda e_\omega-\lambda_I I_\omega}{a_6}}
+\label{eq:vitesse}
+\end{equation}
+En remplaçant dans la troisième équation du modèle :
+\[
+\dot e_\omega=-\lambda e_\omega-\lambda_I I_\omega+a_6\,(i_{dr}-i^\ast_{dr}).
+\]
+\begin{itemize}
+\item Si $i_{dr}=i^\ast_{dr}$, l'erreur de vitesse obéit à $\ddot I_\omega+\lambda\dot I_\omega+\lambda_I I_\omega=0$ : système linéaire stable dont les pôles sont les racines de $p^2+\lambda p+\lambda_I$. Avec $\lambda=10$ et $\lambda_I=25$, on obtient un pôle double en $-5$ (amortissement critique, sans dépassement).
+\item Sinon, c'est un système stable excité par l'erreur de la boucle interne $i_{dr}-i^\ast_{dr}$. Il est donc stable entrée-état (ISS), et $e_\omega\to0$ dès que la boucle interne converge (argument de cascade).
+\item La dérivée $\dot i^\ast_{dr}$, nécessaire à la linéarisation de la boucle interne, est calculée analytiquement à partir du modèle :
+\[
+\dot i^\ast_{dr}=\frac{\ddot\omega_{r,ref}+a_7\dot\omega_r+\dot{\hat a}_8-\lambda(\dot\omega_r-\dot\omega_{r,ref})-\lambda_I e_\omega}{a_6},
+\]
+où $\dot\omega_r=F_3(x)$ et $\dot{\hat a}_8$ s'obtient par dérivation en chaîne de $T_a(v,\omega_r)$.
+\end{itemize}
+La référence de la boucle interne est $x_d=[i^\ast_{dr},\ i_{qr,ref}]^T$.
+
+\section{Étape 1 : linéarisation par retour d'état (boucle interne)}
+
+Soit $e=x_{1,2}-x_d$ l'erreur de poursuite des courants. On choisit
+\begin{equation}
+\boxed{u_{1,2} = -\hat F_{1,2}(x,t)+\dot x_d+v}
 \label{eq:FL}
 \end{equation}
-où $\hat F$ est le modèle nominal (paramètres nominaux) et $v\in\R^3$ une nouvelle entrée. En remplaçant \eqref{eq:FL} dans \eqref{eq:compact} :
+où $\hat F_{1,2}$ est le modèle nominal (paramètres nominaux) et $v\in\R^2$ une nouvelle entrée. En remplaçant \eqref{eq:FL} dans \eqref{eq:compact} :
 \begin{equation}
-\dot e = \dot x-\dot x_d = F-\hat F+v = v+\Delta(x,t),\qquad \Delta=F-\hat F .
+\dot e = \dot x_{1,2}-\dot x_d = F_{1,2}-\hat F_{1,2}+v = v+\Delta(x,t),\qquad \Delta=F_{1,2}-\hat F_{1,2} .
 \label{eq:erreur}
 \end{equation}
 \begin{itemize}
-\item \textbf{Cas nominal ($\Delta=0$).} On obtient trois intégrateurs découplés $\dot e_i=v_i$. Les termes bilinéaires $(\omega_s-x_3)x_{1,2}$, responsables du chaos, sont compensés exactement.
+\item \textbf{Cas nominal ($\Delta=0$).} On obtient deux intégrateurs découplés $\dot e_i=v_i$. Les termes bilinéaires $(\omega_s-x_3)x_{1,2}$, responsables du chaos, sont compensés exactement.
 \item \textbf{Avec erreur de modèle ($\Delta\neq0$).} $\Delta$ agit comme une perturbation. Une loi purement proportionnelle $v=-k_e e$ laisse alors une erreur statique, ce qui justifie l'action intégrale de la section suivante.
 \end{itemize}
 
 \section{Étape 2 : modèle d'erreur augmenté et discrétisé}
 
-Pour chaque canal $i\in\{1,2,3\}$, on ajoute l'intégrale de l'erreur $\sigma_i=\int e_i\,dt$ :
+Pour chaque canal $i\in\{1,2\}$, on ajoute l'intégrale de l'erreur $\sigma_i=\int e_i\,dt$ :
 \[
 \xi_i=\begin{bmatrix}e_i\\ \sigma_i\end{bmatrix},\qquad
 \dot\xi_i=\underbrace{\begin{bmatrix}0&0\\1&0\end{bmatrix}}_{A_c}\xi_i+\underbrace{\begin{bmatrix}1\\0\end{bmatrix}}_{B_c}v_i .
@@ -212,7 +230,7 @@ Dans le programme, $P$ est calculée par l'algorithme de doublement, et la LMI \
 \textbf{Conséquences.}
 \begin{itemize}
 \item Sans contrainte active, le MPC donne exactement $v=K\xi=k_e e+k_I\int e$, c'est-à-dire un PI appliqué au système linéarisé.
-\item Un seul gain $K=[k_e,\ k_I]$ est commun aux trois canaux.
+\item Un seul gain $K=[k_e,\ k_I]$ est commun aux deux canaux.
 \end{itemize}
 
 \section{Loi de commande complète et lois de comparaison}
@@ -221,13 +239,13 @@ Dans le programme, $P$ est calculée par l'algorithme de doublement, et la LMI \
 \toprule
 Loi & Expression & Rôle\\
 \midrule
-FL--MPC (proposée) & $u=\mathrm{sat}\big(-\hat F+\dot x_d+v_{MPC}\big)$ & compensation + optimisation sous contraintes + intégrale\\
-FL seule & $u=\mathrm{sat}\big(-\hat F+\dot x_d-k_e e\big)$ & loi de la version soumise (sans intégrale)\\
-PI & $u=\mathrm{sat}\big(-k_e e-k_I\!\int e\big)$ & sans modèle, avec anti-windup\\
+FL--MPC (proposée) & $i^\ast_{dr}$ par \eqref{eq:vitesse} ; $u_{1,2}=\mathrm{sat}\big(-\hat F_{1,2}+\dot x_d+v_{MPC}\big)$ & compensation + optimisation sous contraintes + intégrale\\
+FL seule & même boucle de vitesse ; $u_{1,2}=\mathrm{sat}\big(-\hat F_{1,2}+\dot x_d-k_e e\big)$ & loi de la version soumise (sans intégrale)\\
+PI en cascade & $i^\ast_{dr}=-(\lambda e_\omega+\lambda_I I_\omega)/a_6$ ; $u_{1,2}=\mathrm{sat}\big(-k_e e-k_I\!\int e\big)$ & commande vectorielle classique, sans modèle, avec anti-windup\\
 \bottomrule
 \end{tabular}
 \end{center}
-Les trois lois utilisent les mêmes gains $k_e$ et $k_I$ issus de la LMI. La comparaison est donc équitable : elle isole l'apport de la linéarisation, puis celui du MPC.
+Les trois lois agissent uniquement sur $u_1,u_2$ et utilisent les mêmes gains $k_e$, $k_I$ (LMI) et $\lambda$, $\lambda_I$. La comparaison est donc équitable : elle isole l'apport de la linéarisation, puis celui du MPC.
 
 \section{Références de poursuite (MPPT)}
 \begin{align*}
@@ -252,7 +270,7 @@ z_3^\ast=0.2\,\omega_s\tau=2.02 .
 \]
 Deux conditions complètent le choix :
 \begin{itemize}
-\item $z_3'=0$ avec $u_3=0$ donne $z_1^\ast=z_3^\ast$ ;
+\item $z_3'=0$ (pas d'actionneur sur la vitesse, $\varepsilon_3=0$) donne $z_1^\ast=z_3^\ast$ ;
 \item $z_1'=0$ avec $u_1=0$ donne $z_2^\ast=(-z_3^\ast+\gamma z_3^\ast+\varepsilon_1)/z_3^\ast=-2.00$.
 \end{itemize}
 Cet équilibre est maintenu par $u_2$ seule :
@@ -311,8 +329,8 @@ $T_s$ & 1 ms & Commande à 1 kHz, soit $T_s\ll\tau=32$ ms.\\
 $N$ & 10 & Horizon de 10 ms $\approx\tau/3$.\\
 $Q=\mathrm{diag}(1,3)$, $r=10^{-6}$ & & On obtient $k_e=-619$ et $k_I=-1070$. La bande passante de la boucle de courant est $\approx620$ rad/s ($\approx100$ Hz), valeur classique pour une boucle de courant de GADA.\\
 $|\Delta u_{dr,qr}|$ & 200 V & $\approx0.35\,V_s$ : tension rotorique d'un convertisseur dimensionné pour un glissement de $\pm30$ \% ($0.3\times563=169$ V), plus une marge.\\
-$|\Delta T|$ & 2 kN$\cdot$m & $\approx16$ \% du couple nominal (12.7 kN$\cdot$m) : canal auxiliaire limité. Sa valeur efficace réelle est de 83 N$\cdot$m (0.7 \%).\\
-Mise à l'échelle & (1 kA, 1 kA, 100 rad/s) & Améliore le conditionnement numérique du QP. Elle ne change pas le gain $K$ (invariance d'échelle).\\
+$\lambda$, $\lambda_I$ & 10 s$^{-1}$, 25 s$^{-2}$ & Boucle de vitesse : pôle double en $-5$ rad/s (constante de temps 0.2 s), environ 100 fois plus lente que la boucle de courant ($\approx620$ rad/s). Cette séparation des échelles de temps justifie la structure en cascade. Mêmes valeurs (normalisées) pour le cas chaotique.\\
+Mise à l'échelle & (1 kA, 1 kA) & Améliore le conditionnement numérique du QP. Elle ne change pas le gain $K$ (invariance d'échelle).\\
 M1 / M2 & $\pm20$ \% ($R$, $J$), $\mp10$ \% ($L_m$) & Même logique d'incertitude. Les inductances de fuite sont conservées, donc $L_s,L_r>L_m$ reste vrai.\\
 Pas d'intégration & $T_s/4$, $T_s/5$ & Précision de RK4 face à la rotation à $\omega_s=314$ rad/s (période de 20 ms).\\
 Métriques & $t\ge5$ s & Exclut le transitoire initial (mise en vitesse, $\approx0.9$ s).\\

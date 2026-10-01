@@ -43,50 +43,70 @@ def refs(t,v,a):
     x1r=(dx3r+a['a7']*x3r+a8)/a['a6']; x2r=np.full_like(t,a['psi']/a['Lm'])
     xr=np.vstack([x1r,x2r,x3r]).T
     return xr, np.gradient(xr,dt,axis=0)
+LAM,LAMI=10.0,25.0          # outer speed loop gains (rad/s): error poles at -5, -5
+def dTa(v,x3,a,dv,dx3):
+    """time derivative of the aerodynamic torque (chain rule, finite differences)"""
+    hx=1e-3*max(abs(x3),1.0); hv=1e-4*max(abs(v),1.0)
+    Tx=(Ta(v,x3+hx,a)-Ta(v,x3-hx,a))/(2*hx); Tv=(Ta(v+hv,x3,a)-Ta(v-hv,x3,a))/(2*hv)
+    return Tx*dx3+Tv*dv
 def run(ctrl, pert=None, T=40.0, Ts=1e-3, sub=4, prm=None, noise=0.0):
+    """Control on u1, u2 (rotor voltages) only.  Cascade:
+       outer loop: omega_r -> i_dr reference (torque balance + PI correction),
+       inner loop: FL-MPC / FL only / PI on i_dr and i_qr."""
     prm=prm or {}
-    an=co(NOM); p=dict(NOM); 
+    an=co(NOM); p=dict(NOM)
     for k,f in (pert or {}).items():
         if k=='Lm':   # scale magnetising inductance, keep leakage inductances -> Ls,Lr > Lm preserved
             lls,llr=p['Ls']-p['Lm'],p['Lr']-p['Lm']; p['Lm']*=f; p['Ls']=p['Lm']+lls; p['Lr']=p['Lm']+llr
         else: p[k]*=f
     ap=co(p)
     t,v=wind(T,Ts); xr,dxr=refs(t,v,an)
-    Umax=np.array([200*an['a4'],200*an['a4'],2000*an['np']/an['J']])   # |u_dr|,|u_qr|<=200 V ; |dT|<=2 kN m
-    sc=np.array([1e3,1e3,prm.get('sc3',100.)])     # error scaling for MPC/PI (A, A, rad/s)
+    dv=np.gradient(v,Ts); ddx3r=np.gradient(dxr[:,2],Ts)
+    Umax=np.array([200*an['a4'],200*an['a4']])          # |u_dr|,|u_qr| <= 200 V
+    sc=np.array([1e3,1e3])
     mpc=MPC(Ts,prm.get('N',10),np.diag([1.0,prm.get('qI',3.0)]),prm.get('r',1e-6))
-    # identical LMI gain K=[k_e,k_i] used by all controllers (fair ablation)
-    Kc=-mpc.K[0,0]; Kp,Ki=-mpc.K[0,0],-mpc.K[0,1]
-    x=np.array([0.0,0.0,0.9*xr[0,2]]); I=np.zeros(3); h=Ts/sub
-    X=[];Ulog=[]; rng=np.random.default_rng(1)
+    ke,ki=-mpc.K[0,0],-mpc.K[0,1]
+    x=np.array([0.0,0.0,0.9*xr[0,2]]); I=np.zeros(2); I3=0.0; h=Ts/sub
+    X=[];Ulog=[];X1d=[]
     for k in range(len(t)-1):
-        xm=x*(1+noise*rng.normal(0,1,3))
-        e=xm-xr[k]
-        ff=-F(xm,an,v[k])+dxr[k]
+        e3=x[2]-xr[k,2]
+        Fn=F(x,an,v[k])
+        a8=-an['np']*Ta(v[k],x[2],an)/an['J']
+        if ctrl=='pi':        # classical cascade PI (no model terms)
+            x1d=-(LAM*e3+LAMI*I3)/an['a6']; dx1d=0.0
+        else:                 # x3' = x3r' - LAM e3 - LAMI I3 when i_dr = x1d
+            x1d=(dxr[k,2]+an['a7']*x[2]+a8-LAM*e3-LAMI*I3)/an['a6']
+            dx3=Fn[2]
+            da8=-an['np']*dTa(v[k],x[2],an,dv[k],dx3)/an['J']
+            dx1d=(ddx3r[k]+an['a7']*dx3+da8-LAM*(dx3-dxr[k,2])-LAMI*e3)/an['a6']
+        e=np.array([x[0]-x1d, x[1]-xr[k,1]])
+        ff=np.array([-Fn[0]+dx1d, -Fn[1]+dxr[k,1]])
         if ctrl=='mpc':
-            vv=np.array([mpc.solve(np.array([e[i],I[i]])/sc[i], (-Umax[i]-ff[i])/sc[i], (Umax[i]-ff[i])/sc[i])*sc[i] for i in range(3)])
-            u=np.clip(ff+vv,-Umax,Umax); I+=np.where(np.abs(u)<Umax-1e-9, e/sc*Ts, 0)   # conditional integration
+            vv=np.array([mpc.solve(np.array([e[i],I[i]])/sc[i], (-Umax[i]-ff[i])/sc[i], (Umax[i]-ff[i])/sc[i])*sc[i] for i in range(2)])
+            u=np.clip(ff+vv,-Umax,Umax); I+=np.where(np.abs(u)<Umax-1e-9, e/sc*Ts, 0)
         elif ctrl=='fl':
-            u=np.clip(ff-Kc*e,-Umax,Umax)
+            u=np.clip(ff-ke*e,-Umax,Umax)
         elif ctrl=='pi':
-            ucmd=np.asarray(Kp)*(-e)-np.asarray(Ki)*I
+            ucmd=-ke*e-ki*I
             u=np.clip(ucmd,-Umax,Umax); I+=np.where(ucmd==u,e*Ts,0)
+        I3+=e3*Ts
+        uu=np.array([u[0],u[1],0.0])          # no actuator on the speed equation
         for j in range(sub):
             vj=v[k]
-            f=lambda xx: F(xx,ap,vj)+u
+            f=lambda xx: F(xx,ap,vj)+uu
             k1=f(x);k2=f(x+h/2*k1);k3=f(x+h/2*k2);k4=f(x+h*k3); x=x+h/6*(k1+2*k2+2*k3+k4)
-        X.append(x.copy()); Ulog.append(u.copy())
+        X.append(x.copy()); Ulog.append(uu.copy()); X1d.append(x1d)
         if not np.all(np.isfinite(x)): break
     X=np.array(X); Ulog=np.array(Ulog); n=len(X)
-    return dict(t=t[1:n+1],x=X,xr=xr[1:n+1],u=Ulog,v=v[1:n+1],a=an,Umax=Umax)
+    return dict(t=t[1:n+1],x=X,xr=xr[1:n+1],u=Ulog,v=v[1:n+1],a=an,Umax=Umax,x1d=np.array(X1d))
 def Ps(x1,a): return -1.5*a['ws']*a['psi']*a['Lm']/a['Ls']*x1
 def metrics(o,t0=5.0):
     m=o['t']>=t0; e=o['x'][m]-o['xr'][m]; a=o['a']
     rm=np.sqrt((e**2).mean(0)); P=Ps(o['x'][m,0],a); Pr=Ps(o['xr'][m,0],a)
     return dict(rmse_idr=float(rm[0]), rmse_iqr=float(rm[1]), rmse_w=float(rm[2]),
                 rmse_P_pct=float(100*np.sqrt(((P-Pr)**2).mean())/2e6),
-                urmax=float(np.abs(o['u'][:,:2]).max()/a['a4']), dTmax=float(np.abs(o['u'][:,2]).max()*a['J']/a['np']),
-                dTrms=float(np.sqrt((o['u'][m,2]**2).mean())*a['J']/a['np']))
+                urmax=float(np.abs(o['u'][:,:2]).max()/a['a4']),
+                urrms=float(np.sqrt((o['u'][m,:2]**2).mean())/a['a4']))
 if __name__=='__main__':
     a=co(NOM); print({k:a[k] for k in ['sig','a1','a2','a3','a4','a5','a6','a7','psi']}, 'tau',-1/a['a1'],'Cpmax',Cpmax)
     for c in ['mpc','fl','pi']:
