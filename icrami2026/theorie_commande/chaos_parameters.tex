@@ -1,0 +1,214 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{booktabs}
+\geometry{margin=2.2cm}
+\setlength{\parskip}{0.4em}
+
+\title{Physical Parameters Corresponding to the Chaotic Dimensionless State\\[2pt]
+\large Reverse calculation and proof of the conditions $\varepsilon_1=0$ and $\varepsilon_3=0$}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+The equation numbers refer to the revised paper:
+\begin{itemize}
+\item (3): physical model;
+\item (4): coefficients;
+\item (5): dimensionless model;
+\item (6): definition of $\gamma$.
+\end{itemize}
+The chaotic set is $\gamma=-1$, $s=8$, $\varepsilon_1=0$, $\varepsilon_2=-85$, $\varepsilon_3=0$. All other constants are taken from Table~I (stator-referred 2-MW-class DFIG).
+
+\section{Model and scaling}
+
+The physical model (3) with $u=0$ is
+\[
+\left\{\begin{aligned}
+\dot x_1 &= a_1x_1+(\omega_s-x_3)x_2+a_2x_3+c_1\\
+\dot x_2 &= -(\omega_s-x_3)x_1+a_1x_2+c_2\\
+\dot x_3 &= a_6x_1-a_7x_3-a_8
+\end{aligned}\right.
+\]
+with the coefficients
+\[
+a_1=-\frac{R_sL_m^2}{\sigma L_s^2L_r}-\frac{R_r}{\sigma L_r},\quad
+a_2=-\frac{L_m\psi_s}{\sigma L_rL_s},\quad
+a_3=-\frac{L_m}{\sigma L_sL_r},\quad
+a_4=\frac{1}{\sigma L_r},\quad
+a_5=\frac{R_sL_m\psi_s}{\sigma L_s^2L_r},
+\]
+\[
+a_6=\frac{3p^2L_m\psi_s}{2JL_s},\quad
+a_7=\frac DJ,\quad
+a_8=\frac pJT_L,\quad
+c_1=a_3u_{ds}+a_4u^0_{dr},\quad
+c_2=a_5+a_3u_{qs}+a_4u^0_{qr}.
+\]
+The change of variables used to obtain (5) is
+\[
+t=\tau\tilde t,\qquad x_{1,2}=k\,z_{1,2},\qquad x_3=\omega_s+\frac{z_3}{\tau},\qquad \tau=-\frac1{a_1},\qquad k=\frac{a_7}{\tau a_6}.
+\]
+
+\section{Derivation of the dimensionless parameters}
+
+\paragraph{First equation.} Use $\omega_s-x_3=-z_3/\tau$ and $a_2x_3=a_2\omega_s+a_2z_3/\tau$, then multiply by $\tau/k$:
+\[
+z_1'=\frac{\tau}{k}\dot x_1=\underbrace{\tau a_1}_{-1}z_1-z_3z_2+\underbrace{\frac{a_2}{k}}_{\gamma}z_3+\underbrace{\frac{\tau}{k}\big(c_1+a_2\omega_s\big)}_{\varepsilon_1}.
+\]
+\paragraph{Second equation.}
+\[
+z_2'=-z_2+z_3z_1+\underbrace{\frac{\tau}{k}c_2}_{\varepsilon_2}.
+\]
+\paragraph{Third equation.} Here $z_3'=\tau^2\dot x_3$, so
+\[
+z_3'=\underbrace{\tau^2a_6k}_{s}z_1-\underbrace{\tau a_7}_{s}z_3\underbrace{-\tau^2\big(a_7\omega_s+a_8\big)}_{\varepsilon_3}.
+\]
+
+Write $a_6=c_6/J$ with $c_6=\dfrac{3p^2L_m\psi_s}{2L_s}$. Then $J$ cancels out of $\gamma$ and $k$:
+\[
+\gamma=\frac{a_2a_6\tau}{a_7}=\frac{a_2c_6\tau}{D}=-\frac{3p^2L_m^2\psi_s^2\,\tau}{2\sigma L_rL_s^2\,D}<0,
+\qquad k=\frac{D}{\tau c_6}=\frac{a_2}{\gamma}.
+\]
+
+\section{Inverse relations}
+Inverting the previous relations gives the five physical unknowns:
+\[
+\boxed{D=\frac{a_2c_6\tau}{\gamma}},\qquad
+\boxed{J=\frac{\tau D}{s}},\qquad
+\boxed{u^0_{dr}=\frac{L_m}{L_s}\big(u_{ds}+\omega_s\psi_s\big)+\frac{\varepsilon_1k}{\tau a_4}},
+\]
+\[
+\boxed{u^0_{qr}=\frac1{a_4}\Big(\frac{\varepsilon_2k}{\tau}-a_5-a_3u_{qs}\Big)},\qquad
+\boxed{T_L=-\frac Jp\Big(\frac{\varepsilon_3}{\tau^2}+\frac DJ\,\omega_s\Big)}.
+\]
+
+\section{Numerical values}
+
+\paragraph{Fixed constants (Table I).} They depend only on the electrical parameters, not on $J$ or $D$:
+\begin{itemize}
+\item $\sigma=0.06613$, $\tau=0.032108$~s, $\psi_s=1.7933$~Wb, $\omega_s=314.16$~rad/s;
+\item $a_2=-10130.07$~A/rad, $a_4=5845.42$~A/(V$\cdot$s), $a_5=10180.98$~A/s;
+\item $c_6=10.398$~N$\cdot$m/A.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{lllll}
+\toprule
+Parameter & Calculation & Chaotic value & Nominal / limit & Ratio\\
+\midrule
+$D$ & $a_2c_6\tau/\gamma$ & 3382.0 N$\cdot$m$\cdot$s/rad & $10^{-3}$ & $\times3.4\cdot10^{6}$\\
+$J$ & $\tau D/s$ & 13.57 kg$\cdot$m$^2$ & 127 & $\div9.4$\\
+$D/J$ & $s/\tau$ & 249.2 s$^{-1}$ & $7.9\cdot10^{-6}$ & $\times3.2\cdot10^{7}$\\
+$k$ & $a_2/\gamma$ & 10130 A & -- & --\\
+$u^0_{dr}$ & $\varepsilon_1=0$ & 0 V & -- & --\\
+$u^0_{qr}$ & $\big(\varepsilon_2k/\tau-a_5\big)/a_4$ & $-4589.5$ V & $\approx200$ V & $\times23$\\
+$T_L$ & $-D\omega_s/p$ & $-531.2$ kN$\cdot$m & 12.7 kN$\cdot$m rated & $\times42$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Proof of the conditions $\varepsilon_1=0$ and $\varepsilon_3=0$}
+
+Since $\tau/k\neq0$ and $\tau^2\neq0$, Section~2 gives
+\[
+\varepsilon_1=0\iff c_1+a_2\omega_s=0,\qquad\qquad \varepsilon_3=0\iff a_7\omega_s+a_8=0 .
+\]
+
+\subsection{Condition $\varepsilon_1=0$: rotor $d$-axis voltage}
+Using $c_1=a_3u_{ds}+a_4u^0_{dr}$:
+\[
+a_3u_{ds}+a_2\omega_s=-\frac{L_m}{\sigma L_sL_r}u_{ds}-\frac{L_m\psi_s}{\sigma L_rL_s}\omega_s=-\frac{L_m}{\sigma L_sL_r}\big(u_{ds}+\omega_s\psi_s\big).
+\]
+Hence
+\[
+\varepsilon_1=0\iff\frac{u^0_{dr}}{\sigma L_r}=\frac{L_m}{\sigma L_sL_r}\big(u_{ds}+\omega_s\psi_s\big)\iff
+\boxed{u^0_{dr}=\frac{L_m}{L_s}\big(u_{ds}+\omega_s\psi_s\big)}.
+\]
+
+\begin{itemize}
+\item \textbf{With the paper's assumption.} The stator resistance is neglected in the flux relation and the flux is aligned on the $q$ axis, so $u_{ds}=-\omega_s\psi_s=-V_s$. Then
+\[
+\boxed{u^0_{dr}=0\ \text{V}}.
+\]
+Numerically, $a_3u_{ds}=+3.1825\times10^6$~A/s and $a_2\omega_s=-3.1825\times10^6$~A/s cancel exactly.
+\item \textbf{Physical meaning.} The term $a_2x_3$ is the back-EMF of the stator flux seen by the rotor. At synchronous speed it is exactly compensated by the stator voltage, so no rotor $d$-axis voltage is needed. The condition is purely electrical: it does not depend on $J$, $D$ or $T_L$.
+\item \textbf{If $R_s$ is kept.} Then $u_{ds}=-\omega_s\psi_s+R_si_{ds}$, and $\varepsilon_1=0$ requires $u^0_{dr}=\frac{L_m}{L_s}R_si_{ds}$, which is only a few mV per kA. In all cases, $\varepsilon_1=0$ means an essentially zero rotor $d$-axis voltage.
+\end{itemize}
+
+\subsection{Condition $\varepsilon_3=0$: load torque}
+With $a_7=D/J$ and $a_8=pT_L/J$:
+\[
+a_7\omega_s+a_8=\frac{D\omega_s+pT_L}{J}=0\iff\boxed{T_L=-\frac{D\,\omega_s}{p}=-D\,\Omega_s},
+\]
+where $\Omega_s=\omega_s/p=157.08$~rad/s is the synchronous mechanical speed.
+
+\begin{itemize}
+\item \textbf{Dependence.} $J$ cancels: the condition depends only on $D$. With the motor convention, $T_L<0$ means that the turbine \emph{drives} the shaft.
+\item \textbf{Physical meaning.} For $x_1=0$ (zero electromagnetic torque) and $x_3=\omega_s$, the third line of (3) gives $\dot x_3=-a_7\omega_s-a_8=0$. Thus $\varepsilon_3=0$ means that synchronous speed is an equilibrium of the mechanical equation without electromagnetic torque: the driving torque exactly compensates the viscous loss $D\Omega_s$.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{llll}
+\toprule
+Case & $D$ (N$\cdot$m$\cdot$s/rad) & Required $T_L$ & vs.\ rated (12.7 kN$\cdot$m)\\
+\midrule
+Nominal (Table I) & $10^{-3}$ & $-0.157$ N$\cdot$m & negligible (almost no load)\\
+Chaotic set ($\gamma=-1$, $s=8$) & 3382 & $-531.2$ kN$\cdot$m & 42 times rated\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The condition $\varepsilon_3=0$ is harmless in itself. The required torque becomes impossible only because $\gamma=-1$ imposes a huge $D$.
+
+\subsection{Why choose $\varepsilon_1=\varepsilon_3=0$: symmetry}
+With $\varepsilon_1=\varepsilon_3=0$, system (5) is invariant under the transformation
+\[
+(z_1,z_2,z_3)\longmapsto(-z_1,\ z_2,\ -z_3).
+\]
+Line-by-line check:
+\begin{itemize}
+\item first line: $-z_1'=z_1+z_3z_2-\gamma z_3$, which gives back $z_1'=-z_1-z_3z_2+\gamma z_3$;
+\item second line: $z_2'=-z_2+(-z_3)(-z_1)+\varepsilon_2$;
+\item third line: $-z_3'=s(-z_1+z_3)$.
+\end{itemize}
+If $\varepsilon_1\neq0$ or $\varepsilon_3\neq0$, a constant term changes sign and the symmetry is broken. This explains the symmetric double-scroll attractor of Fig.~1(a)--(b), and leaves $\varepsilon_2$ as the only bifurcation parameter.
+
+\section{Role of each dimensionless parameter}
+\begin{itemize}
+\item \textbf{$\gamma=-1$ fixes $D$ alone}, since $\gamma=a_2c_6\tau/D$ does not contain $J$. Its sign is imposed by physics: $a_2<0$ whenever $\sigma>0$. With the nominal $D=10^{-3}$, one would have $\gamma\approx-3.4\times10^{6}$.
+\item \textbf{$s=8$ then fixes $J=\tau D/s$.} It means that the mechanical time constant $J/D=4$~ms is 8 times shorter than the electrical time constant $\tau=32$~ms. In a real turbine, the mechanical time constant is of the order of seconds to minutes.
+\item \textbf{$\varepsilon_2=-85$ fixes $u^0_{qr}=-4.59$~kV.} The bifurcation diagram shows chaos for $\varepsilon_2<-15$, i.e.\ $u^0_{qr}<-812$~V. Even the onset of chaos is about four times the converter limit.
+\end{itemize}
+
+\section{Conclusion}
+\begin{center}
+\small
+\begin{tabular}{p{4.6cm}p{3.0cm}p{7.2cm}}
+\toprule
+Quantity & Chaotic set & Physical limit / nominal\\
+\midrule
+Rotor $q$-axis voltage & $-4.6$ kV & $\approx200$ V converter limit ($\times23$); 8 times $V_s=563$ V\\
+Driving torque & 531 kN$\cdot$m & 12.7 kN$\cdot$m rated ($\times42$)\\
+Damping $D$ & 3382 N$\cdot$m$\cdot$s/rad & $10^{-3}$ (6 orders of magnitude above)\\
+Inertia $J$ & 13.6 kg$\cdot$m$^2$ & 127 kg$\cdot$m$^2$ (9 times smaller)\\
+Rotor currents on the attractor ($|z|\approx45$) & $\approx456$ kA & $\approx2$ kA rated ($\times200$)\\
+Speed on the attractor ($\omega_s\pm25/\tau$) & $-464$ to $+1093$ rad/s & speed would even change sign\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The chaotic state does not correspond to a normal operating condition. It is a severe fault/detuning scenario that is physically unreachable for a real 2-MW DFIG}: the converter, the insulation and the protections would fail long before.
+\begin{itemize}
+\item $\varepsilon_1=0$ is physically realistic: zero rotor $d$-axis voltage at synchronous speed.
+\item $\varepsilon_3=0$ is realistic in form, but with the damping imposed by $\gamma=-1$ it requires a driving torque 42 times the rated torque.
+\end{itemize}
+This is consistent with the revised paper (Section III-B). It justifies studying chaos suppression on the dimensionless model (5), and MPPT tracking in physical units.
+
+\end{document}
