@@ -271,13 +271,22 @@ A common practice in addressing the control problem of wind turbines is to use a
 The controlled system takes the form
 \begin{equation}
 \begin{aligned}
-\dot{x}_{1} &= a_{1}x_{1} + \left( \omega_{s} - x_{3} \right)x_{2} - a_{2}x_{3} + 8517 + u_{1}, \\
-\dot{x}_{2} &= - \left( \omega_{s} - x_{3} \right)x_{1} + a_{5}x_{2} - 0.6228 + u_{2}, \\
-\dot{x}_{3} &= a_{8}x_{1} - a_{9}x_{3} - a_{10} + u_{3},
+\dot{x}_{1} &= a_{1}x_{1} + \left( \omega_{s} - x_{3} \right)x_{2} + a_{2}x_{3} + a_{3}u_{ds} + a_{4}u_{1}, \\
+\dot{x}_{2} &= - \left( \omega_{s} - x_{3} \right)x_{1} + a_{1}x_{2} + a_{5} + a_{3}u_{qs} + a_{4}u_{2}, \\
+\dot{x}_{3} &= a_{6}x_{1} - a_{7}x_{3} - a_{8},
 \end{aligned}
 \label{eq18}
 \end{equation}
-where $x = \left\lbrack x_{1},x_{2},x_{3} \right\rbrack^{T} = \left\lbrack i_{dr},i_{qr},\omega_{r} \right\rbrack^{T}$. The objective is to force the nonlinear chaotic dynamics to follow a desired trajectory $x_{d}(t)$, constructed from wind-profile-based references for $i_{dr}$, $i_{qr}$, and $\omega_{r}$. The tracking error is defined as $e(t) = x(t) - x_{d}(t)$, and its stabilization ensures both chaos suppression and accurate MPPT behavior under turbulent wind fluctuations.
+where $x = \left\lbrack x_{1},x_{2},x_{3} \right\rbrack^{T} = \left\lbrack i_{dr},i_{qr},\omega_{r} \right\rbrack^{T}$ and the two control inputs $u_{1} = u_{dr}$ and $u_{2} = u_{qr}$ are the rotor voltages imposed by the rotor-side converter. The speed equation has no direct input: $\omega_{r}$ is controlled through the electromagnetic torque, i.e., through $i_{dr}$. With the parameters of Table~\ref{tab1}, \eqref{eq18} reads
+\begin{equation*}
+\begin{aligned}
+\dot{x}_{1} &= -0.0433\,x_{1} + \left( \omega_{s} - x_{3} \right)x_{2} - 320.83\,x_{3} \\
+&\quad + 1.0079\times10^{5} + 183.76\,u_{1}, \\
+\dot{x}_{2} &= - \left( \omega_{s} - x_{3} \right)x_{1} - 0.0433\,x_{2} + 0.1946 + 183.76\,u_{2}, \\
+\dot{x}_{3} &= 0.3360\,x_{1} - 2.3044\,x_{3} + 727.20 .
+\end{aligned}
+\end{equation*}
+In open loop ($u_{1} = 2.539$~V, $u_{2} = -2.936$~V), \eqref{eq18} reduces to the chaotic system \eqref{eq10}. The objective is to force the nonlinear chaotic dynamics to follow a desired trajectory $x_{d}(t)$, constructed from wind-profile-based references for $i_{dr}$, $i_{qr}$, and $\omega_{r}$. The tracking error is defined as $e(t) = x(t) - x_{d}(t)$, and its stabilization ensures both chaos suppression and accurate MPPT behavior under turbulent wind fluctuations.
 
 The overall control structure implementing this hybrid strategy combining Model Predictive Control with nonlinear feedback compensation is illustrated in Fig.~\ref{fig3}, where the proposed controller interacts with the turbine dynamics and the MPPT block to achieve robust trajectory tracking under variable wind conditions.
 
