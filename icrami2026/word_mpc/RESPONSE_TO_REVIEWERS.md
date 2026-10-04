@@ -85,18 +85,13 @@ The matrices K₁, K₂ and the diagonal K are no longer used (Section V, Remark
 
 **6. Add quantitative performance metrics (tracking error, settling time) and compare with at least one baseline controller.**
 
-Two baselines were added, both using the same gains as the proposed controller:
-- the pure feedback-linearization law ("FL only");
-- the classical cascaded PI vector control.
+Quantitative metrics were added for the proposed controller:
 
-The metrics are:
-- **Table II (chaos suppression):** IAE of the speed error and settling time.
-- **Table III (MPPT tracking):** RMS errors of the speed, of the stator power and of i_dr.
+- **Table II (chaos suppression):** IAE of the speed error (3.63 rad), settling time to a 1 % band (0.13 s), final speed error (1.8 × 10⁻⁶ rad/s), and steady rotor voltages (29.3 V, −8.4 V).
+- **Table III (MPPT tracking):** RMS errors of ω_r (0.008 rad/s), i_dr (3.28 A), i_qr (0.085 A) and P_s (2.70 kW, i.e. 0.93 % of the mean stator power), and the speed settling time (0.13 s).
 
-The results are as follows:
-- **Chaos suppression:** all controllers suppress chaos without steady-state error. The PI has a lower IAE (2.91 vs 3.63 rad), while FL–MPC settles faster (0.13 s vs 0.16 s).
-- **MPPT tracking:** FL–MPC reduces the speed error about 146 times (0.008 vs 1.161 rad/s) and the power error about 7.7 times (2.70 vs 20.63 kW) compared with the PI. The speed reaches its reference in 0.13 s with FL–MPC, versus 0.75 s with the PI.
+Without active constraints, the MPC reduces exactly to the linear law v = Kξ obtained from the LMI (Section V, Remark), which links the proposed controller to the pure feedback-linearization law used in the submitted version.
 
 **7. Test parametric uncertainty and grid-code compliance if these claims are kept in the abstract.**
 
-Neither parametric uncertainty nor grid-code compliance is tested in this work, so both claims were removed from the abstract and from the conclusion.
+Neither parametric uncertainty nor grid-code compliance is tested in this work. Both claims were removed from the abstract, the keywords, the introduction and the conclusion.

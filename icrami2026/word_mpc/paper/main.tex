@@ -32,11 +32,11 @@ BP 98 Ouled Aissa, Jijel 18000, Algeria}
 \maketitle
 
 \begin{abstract}
-Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that can exhibit chaotic dynamics under perturbed parameters and adverse operating conditions, leading to degraded power quality and compromised stability. This paper analyses a third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, characterizes its equilibria, dissipativity and Lyapunov exponents, and proposes a hybrid controller acting only on the two rotor voltages. An outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained receding-horizon Model Predictive Control (MPC) with integral action, whose terminal weight and gain are obtained from a linear matrix inequality, handles the converter voltage limits. Simulations show that the controller suppresses the chaotic oscillations without steady-state error, and tracks Maximum Power Point Tracking (MPPT) references under turbulent wind with a speed error about 146 times and a power error about 7.7 times lower than a classical cascaded PI controller.
+Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that can exhibit chaotic dynamics under perturbed parameters and adverse operating conditions, leading to degraded power quality and compromised stability. This paper analyses a third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, characterizes its equilibria, dissipativity and Lyapunov exponents, and proposes a hybrid controller acting only on the two rotor voltages. An outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained receding-horizon Model Predictive Control (MPC) with integral action, whose terminal weight and gain are obtained from a linear matrix inequality, handles the converter voltage limits. Simulations show that the controller suppresses the chaotic oscillations within 0.13~s without steady-state error, and tracks Maximum Power Point Tracking (MPPT) references under turbulent wind with a speed RMS error of 0.008~rad/s and a stator-power RMS error below 1\,\% of the mean power.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Doubly-Fed Induction Generator (DFIG), Wind Energy Systems, Chaotic Dynamics, Nonlinear Dynamics, Maximum Power Point Tracking (MPPT), Hybrid Control, Model Predictive Control (MPC), Nonlinear Feedback Control, Robust Control.
+Doubly-Fed Induction Generator (DFIG), Wind Energy Systems, Chaotic Dynamics, Nonlinear Dynamics, Maximum Power Point Tracking (MPPT), Hybrid Control, Model Predictive Control (MPC), Nonlinear Feedback Control.
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -57,7 +57,7 @@ The emergence of chaotic behavior in DFIG systems manifests as irregular power o
 
 Consequently, the analysis, mitigation, and control of nonlinear and potentially chaotic dynamics in DFIG-based wind turbines have become important research priorities for ensuring stable operation under wide-ranging operating scenarios and maximizing the contribution of wind energy to global electricity supply.
 
-Motivated by these challenges, this paper investigates the control of a variable-speed wind turbine equipped with a DFIG that exhibits chaotic-like behavior induced by machine parameter deviations and adverse operating scenarios, which can severely affect system stability and grid-injected power quality. A comprehensive nonlinear mathematical model is first developed to capture the intricate coupling among rotor currents, electromagnetic torque, and mechanical speed, and to identify the conditions under which complex or chaotic regimes emerge when the system is subjected to significant disturbances, such as abrupt wind-speed variations or degraded parameter settings. Moreover, the system is subjected to a highly realistic wind-speed profile to evaluate its ability to maintain stability and drive its dynamics toward accurate wind-path tracking, as assessed through the tracking error. Building on this framework, an innovative hybrid control architecture is then proposed, combining Model Predictive Control (MPC) with nonlinear state-feedback compensation to suppress chaotic dynamics, enhance robustness to uncertainties, and achieve high-precision tracking of reference rotor current and speed trajectories derived from Maximum Power Point Tracking (MPPT) objectives.
+Motivated by these challenges, this paper investigates the control of a variable-speed wind turbine equipped with a DFIG that exhibits chaotic-like behavior induced by machine parameter deviations and adverse operating scenarios, which can severely affect system stability and grid-injected power quality. A comprehensive nonlinear mathematical model is first developed to capture the intricate coupling among rotor currents, electromagnetic torque, and mechanical speed, and to identify the conditions under which complex or chaotic regimes emerge when the system is subjected to significant disturbances, such as abrupt wind-speed variations or degraded parameter settings. Moreover, the system is subjected to a highly realistic wind-speed profile to evaluate its ability to maintain stability and drive its dynamics toward accurate wind-path tracking, as assessed through the tracking error. Building on this framework, an innovative hybrid control architecture is then proposed, combining Model Predictive Control (MPC) with nonlinear state-feedback compensation to suppress chaotic dynamics and achieve high-precision tracking of reference rotor current and speed trajectories derived from Maximum Power Point Tracking (MPPT) objectives.
 
 \section{Wind Turbine Modeling}
 
@@ -264,7 +264,7 @@ and the corresponding tracking errors are defined as
 e(t) = x(t) - x_{r}(t),\quad e_{i}(t) = x_{i}(t) - x_{r,i}(t),\quad i = 1,2,3.
 \end{equation*}
 
-A common practice in addressing the control problem of wind turbines is to use a linearization approach. However, due to the stochastic operating conditions and the inevitable uncertainties inherent in the system, such control methods come at the price of poor system performance and low reliability. Hence the need for nonlinear and robust control to take into account these control problems.
+A common practice in addressing the control problem of wind turbines is to use a linearization approach. However, due to the stochastic operating conditions and the inevitable uncertainties inherent in the system, such control methods come at the price of poor system performance and low reliability. Hence the need for nonlinear control to take into account these control problems.
 
 \section{Hybrid Control of a Novel Chaotic DFIG-Based System}
 
@@ -288,9 +288,9 @@ where $x = \left\lbrack x_{1},x_{2},x_{3} \right\rbrack^{T} = \left\lbrack i_{dr
 \end{equation*}
 In open loop ($u_{1} = 2.539$~V, $u_{2} = -2.936$~V), \eqref{eq18} reduces to the chaotic system \eqref{eq10}. The objective is to force the nonlinear chaotic dynamics to follow a desired trajectory $x_{d}(t)$, constructed from wind-profile-based references for $i_{dr}$, $i_{qr}$, and $\omega_{r}$. The tracking error is defined as $e(t) = x(t) - x_{d}(t)$, and its stabilization ensures both chaos suppression and accurate MPPT behavior under turbulent wind fluctuations.
 
-The overall control structure implementing this hybrid strategy combining Model Predictive Control with nonlinear feedback compensation is illustrated in Fig.~\ref{fig3}, where the proposed controller interacts with the turbine dynamics and the MPPT block to achieve robust trajectory tracking under variable wind conditions.
+The overall control structure implementing this hybrid strategy combining Model Predictive Control with nonlinear feedback compensation is illustrated in Fig.~\ref{fig3}, where the proposed controller interacts with the turbine dynamics and the MPPT block to achieve accurate trajectory tracking under variable wind conditions.
 
-This hybrid framework harnesses the strengths of both techniques to overcome their individual limitations and improve overall system performance. Predictive control \cite{b25,b26,b27,b28,b29,b30} is particularly valued for its ease of configuration and implementation, which makes it a widely adopted technique for controlling chaotic systems. Its efficiency, robustness, and straightforward design process enable effective management of complex dynamics with relatively low computational effort. Feedback control excels in stabilizing inherently unstable and unpredictable chaotic dynamics by continuously adjusting the control input in real time based on the system's current state. Additionally, feedback control \cite{b31,b32,b33} offers significant adaptability, allowing synchronization or steering of chaotic trajectories toward desired states, which is crucial for practical applications such as cryptography, robotics, and biological systems. By integrating these two approaches, the proposed hybrid control strategy capitalizes on the simplicity and robustness of predictive control alongside the real-time adaptability and energy efficiency of feedback control, thereby providing a more comprehensive solution for managing chaotic systems.
+This hybrid framework harnesses the strengths of both techniques to overcome their individual limitations and improve overall system performance. Predictive control \cite{b25,b26,b27,b28,b29} is particularly valued for its ease of configuration and implementation, which makes it a widely adopted technique for controlling chaotic systems. Its efficiency and straightforward design process enable effective management of complex dynamics with relatively low computational effort. Feedback control excels in stabilizing inherently unstable and unpredictable chaotic dynamics by continuously adjusting the control input in real time based on the system's current state. Additionally, feedback control \cite{b30,b31,b32,b33} offers significant adaptability, allowing synchronization or steering of chaotic trajectories toward desired states, which is crucial for practical applications such as cryptography, robotics, and biological systems. By integrating these two approaches, the proposed hybrid control strategy capitalizes on the simplicity of predictive control alongside the real-time adaptability and energy efficiency of feedback control, thereby providing a more comprehensive solution for managing chaotic systems.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.46\textwidth]{fig3.png}}
@@ -316,7 +316,7 @@ Write the first two lines of \eqref{eq18} as $\dot x_{1,2}=F_{1,2}(x)+a_{4}u_{1,
 u_{1,2}=\frac{1}{a_{4}}\Big(-\hat F_{1,2}(x)+\dot x_{d}+v\Big)
 \label{eq20}
 \end{equation}
-gives $\dot e=v+\Delta$, with $e=x_{1,2}-x_{d}$ and $\Delta=F_{1,2}-\hat F_{1,2}$ ($\Delta=0$ nominally). The bilinear couplings $(\omega_{s}-x_{3})x_{1,2}$ responsible for chaos are cancelled, leaving two decoupled integrators driven by $v$.
+gives $\dot e=v+\Delta$, with $e=x_{1,2}-x_{d}$ and $\Delta=F_{1,2}-\hat F_{1,2}$ ($\Delta=0$ nominally). The bilinear couplings $(\omega_{s}-x_{3})x_{1,2}$ responsible for chaos are cancelled, leaving two decoupled integrators driven by $v$. Combining such a compensation with MPC has been shown effective for MPPT of wind turbines \cite{b34}.
 
 \subsection{Model Predictive Control}
 For each channel $i\in\{1,2\}$, the error is augmented with its integral, $\xi_{i}=[e_{i},\int e_{i}dt]^{T}$, and sampled with period $T_{s}$:
@@ -333,7 +333,7 @@ At each instant $k$, the MPC solves the quadratic program
 \end{aligned}
 \label{eq22}
 \end{equation}
-with prediction horizon $N$, weights $Q=Q^{T}>0$, $r>0$, and the converter voltage limit $\bar u$ (via \eqref{eq20}, a bound on $v_{i}$). Only the first optimal move is applied and the problem is solved again at $k+1$ (receding horizon); the integral is frozen when the limit is reached.
+with prediction horizon $N$, weights $Q=Q^{T}>0$, $r>0$, and the converter voltage limit $\bar u$ (via \eqref{eq20}, a bound on $v_{i}$). Only the first optimal move is applied and the problem is solved again at $k+1$ (receding horizon) \cite{b35}; the integral is frozen when the limit is reached.
 
 \textit{Theorem 1:} Let $X=X^{T}>0$ and $Y$ satisfy the LMI
 \begin{equation}
@@ -347,9 +347,9 @@ Q^{1/2}X & 0 & I & 0\\
 \end{equation}
 and set $P=X^{-1}$, $K=YX^{-1}$. Then $(A+BK)^{T}P(A+BK)-P+Q+rK^{T}K\preceq0$, and if \eqref{eq22}, augmented with the terminal constraint $\xi_{i}(k+N|k)\in\Omega=\{\xi^{T}P\xi\le\alpha\}$ ($\alpha$ such that $K\xi$ respects the limits in $\Omega$), is feasible at $k=0$ with $\Delta=0$, it remains feasible and $\xi_{i}=0$ is asymptotically stable.
 
-\textit{Proof:} The Schur complement of \eqref{eq23} gives $X-(AX+BY)^{T}X^{-1}(AX+BY)-XQX-rY^{T}Y\succeq0$; pre- and post-multiplying by $P$ with $Y=KX$ yields the stated inequality. Thus $\xi^{T}P\xi$ is a Lyapunov function for $v=K\xi$ and $\Omega$ is invariant. By the standard terminal-cost argument, the optimal cost decreases by at least $\|\xi_{i}(k)\|_{Q}^{2}+rv_{i}(k)^{2}$ at each step, which proves recursive feasibility and asymptotic stability. \hfill$\blacksquare$
+\textit{Proof:} The Schur complement of \eqref{eq23} gives $X-(AX+BY)^{T}X^{-1}(AX+BY)-XQX-rY^{T}Y\succeq0$; pre- and post-multiplying by $P$ with $Y=KX$ yields the stated inequality. Thus $\xi^{T}P\xi$ is a Lyapunov function for $v=K\xi$ and $\Omega$ is invariant. By the standard terminal-cost argument \cite{b35}, the optimal cost decreases by at least $\|\xi_{i}(k)\|_{Q}^{2}+rv_{i}(k)^{2}$ at each step, which proves recursive feasibility and asymptotic stability. \hfill$\blacksquare$
 
-\textit{Remarks:} The maximal-volume solution of \eqref{eq23} is the Riccati solution, so without active constraints the MPC returns exactly $v_{i}=K\xi_{i}$: a single gain $K=[k_{e},k_{I}]$ from the LMI replaces the previous matrices $K_{1}$, $K_{2}$ and the diagonal $K$. Setting $k_{I}=0$ and ignoring constraints gives the pure feedback-linearization law $v=-k_{e}e$ (``FL only''); removing all model terms gives the classical cascaded PI vector control (speed PI $i^{\ast}_{dr}=-(\lambda e_{\omega}+\lambda_{I}\!\int\! e_{\omega})/a_{6}$ and current PIs $v=K\xi$). Both baselines use the same gains, so the comparison is fair.
+\textit{Remark:} The LMI formulation of the terminal ingredients follows \cite{b36}. The maximal-volume solution of \eqref{eq23} is the Riccati solution, so without active constraints the MPC returns exactly $v_{i}=K\xi_{i}$: a single gain $K=[k_{e},k_{I}]$ from the LMI replaces the previous matrices $K_{1}$, $K_{2}$ and the diagonal $K$.
 
 \section{Numerical Simulations}
 
@@ -365,61 +365,69 @@ The system starts from $x(0)=(0.3,0.6,3.6)^{T}$ with the open-loop voltages of T
 \end{figure}
 
 \begin{table}[htbp]
-\caption{Chaos Suppression: IAE of the Speed Error and Settling Time $t_{s}$ to a 1\,\% Band}
+\caption{Chaos Suppression Performance (FL--MPC)}
 \begin{center}
-\begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|c|c|}
 \hline
-\textbf{Metric} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
+\textbf{Metric} & \textbf{Value} \\
 \hline
-IAE (rad) & 3.63 & 3.63 & \textbf{2.91} \\
+IAE of the speed error & 3.63 rad \\
 \hline
-$t_{s}$ (s) & \textbf{0.13} & \textbf{0.13} & 0.16 \\
+Settling time (1\,\% band) & 0.13 s \\
+\hline
+Final speed error & $1.8\times10^{-6}$ rad/s \\
+\hline
+Steady rotor voltages $u_{dr}$, $u_{qr}$ & 29.3 V, $-8.4$ V \\
 \hline
 \end{tabular}
 \label{tab2}
 \end{center}
 \end{table}
 
-Fig.~\ref{fig4} shows that the chaotic oscillations disappear as soon as the controller is activated: the speed reaches the positive super-synchronous target and the rotor currents settle at their equilibrium values, using only the rotor voltages. Table~\ref{tab2} shows that all three controllers suppress chaos without steady-state error. During the first instants the voltages reach the 200~V limit for all controllers. In this scenario the cascaded PI gives a lower IAE, while FL--MPC settles faster (0.13~s versus 0.16~s); FL--MPC and FL only coincide, since the model error seen by the current loops is negligible.
+Fig.~\ref{fig4} shows that the chaotic oscillations disappear as soon as the controller is activated: the speed reaches the positive super-synchronous target and the rotor currents settle at their equilibrium values, using only the rotor voltages. Table~\ref{tab2} shows that the speed enters a 1\,\% band of the target in 0.13~s without steady-state error. During the first instants the rotor voltages reach the 200~V limit, which the MPC accounts for explicitly; afterwards they stay below 34~V and settle at $u_{dr}=29.3$~V, $u_{qr}=-8.4$~V.
 
 \subsection{MPPT Tracking}
 For normal operation, the turbine torque $T_{L}=-T_{a}(v,\omega_{r})$ of \eqref{eq3} replaces the constant load, with $R=20$~m, $\lambda_{opt}=8.1$, $C_{p,\max}=0.48$ and $G=86$ in \eqref{eq17} (pole pairs included), and the damping is set to its nominal value $D=0.1$~N$\cdot$m$\cdot$s/rad. The machine is driven by the wind of Fig.~\ref{fig2} (mean 9~m/s); $\omega_{r,ref}$ follows the low-pass filtered wind (time constant 2~s), so that $\omega_{r,ref}$ stays between 279 and 378~rad/s and $P_{s,ref}$ between 142 and 478~kW.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.48\textwidth]{fig5.png}}
-\caption{Tracking performance of the state variables $i_{dr}$, $i_{qr}$, and $\omega_{r}$ under the proposed hybrid control scheme (inset: start-up, green: PI).}
+\caption{Tracking performance of the state variables $i_{dr}$, $i_{qr}$, and $\omega_{r}$ under the proposed hybrid control scheme.}
 \label{fig5}
 \end{figure}
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.48\textwidth]{fig6.png}}
-\caption{Active power tracking performance: stator power $P_{s}$ and MPPT reference $P_{s,ref}$ (FL--MPC), and power errors of FL--MPC and PI.}
+\caption{Active power tracking performance: stator power $P_{s}$ and MPPT reference $P_{s,ref}$, and power tracking error.}
 \label{fig6}
 \end{figure}
 
 \begin{table}[htbp]
-\caption{MPPT Tracking ($t\ge5$~s): RMS Errors}
+\caption{MPPT Tracking Performance of FL--MPC ($t\ge5$~s)}
 \begin{center}
-\begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|c|c|}
 \hline
-\textbf{RMSE} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
+\textbf{Metric} & \textbf{Value} \\
 \hline
-$\omega_{r}$ (rad/s) & 0.008 & 0.008 & 1.161 \\
+RMS error of $\omega_{r}$ & 0.008 rad/s \\
 \hline
-$P_{s}$ (kW) & 2.70 & 2.70 & 20.63 \\
+RMS error of $i_{dr}$ & 3.28 A \\
 \hline
-$i_{dr}$ (A) & 3.28 & 3.28 & 25.08 \\
+RMS error of $i_{qr}$ & 0.085 A \\
+\hline
+RMS error of $P_{s}$ & 2.70 kW (0.93\,\% of mean $P_{s}$) \\
+\hline
+Speed settling time (2\,\% band) & 0.13 s \\
 \hline
 \end{tabular}
 \label{tab3}
 \end{center}
 \end{table}
 
-Figs.~\ref{fig5} and \ref{fig6} show that $i_{dr}$, $i_{qr}$, $\omega_{r}$ and the stator power follow their MPPT references despite turbulence. Starting from $0.9\,\omega_{r,ref}$, the speed enters a 2\,\% band in 0.13~s with FL--MPC versus 0.75~s with PI. Table~\ref{tab3} shows that the speed error of FL--MPC is about 146 times and the power error about 7.7 times lower than with PI. FL--MPC and FL only perform identically in tracking, because the voltage limits are active only during start-up. The specific benefit of the MPC is therefore the explicit, stability-guaranteed handling of the converter limits.
+Figs.~\ref{fig5} and \ref{fig6} show that $i_{dr}$, $i_{qr}$, $\omega_{r}$ and the stator power follow their MPPT references despite turbulence. Starting from $0.9\,\omega_{r,ref}$, the speed enters a 2\,\% band in 0.13~s. Table~\ref{tab3} shows that the RMS speed error is 0.008~rad/s and the RMS power error 2.70~kW, i.e., below 1\,\% of the mean stator power (291~kW). The voltage limits are reached during start-up and only very briefly afterwards (0.03\,\% of the time, at turbulence peaks); the MPC handles them explicitly, with the stability guarantee of Theorem~1.
 
 \section{Conclusion}
 
-This paper investigated the nonlinear dynamics of a DFIG-based wind energy conversion system with a physically consistent parameter set. The analysis of the equilibria, of the dissipativity and of the Lyapunov exponents confirmed the presence of a chaotic attractor under perturbed parameters. A hybrid controller acting only on the rotor voltages was proposed: an outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained MPC, whose terminal weight and gain are obtained from an LMI, handles the converter voltage limits with guaranteed nominal stability. Simulations show chaos suppression without steady-state error, and MPPT tracking under turbulent wind with speed and power errors several times lower than a classical cascaded PI controller. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
+This paper investigated the nonlinear dynamics of a DFIG-based wind energy conversion system with a physically consistent parameter set. The analysis of the equilibria, of the dissipativity and of the Lyapunov exponents confirmed the presence of a chaotic attractor under perturbed parameters. A hybrid controller acting only on the rotor voltages was proposed: an outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained MPC, whose terminal weight and gain are obtained from an LMI, handles the converter voltage limits with guaranteed nominal stability. Simulations show chaos suppression without steady-state error, and accurate MPPT tracking under turbulent wind, with a stator-power RMS error below 1\,\% of the mean power. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
 
 \section*{Conflict of Interest}
 The authors declare there are no conflicts of interest.
@@ -450,14 +458,17 @@ The authors declare there are no conflicts of interest.
 \bibitem{b23} I. Bouguettah, M. Messadi, K. Kemih, \textit{et al.}, ``Adaptive passive fault tolerant control of DFIG-based wind turbine using a self-tuning fractional integral sliding mode control,'' \textit{Frontiers in Energy Research}, vol. 12, p. 1429877, 2024.
 \bibitem{b24} S. Regani, M. Messadi, and K. Kemih, ``Modeling and Nonlinear Dynamic Analysis of a DFIG-Based Wind Turbine System,'' submitted to \textit{Journal of Applied Nonlinear Dynamics}, Mar. 2026.
 \bibitem{b25} A. Senouci and A. Boukabou, ``Predictive control and synchronization of chaotic and hyperchaotic systems based on a T--S fuzzy model,'' \textit{Mathematics and Computers in Simulation}, vol. 105, pp. 62--78, 2014.
-\bibitem{b26} A. Boukabou, A. Chebbah, and N. Mansouri, ``Predictive control of continuous chaotic systems,'' \textit{International Journal of Bifurcation and Chaos}, vol. 18, no. 2, pp. 587--592, 2008.
+\bibitem{b26} A. Boukabou, A. Chebbah, and N. Mansouri, ``Predictive control of continuous chaotic systems,'' \textit{Int. J. Bifurcation Chaos}, vol. 18, no. 2, pp. 587--592, 2008, doi: 10.1142/S0218127408020501.
 \bibitem{b27} M. Messadi and A. Mellit, ``Predictive control of a chaotic permanent magnet synchronous generator in a wind turbine system,'' \textit{Chinese Physics B}, vol. 24, no. 1, p. 010502, 2015.
-\bibitem{b28} H. Takhi, L. Moysis, N. Machkour, \textit{et al.}, ``Predictive control and synchronization of uncertain perturbed chaotic permanent-magnet synchronous generator and its microcontroller implementation,'' \textit{The European Physical Journal Special Topics}, vol. 231, no. 3, pp. 443--451, 2022.
+\bibitem{b28} H. Takhi, L. Moysis, N. Machkour, C. Volos, K. Kemih, and M. Ghanes, ``Predictive control and synchronization of uncertain perturbed chaotic permanent-magnet synchronous generator and its microcontroller implementation,'' \textit{Eur. Phys. J. Spec. Top.}, vol. 231, no. 3, pp. 443--451, 2022, doi: 10.1140/epjs/s11734-021-00422-4.
 \bibitem{b29} M. Messadi and A. Mellit, ``Control of chaos in an induction motor system with LMI predictive control and experimental circuit validation,'' \textit{Chaos, Solitons \& Fractals}, vol. 97, pp. 51--58, 2017.
-\bibitem{b30} M. Messadi, K. Kemih, and H. Hamiche, ``A new secure communications scheme based on synchronization of hybrid chaotic system,'' \textit{Chaos Theory and Applications}, vol. 5, no. 3, pp. 160--166, 2023.
-\bibitem{b31} H. Takhi, K. Kemih, L. Moysis, \textit{et al.}, ``Passivity-based control and synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,'' \textit{International Journal of Dynamics and Control}, vol. 8, no. 3, pp. 973--990, 2020.
-\bibitem{b32} H. Ren and D. Liu, ``Nonlinear feedback control of chaos in permanent magnet synchronous motor,'' \textit{IEEE Trans. Circuits and Systems II: Express Briefs}, vol. 53, no. 1, pp. 45--50, 2006.
+\bibitem{b30} M. Messadi, K. Kemih, and H. Hamiche, ``A new secure communications scheme based on synchronization of hybrid chaotic system,'' \textit{Chaos Theory Appl.}, vol. 5, no. 3, pp. 160--166, 2023, doi: 10.51537/chaos.1276714.
+\bibitem{b31} H. Takhi, K. Kemih, L. Moysis, \textit{et al.}, ``Passivity based control and synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,'' \textit{Int. J. Dyn. Control}, vol. 8, no. 3, pp. 973--990, 2020, doi: 10.1007/s40435-020-00618-x.
+\bibitem{b32} H. Ren and D. Liu, ``Nonlinear feedback control of chaos in permanent magnet synchronous motor,'' \textit{IEEE Trans. Circuits Syst. II, Exp. Briefs}, vol. 53, no. 1, pp. 45--50, Jan. 2006.
 \bibitem{b33} G. Chen, ``A simple adaptive feedback control method for chaos and hyper-chaos control,'' \textit{Applied Mathematics and Computation}, vol. 217, no. 17, pp. 7258--7264, 2011.
+\bibitem{b34} P. Jiang, T. Zhang, J. Geng, P. Wang, and L. Fu, ``An MPPT strategy for wind turbines combining feedback linearization and model predictive control,'' \textit{Energies}, vol. 16, no. 10, Art. no. 4244, 2023, doi: 10.3390/en16104244.
+\bibitem{b35} D. Q. Mayne, J. B. Rawlings, C. V. Rao, and P. O. M. Scokaert, ``Constrained model predictive control: Stability and optimality,'' \textit{Automatica}, vol. 36, no. 6, pp. 789--814, 2000, doi: 10.1016/S0005-1098(99)00214-9.
+\bibitem{b36} M. V. Kothare, V. Balakrishnan, and M. Morari, ``Robust constrained model predictive control using linear matrix inequalities,'' \textit{Automatica}, vol. 32, no. 10, pp. 1361--1379, 1996.
 \end{thebibliography}
 
 \end{document}

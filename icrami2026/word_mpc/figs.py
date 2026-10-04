@@ -10,10 +10,8 @@ fig,axs=plt.subplots(3,1,figsize=(3.5,3.4),sharex=True)
 lab=[r'$x_1=i_{dr}$ (A)',r'$x_2=i_{qr}$ (A)',r'$x_3=\omega_r$ (rad/s)']
 for i in range(3):
     axs[i].plot(A['t'],A['x'][:,i],'C0',lw=0.5,label='FL--MPC')
-    m=Api['t']>=10; axs[i].plot(Api['t'][m],Api['x'][m,i],'C2--',lw=0.8,label='PI')
     axs[i].axhline(xs[i],color='k',ls='-.',lw=0.5); axs[i].axvline(10,color='gray',lw=0.5)
     axs[i].set_ylabel(lab[i]); fmt(axs[i])
-axs[0].legend(fontsize=6,loc='lower left',ncol=2)
 axs[2].set_xlabel('time (s)'); axs[2].set_xlim(0,14)
 fig.tight_layout(pad=0.3,h_pad=0.2); fig.savefig('fig4.png',dpi=400)
 # ---- Fig 5: MPPT tracking
@@ -24,9 +22,6 @@ for i in range(3):
     axs[i].plot(t,B['xr'][:,i],'r',lw=1.1,label='reference'); axs[i].plot(t,B['x'][:,i],'C0',lw=0.5,label='FL--MPC')
     axs[i].set_ylabel(lab[i]); fmt(axs[i])
 axs[1].set_ylim(10,35); axs[0].set_ylim(-700,700); axs[0].legend(fontsize=6,loc='upper right',ncol=2)
-ins=axs[2].inset_axes([0.42,0.55,0.3,0.4]); m=(t>0)&(t<1.5)
-ins.plot(t[m],B['xr'][m,2],'r',lw=1); ins.plot(t[m],B['x'][m,2],'C0',lw=0.6); ins.plot(t[m],Bpi['x'][m,2],'C2--',lw=0.6)
-ins.tick_params(labelsize=5,length=1.5); ins.text(0.03,0.05,'start-up; green: PI',transform=ins.transAxes,fontsize=5)
 axs[2].set_xlabel('time (s)'); axs[2].set_xlim(0,30)
 fig.tight_layout(pad=0.3,h_pad=0.2); fig.savefig('fig5.png',dpi=400)
 # ---- Fig 6: power
@@ -35,7 +30,7 @@ P=Ps(B['x'][:,0],a)/1e3; Pr=Ps(B['xr'][:,0],a)/1e3; Ppi=Ps(Bpi['x'][:,0],a)/1e3
 fig,axs=plt.subplots(2,1,figsize=(3.5,2.3),sharex=True,gridspec_kw=dict(height_ratios=[2,1]))
 axs[0].plot(t,Pr,'r',lw=1.1,label='$P_{s,ref}$'); axs[0].plot(t,P,'C0',lw=0.5,label='$P_s$ (FL--MPC)')
 axs[0].set_ylabel('$P_s$ (kW)'); axs[0].set_ylim(0,550); axs[0].legend(fontsize=6,loc='upper right',ncol=2); fmt(axs[0])
-axs[1].plot(t,Ppi-Pr,'C2',lw=0.5,label='PI'); axs[1].plot(t,P-Pr,'C0',lw=0.5,label='FL--MPC')
-axs[1].set_ylabel('error (kW)'); axs[1].set_ylim(-80,80); axs[1].legend(fontsize=6,loc='lower right',ncol=2); fmt(axs[1])
+axs[1].plot(t,P-Pr,'C0',lw=0.5)
+axs[1].set_ylabel('error (kW)'); axs[1].set_ylim(-30,30); fmt(axs[1])
 axs[1].set_xlabel('time (s)'); axs[1].set_xlim(0,30)
 fig.tight_layout(pad=0.3,h_pad=0.2); fig.savefig('fig6.png',dpi=400)
