@@ -1,0 +1,5 @@
+*.pkl
+log_*.txt
+__pycache__/
+paper/*.aux
+paper/*.log
