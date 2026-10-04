@@ -41,23 +41,11 @@ Doubly-Fed Induction Generator (DFIG), Wind Energy Systems, Chaotic Dynamics, No
 
 \section{Introduction}
 
-The escalating global population coupled with increasing electricity demand has accelerated the depletion of non-renewable energy resources at unprecedented rates \cite{b1}. This critical challenge necessitates the exploration and deployment of alternative, sustainable, and environmentally-friendly energy sources, particularly wind energy, to mitigate environmental degradation and address energy security concerns \cite{b2}, \cite{b3}.
+Growing electricity demand and the depletion of non-renewable resources call for sustainable energy sources, particularly wind energy \cite{b1}--\cite{b3}. Global wind capacity grew by a record 117~GW in 2024, reaching about 1136~GW \cite{b4}--\cite{b6}.
 
-Wind energy has emerged as a pivotal renewable energy technology in recent decades, experiencing substantial growth in both global investments and installed capacity \cite{b4}. Recent statistics indicate that global wind power capacity expanded by a record 117 GW in 2024, elevating the cumulative worldwide installed capacity to approximately 1,136 GW \cite{b5}. This remarkable expansion has been driven by supportive policy frameworks, technological innovations, and declining levelized cost of energy, positioning wind power as one of the fastest-growing renewable energy sources worldwide \cite{b6}.
+The doubly fed induction generator (DFIG) dominates large onshore wind farms: its partial-scale (25--30\,\%) back-to-back converter allows decoupled control of torque, active and reactive power over a wide speed range \cite{b7}--\cite{b10}. However, the nonlinearity of the induction machine and the electromechanical coupling can lead to oscillatory transients and, under severe conditions, bifurcations and chaotic responses \cite{b11}--\cite{b15}. Grid disturbances, turbulent wind, machine detuning and converter saturation amplify these phenomena, which cause power oscillations and torque ripple and conflict with grid-code requirements such as low-voltage ride-through \cite{b16}--\cite{b20}.
 
-Among various wind turbine generator configurations, the doubly fed induction generator (DFIG) has become the dominant technology in large-scale onshore wind farms, primarily due to its partial-scale back-to-back power converter architecture that enables flexible control of active and reactive power with reduced converter ratings \cite{b7}, \cite{b8}. This configuration allows the rotor-side converter (RSC) and grid-side converter (GSC) to independently regulate rotor currents and grid-injected currents, respectively, thereby achieving decoupled control of electromagnetic torque, stator active power, and reactive power over a wide operational speed range \cite{b9}.
-
-The economic advantage of requiring only 25--30\% rated power converters compared to full-scale converter systems, combined with superior power quality and grid-support capabilities, has made DFIG the preferred choice for variable-speed wind energy conversion systems (WECS) \cite{b10}.
-
-Despite extensive research on DFIG-based WECS including dynamic modeling, vector control strategies, grid-fault ride-through capability, and ancillary services provision, recent studies have revealed that these systems can exhibit complex nonlinear dynamic behaviors under certain operating conditions \cite{b11}--\cite{b13}. The inherent nonlinearity of the induction machine, coupled with the interaction between mechanical and electrical subsystems and the coupling between stator and rotor flux linkages, can lead to oscillatory transients and, under severe conditions, bifurcations and quasi-chaotic responses \cite{b14}, \cite{b15}.
-
-These phenomena become particularly pronounced under severe grid disturbances, highly turbulent wind speed profiles, parameter uncertainties (such as machine detuning), and converter saturation effects, all of which may degrade power quality, stress mechanical components, and compromise system stability \cite{b16}, \cite{b17}.
-
-The emergence of chaotic behavior in DFIG systems manifests as irregular power oscillations, torque ripple, and complex trajectories in the state space, which are detrimental to both electrical and mechanical performance \cite{b18}. Such dynamics are especially critical in the context of stringent grid-code requirements for low-voltage ride-through (LVRT), frequency support, and reactive power support \cite{b19}, \cite{b20}.
-
-Consequently, the analysis, mitigation, and control of nonlinear and potentially chaotic dynamics in DFIG-based wind turbines have become important research priorities for ensuring stable operation under wide-ranging operating scenarios and maximizing the contribution of wind energy to global electricity supply.
-
-Motivated by these challenges, this paper investigates the control of a variable-speed wind turbine equipped with a DFIG that exhibits chaotic-like behavior induced by machine parameter deviations and adverse operating scenarios, which can severely affect system stability and grid-injected power quality. A comprehensive nonlinear mathematical model is first developed to capture the intricate coupling among rotor currents, electromagnetic torque, and mechanical speed, and to identify the conditions under which complex or chaotic regimes emerge when the system is subjected to significant disturbances, such as abrupt wind-speed variations or degraded parameter settings. Moreover, the system is subjected to a highly realistic wind-speed profile to evaluate its ability to maintain stability and drive its dynamics toward accurate wind-path tracking, as assessed through the tracking error. Building on this framework, an innovative hybrid control architecture is then proposed, combining Model Predictive Control (MPC) with nonlinear state-feedback compensation to suppress chaotic dynamics and achieve high-precision tracking of reference rotor current and speed trajectories derived from Maximum Power Point Tracking (MPPT) objectives.
+This paper studies a variable-speed DFIG wind turbine that exhibits chaotic behavior. A nonlinear model coupling the rotor currents, the electromagnetic torque and the speed is analyzed with a physically consistent parameter set, and the system is excited by a realistic turbulent wind profile. A hybrid controller combining Model Predictive Control (MPC) with nonlinear feedback compensation is then proposed to suppress chaos and track the Maximum Power Point Tracking (MPPT) references of the rotor currents and speed.
 
 \section{Wind Turbine Modeling}
 
@@ -181,15 +169,9 @@ $\psi_{s}$ & $1.7933\,\text{Wb}$ & $u_{qs}$ & $0\,\text{V}$ \\
 
 The parameters listed in Table~\ref{tab1} are physically consistent: $L_{s},L_{r}>L_{m}$ and $\sigma = 0.0645 \in (0,1)$. They give $a_{1} = -0.0433$, $a_{2} = -320.83$, $a_{3} = -178.91$, $a_{4} = 183.76$, $a_{5} = 0.1946$, $a_{6} = 0.3360$, $a_{7} = 2.3044$, $a_{8} = -727.20$. The constant terms of \eqref{eq10} are therefore $a_{3}u_{ds}+a_{4}u_{dr} = 1.0126\times10^{5}$ and $a_{5}+a_{3}u_{qs}+a_{4}u_{qr} = -539.32$.
 
-System \eqref{eq10} has three equilibrium points, all unstable:
-\begin{itemize}
-\item $E_{1} = (-64.94,\,-379.12,\,306.11)$, a saddle-focus with eigenvalues $1.462 \pm 7.673j$ and $-5.315$;
-\item $E_{2} = (-9.97,\,-12442.5,\,314.12)$, a saddle with eigenvalues $-65.00$, $62.65$ and $-0.043$;
-\item $E_{3} = (55.50,\,-272.00,\,323.67)$, a saddle-focus with eigenvalues $0.547 \pm 10.511j$ and $-3.486$.
-\end{itemize}
-The divergence of the vector field is constant and negative, $\nabla\cdot f = 2a_{1} - a_{7} = -2.391$, so the system is dissipative.
+System \eqref{eq10} has three unstable equilibria: the saddle-foci $E_{1}=(-64.94,-379.12,306.11)$ (eigenvalues $1.462\pm7.673j$, $-5.315$) and $E_{3}=(55.50,-272.00,323.67)$ ($0.547\pm10.511j$, $-3.486$), and the saddle $E_{2}=(-9.97,-12442.5,314.12)$ ($-65.00$, $62.65$, $-0.043$). The divergence $\nabla\cdot f=2a_{1}-a_{7}=-2.391$ is negative, so the system is dissipative.
 
-With these parameters, the dynamical system exhibits complex nonlinear behavior. The corresponding chaotic attractors generated from the initial condition $x(0) = (0.3,\, 0.6,\, 3.6)^{T}$ are illustrated in Fig.~\ref{fig1}.
+The chaotic attractor obtained from $x(0) = (0.3,\, 0.6,\, 3.6)^{T}$ is shown in Fig.~\ref{fig1}.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.48\textwidth]{fig1.png}}
@@ -197,11 +179,11 @@ With these parameters, the dynamical system exhibits complex nonlinear behavior.
 \label{fig1}
 \end{figure}
 
-The phase portraits presented in Fig.~\ref{fig1} illustrate the complex nonlinear behavior of the DFIG system. The trajectory winds around the two saddle-foci $E_{1}$ and $E_{3}$. The rotor speed remains positive and close to synchronism ($296 \le \omega_{r} \le 336$~rad/s), while the rotor currents oscillate irregularly between about $-670$ and $+470$~A. The Lyapunov exponents, computed with the QR-based variational method, are $(0.202,\,-0.010,\,-2.582)$. Their sum equals the divergence $-2.391$, and the Kaplan--Yorke dimension is $2.08$. The positive largest Lyapunov exponent confirms the presence of chaotic dynamics. The three-dimensional attractor further highlights the bounded yet aperiodic evolution of the system states, which is a typical signature of chaos.
+In Fig.~\ref{fig1}, the trajectory winds around the two saddle-foci $E_{1}$ and $E_{3}$. The rotor speed remains positive and close to synchronism ($296 \le \omega_{r} \le 336$~rad/s), while the rotor currents oscillate irregularly between about $-670$ and $+470$~A. The Lyapunov exponents, computed with the QR-based variational method, are $(0.202,\,-0.010,\,-2.582)$. Their sum equals the divergence $-2.391$, and the Kaplan--Yorke dimension is $2.08$. The positive largest exponent confirms chaos.
 
 \section{Reference Trajectory Generation and Tracking Error Formulation}
 
-A realistic wind excitation is essential for evaluating the dynamic performance of a DFIG-based wind energy conversion system. In this work, the wind speed is modeled as the combination of a mean component, several low-frequency harmonic components, and a stochastic turbulence term, yielding a physically representative turbulent wind signal. The wind-speed model is expressed as
+The wind speed combines a mean value, low-frequency harmonics and a stochastic turbulence term:
 \begin{equation}
 v(t) = V_{mean} + \sum_{k = 1}^{3}A_{k}\sin\left( 2\pi f_{k}t \right) + v_{turb}(t)
 \label{eq11}
@@ -214,14 +196,12 @@ here $V_{mean}$ denotes the average wind speed, $A_{k}$ and $f_{k}$ are the ampl
 \label{fig2}
 \end{figure}
 
-Fig.~\ref{fig2} shows the generated wind-speed profile used to excite the DFIG system. The signal combines deterministic low-frequency variations with stochastic turbulence, providing a realistic representation of wind conditions. This complex excitation plays a key role in revealing the nonlinear and potentially chaotic behavior of the system.
-
-Based on this profile, the aerodynamic power reference is computed from the standard wind-power expression
+The resulting profile is shown in Fig.~\ref{fig2}. The power reference is
 \begin{equation}
 P_{ref}(t) = \frac{1}{2}\rho\pi R^{2}C_{p}v^{3}(t)
 \label{eq12}
 \end{equation}
-where $\rho$ is the air density, $R$ the turbine radius, and $C_{p}$ the optimal power coefficient. With the stator flux aligned with the $q$ axis (Section~III), the electromagnetic torque and the stator active power are governed by the $d$-axis rotor current, leading to the reference
+with $C_{p}$ the optimal power coefficient. With the stator flux aligned with the $q$ axis (Section~III), the electromagnetic torque and the stator active power are governed by the $d$-axis rotor current, leading to the reference
 \begin{equation}
 i_{dr,ref}(t) = -\frac{2}{3}\,\frac{P_{ref}(t)}{V_{s}}\,\frac{L_{s}}{L_{m}}
 \label{eq13}
@@ -259,12 +239,7 @@ i_{qr,ref}(t) \\
 \omega_{r,ref}(t)
 \end{bmatrix},
 \end{equation*}
-and the corresponding tracking errors are defined as
-\begin{equation*}
-e(t) = x(t) - x_{r}(t),\quad e_{i}(t) = x_{i}(t) - x_{r,i}(t),\quad i = 1,2,3.
-\end{equation*}
-
-A common practice in addressing the control problem of wind turbines is to use a linearization approach. However, due to the stochastic operating conditions and the inevitable uncertainties inherent in the system, such control methods come at the price of poor system performance and low reliability. Hence the need for nonlinear control to take into account these control problems.
+with tracking error $e(t) = x(t) - x_{r}(t)$.
 
 \section{Hybrid Control of a Novel Chaotic DFIG-Based System}
 
@@ -286,11 +261,9 @@ where $x = \left\lbrack x_{1},x_{2},x_{3} \right\rbrack^{T} = \left\lbrack i_{dr
 \dot{x}_{3} &= 0.3360\,x_{1} - 2.3044\,x_{3} + 727.20 .
 \end{aligned}
 \end{equation*}
-In open loop ($u_{1} = 2.539$~V, $u_{2} = -2.936$~V), \eqref{eq18} reduces to the chaotic system \eqref{eq10}. The objective is to force the nonlinear chaotic dynamics to follow a desired trajectory $x_{d}(t)$, constructed from wind-profile-based references for $i_{dr}$, $i_{qr}$, and $\omega_{r}$. The tracking error is defined as $e(t) = x(t) - x_{d}(t)$, and its stabilization ensures both chaos suppression and accurate MPPT behavior under turbulent wind fluctuations.
+In open loop ($u_{1} = 2.539$~V, $u_{2} = -2.936$~V), \eqref{eq18} reduces to the chaotic system \eqref{eq10}. The objective is to drive $x$ to the references of Section~IV; stabilizing the tracking error ensures both chaos suppression and MPPT.
 
-The overall control structure implementing this hybrid strategy combining Model Predictive Control with nonlinear feedback compensation is illustrated in Fig.~\ref{fig3}, where the proposed controller interacts with the turbine dynamics and the MPPT block to achieve accurate trajectory tracking under variable wind conditions.
-
-This hybrid framework harnesses the strengths of both techniques to overcome their individual limitations and improve overall system performance. Predictive control \cite{b25,b26,b27,b28,b29} is particularly valued for its ease of configuration and implementation, which makes it a widely adopted technique for controlling chaotic systems. Its efficiency and straightforward design process enable effective management of complex dynamics with relatively low computational effort. Feedback control excels in stabilizing inherently unstable and unpredictable chaotic dynamics by continuously adjusting the control input in real time based on the system's current state. Additionally, feedback control \cite{b30,b31,b32,b33} offers significant adaptability, allowing synchronization or steering of chaotic trajectories toward desired states, which is crucial for practical applications such as cryptography, robotics, and biological systems. By integrating these two approaches, the proposed hybrid control strategy capitalizes on the simplicity of predictive control alongside the real-time adaptability and energy efficiency of feedback control, thereby providing a more comprehensive solution for managing chaotic systems.
+The control structure is shown in Fig.~\ref{fig3}. Predictive control \cite{b25,b26,b27,b28,b29} is simple to configure and has a low computational cost, which makes it widely used for chaotic systems, while feedback control \cite{b30,b31,b32,b33} stabilizes unstable chaotic dynamics in real time and can steer trajectories toward desired states. The hybrid scheme combines both advantages.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=0.46\textwidth]{fig3.png}}
