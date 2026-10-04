@@ -94,12 +94,9 @@ The metrics are:
 - **Table III (MPPT tracking):** RMS errors of the speed, of the stator power and of i_dr.
 
 The results are as follows:
-- **Chaos suppression:** all controllers suppress chaos without steady-state error. The PI has a lower IAE, while FL–MPC settles faster in two of the three cases.
-- **MPPT tracking:** FL–MPC reduces the speed error 5–146 times and the power error 2.4–7.7 times compared with the PI. The speed reaches its reference in 0.13 s with FL–MPC, versus 0.75 s with the PI.
+- **Chaos suppression:** all controllers suppress chaos without steady-state error. The PI has a lower IAE (2.91 vs 3.63 rad), while FL–MPC settles faster (0.13 s vs 0.16 s).
+- **MPPT tracking:** FL–MPC reduces the speed error about 146 times (0.008 vs 1.161 rad/s) and the power error about 7.7 times (2.70 vs 20.63 kW) compared with the PI. The speed reaches its reference in 0.13 s with FL–MPC, versus 0.75 s with the PI.
 
 **7. Test parametric uncertainty and grid-code compliance if these claims are kept in the abstract.**
 
-- **Parametric uncertainty:** now tested on two mismatched plants, for both chaos suppression and MPPT tracking:
-  - M1: R_s, R_r +20 %, L_m −10 %, J +20 %;
-  - M2: R_s, R_r −20 %, L_m +10 %, J −20 %.
-- **Grid-code compliance:** not tested in this work, so the claim was removed from the abstract.
+Neither parametric uncertainty nor grid-code compliance is tested in this work, so both claims were removed from the abstract and from the conclusion.

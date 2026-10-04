@@ -32,7 +32,7 @@ BP 98 Ouled Aissa, Jijel 18000, Algeria}
 \maketitle
 
 \begin{abstract}
-Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that can exhibit chaotic dynamics under perturbed parameters and adverse operating conditions, leading to degraded power quality and compromised stability. This paper analyses a third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, characterizes its equilibria, dissipativity and Lyapunov exponents, and proposes a hybrid controller acting only on the two rotor voltages. An outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained receding-horizon Model Predictive Control (MPC) with integral action, whose terminal weight and gain are obtained from a linear matrix inequality, handles the converter voltage limits. Simulations show that the controller suppresses the chaotic oscillations without steady-state error, also under $\pm20\,\%$ parameter mismatch, and tracks Maximum Power Point Tracking (MPPT) references under turbulent wind with a speed error 5--146 times and a power error 2.4--7.7 times lower than a classical cascaded PI controller.
+Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that can exhibit chaotic dynamics under perturbed parameters and adverse operating conditions, leading to degraded power quality and compromised stability. This paper analyses a third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, characterizes its equilibria, dissipativity and Lyapunov exponents, and proposes a hybrid controller acting only on the two rotor voltages. An outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained receding-horizon Model Predictive Control (MPC) with integral action, whose terminal weight and gain are obtained from a linear matrix inequality, handles the converter voltage limits. Simulations show that the controller suppresses the chaotic oscillations without steady-state error, and tracks Maximum Power Point Tracking (MPPT) references under turbulent wind with a speed error about 146 times and a power error about 7.7 times lower than a classical cascaded PI controller.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -353,7 +353,7 @@ and set $P=X^{-1}$, $K=YX^{-1}$. Then $(A+BK)^{T}P(A+BK)-P+Q+rK^{T}K\preceq0$, a
 
 \section{Numerical Simulations}
 
-All simulations integrate \eqref{eq18} with a fourth-order Runge--Kutta scheme (step $T_{s}/4$). The controller uses $T_{s}=1$~ms, $N=10$, $Q=\mathrm{diag}(1,3)$, $r=10^{-6}$ (currents scaled by 100~A), which gives $K=[-619.2,\,-1069.5]$ and an LMI residual below $10^{-15}$; the outer loop uses $\lambda=10$~s$^{-1}$, $\lambda_{I}=25$~s$^{-2}$, and the rotor voltages are limited to $|u_{dr}|,|u_{qr}|\le200$~V. Robustness is tested on two mismatched plants: M1 ($R_{s},R_{r}$ $+20\,\%$, $L_{m}$ $-10\,\%$, $J$ $+20\,\%$) and M2 ($R_{s},R_{r}$ $-20\,\%$, $L_{m}$ $+10\,\%$, $J$ $-20\,\%$), the leakage inductances being kept constant so that $L_{s},L_{r}>L_{m}$.
+All simulations integrate \eqref{eq18} with a fourth-order Runge--Kutta scheme (step $T_{s}/4$). The controller uses $T_{s}=1$~ms, $N=10$, $Q=\mathrm{diag}(1,3)$, $r=10^{-6}$ (currents scaled by 100~A), which gives $K=[-619.2,\,-1069.5]$ and an LMI residual below $10^{-15}$; the outer loop uses $\lambda=10$~s$^{-1}$, $\lambda_{I}=25$~s$^{-2}$, and the rotor voltages are limited to $|u_{dr}|,|u_{qr}|\le200$~V.
 
 \subsection{Chaos Suppression}
 The system starts from $x(0)=(0.3,0.6,3.6)^{T}$ with the open-loop voltages of Table~\ref{tab1} and evolves on the chaotic attractor. At $t=10$~s the controller is activated with the target $\omega_{r}^{\ast}=1.05\,\omega_{s}=329.9$~rad/s and $i_{qr}^{\ast}=\psi_{s}/L_{m}=22.1$~A ($Q_{s}=0$); the corresponding equilibrium $i_{dr}^{\ast}=98.0$~A is held with $u_{dr}=29.3$~V and $u_{qr}=-8.4$~V.
@@ -365,24 +365,22 @@ The system starts from $x(0)=(0.3,0.6,3.6)^{T}$ with the open-loop voltages of T
 \end{figure}
 
 \begin{table}[htbp]
-\caption{Chaos Suppression: IAE of the Speed Error (rad), Settling Time $t_{s}$ to a 1\,\% Band (s)}
+\caption{Chaos Suppression: IAE of the Speed Error and Settling Time $t_{s}$ to a 1\,\% Band}
 \begin{center}
-\begin{tabular}{|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Plant} & \textbf{Metric} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
+\textbf{Metric} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
 \hline
-nominal & IAE / $t_{s}$ & 3.63 / \textbf{0.13} & 3.63 / \textbf{0.13} & \textbf{2.91} / 0.16 \\
+IAE (rad) & 3.63 & 3.63 & \textbf{2.91} \\
 \hline
-M1 & IAE / $t_{s}$ & 4.53 / 0.51 & 4.53 / 0.51 & \textbf{3.85} / \textbf{0.19} \\
-\hline
-M2 & IAE / $t_{s}$ & 2.82 / \textbf{0.11} & 2.82 / \textbf{0.11} & \textbf{2.10} / 0.14 \\
+$t_{s}$ (s) & \textbf{0.13} & \textbf{0.13} & 0.16 \\
 \hline
 \end{tabular}
 \label{tab2}
 \end{center}
 \end{table}
 
-Fig.~\ref{fig4} shows that the chaotic oscillations disappear as soon as the controller is activated: the speed reaches the positive super-synchronous target and the rotor currents settle at their equilibrium values, using only the rotor voltages. Table~\ref{tab2} shows that all three controllers suppress chaos without steady-state error, including under mismatch, because the integral action of the outer loop compensates the model error. During the first instants the voltages reach the 200~V limit for all controllers. In this scenario the cascaded PI gives a lower IAE, while FL--MPC settles faster in two of the three cases; FL--MPC and FL only coincide, since the model error seen by the current loops is negligible.
+Fig.~\ref{fig4} shows that the chaotic oscillations disappear as soon as the controller is activated: the speed reaches the positive super-synchronous target and the rotor currents settle at their equilibrium values, using only the rotor voltages. Table~\ref{tab2} shows that all three controllers suppress chaos without steady-state error. During the first instants the voltages reach the 200~V limit for all controllers. In this scenario the cascaded PI gives a lower IAE, while FL--MPC settles faster (0.13~s versus 0.16~s); FL--MPC and FL only coincide, since the model error seen by the current loops is negligible.
 
 \subsection{MPPT Tracking}
 For normal operation, the turbine torque $T_{L}=-T_{a}(v,\omega_{r})$ of \eqref{eq3} replaces the constant load, with $R=20$~m, $\lambda_{opt}=8.1$, $C_{p,\max}=0.48$ and $G=86$ in \eqref{eq17} (pole pairs included), and the damping is set to its nominal value $D=0.1$~N$\cdot$m$\cdot$s/rad. The machine is driven by the wind of Fig.~\ref{fig2} (mean 9~m/s); $\omega_{r,ref}$ follows the low-pass filtered wind (time constant 2~s), so that $\omega_{r,ref}$ stays between 279 and 378~rad/s and $P_{s,ref}$ between 142 and 478~kW.
@@ -400,34 +398,28 @@ For normal operation, the turbine torque $T_{L}=-T_{a}(v,\omega_{r})$ of \eqref{
 \end{figure}
 
 \begin{table}[htbp]
-\caption{MPPT Tracking ($t\ge5$~s): RMS Errors of $\omega_{r}$ (rad/s), $P_{s}$ (kW) and $i_{dr}$ (A)}
+\caption{MPPT Tracking ($t\ge5$~s): RMS Errors}
 \begin{center}
-\begin{tabular}{|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Plant} & \textbf{RMSE} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
+\textbf{RMSE} & \textbf{FL--MPC} & \textbf{FL only} & \textbf{PI} \\
 \hline
- & $\omega_{r}$ & 0.008 & 0.008 & 1.161 \\
-nominal & $P_{s}$ & 2.70 & 2.70 & 20.63 \\
- & $i_{dr}$ & 3.28 & 3.28 & 25.08 \\
+$\omega_{r}$ (rad/s) & 0.008 & 0.008 & 1.161 \\
 \hline
- & $\omega_{r}$ & 0.211 & 0.211 & 0.958 \\
-M1 & $P_{s}$ & 8.65 & 8.65 & 22.85 \\
- & $i_{dr}$ & 10.52 & 10.52 & 27.78 \\
+$P_{s}$ (kW) & 2.70 & 2.70 & 20.63 \\
 \hline
- & $\omega_{r}$ & 0.216 & 0.216 & 1.374 \\
-M2 & $P_{s}$ & 8.62 & 8.62 & 21.05 \\
- & $i_{dr}$ & 10.48 & 10.48 & 25.58 \\
+$i_{dr}$ (A) & 3.28 & 3.28 & 25.08 \\
 \hline
 \end{tabular}
 \label{tab3}
 \end{center}
 \end{table}
 
-Figs.~\ref{fig5} and \ref{fig6} show that $i_{dr}$, $i_{qr}$, $\omega_{r}$ and the stator power follow their MPPT references despite turbulence. Starting from $0.9\,\omega_{r,ref}$, the speed enters a 2\,\% band in 0.13~s with FL--MPC versus 0.75~s with PI. Table~\ref{tab3} shows that the speed error of FL--MPC is 5--146 times and the power error 2.4--7.7 times lower than with PI, for the nominal and mismatched plants. Under mismatch, the larger errors with respect to the nominal MPPT reference mainly reflect that the torque current actually required changes with $J$ and $L_{m}$. FL--MPC and FL only perform identically in tracking: the voltage limits are active only during start-up, and the outer integral action removes the effect of mismatch. The specific benefit of the MPC is therefore the explicit, stability-guaranteed handling of the converter limits.
+Figs.~\ref{fig5} and \ref{fig6} show that $i_{dr}$, $i_{qr}$, $\omega_{r}$ and the stator power follow their MPPT references despite turbulence. Starting from $0.9\,\omega_{r,ref}$, the speed enters a 2\,\% band in 0.13~s with FL--MPC versus 0.75~s with PI. Table~\ref{tab3} shows that the speed error of FL--MPC is about 146 times and the power error about 7.7 times lower than with PI. FL--MPC and FL only perform identically in tracking, because the voltage limits are active only during start-up. The specific benefit of the MPC is therefore the explicit, stability-guaranteed handling of the converter limits.
 
 \section{Conclusion}
 
-This paper investigated the nonlinear dynamics of a DFIG-based wind energy conversion system with a physically consistent parameter set. The analysis of the equilibria, of the dissipativity and of the Lyapunov exponents confirmed the presence of a chaotic attractor under perturbed parameters. A hybrid controller acting only on the rotor voltages was proposed: an outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained MPC, whose terminal weight and gain are obtained from an LMI, handles the converter voltage limits with guaranteed nominal stability. Simulations show chaos suppression without steady-state error under $\pm20\,\%$ parameter mismatch, and MPPT tracking under turbulent wind with speed and power errors several times lower than a classical cascaded PI controller. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
+This paper investigated the nonlinear dynamics of a DFIG-based wind energy conversion system with a physically consistent parameter set. The analysis of the equilibria, of the dissipativity and of the Lyapunov exponents confirmed the presence of a chaotic attractor under perturbed parameters. A hybrid controller acting only on the rotor voltages was proposed: an outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained MPC, whose terminal weight and gain are obtained from an LMI, handles the converter voltage limits with guaranteed nominal stability. Simulations show chaos suppression without steady-state error, and MPPT tracking under turbulent wind with speed and power errors several times lower than a classical cascaded PI controller. Future work will address converter and grid dynamics, low-voltage ride-through, and experimental validation.
 
 \section*{Conflict of Interest}
 The authors declare there are no conflicts of interest.
