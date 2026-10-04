@@ -1,0 +1,495 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Hybrid Model Predictive and Nonlinear Feedback Control for Chaos Suppression and MPPT Enhancement in DFIG-Based Wind Energy Systems}
+
+\author{\IEEEauthorblockN{Said Regani}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Manal Messadi}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Kemih Karim}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+}
+
+\maketitle
+
+\begin{abstract}
+Doubly fed induction generator (DFIG)-based wind turbines, despite their widespread adoption, can exhibit chaotic dynamics under adverse conditions such as grid disturbances, turbulent wind profiles, and parameter deviations, leading to degraded power quality and compromised stability. This paper investigates the emergence of chaotic behavior in variable-speed DFIG systems through comprehensive nonlinear modeling and proposes an innovative hybrid control architecture combining Model Predictive Control (MPC) with nonlinear state-feedback compensation. The proposed controller effectively suppresses chaotic dynamics, achieves high-precision tracking of Maximum Power Point Tracking (MPPT)-derived reference trajectories, and demonstrates superior robustness against parameter uncertainties under realistic wind conditions. Simulation results validate the effectiveness of the hybrid control strategy in maintaining stable operation, minimizing tracking error, and ensuring compliance with stringent grid-code requirements, thereby enhancing the reliability and performance of DFIG-based wind energy systems.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Doubly-Fed Induction Generator (DFIG), Wind Energy Systems, Chaotic Dynamics, Nonlinear Dynamics, Maximum Power Point Tracking (MPPT), Hybrid Control, Model Predictive Control (MPC), Nonlinear Feedback Control, Robust Control.
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+The escalating global population coupled with increasing electricity demand has accelerated the depletion of non-renewable energy resources at unprecedented rates \cite{b1}. This critical challenge necessitates the exploration and deployment of alternative, sustainable, and environmentally-friendly energy sources, particularly wind energy, to mitigate environmental degradation and address energy security concerns \cite{b2}, \cite{b3}.
+
+Wind energy has emerged as a pivotal renewable energy technology in recent decades, experiencing substantial growth in both global investments and installed capacity \cite{b4}. Recent statistics indicate that global wind power capacity expanded by a record 117 GW in 2024, elevating the cumulative worldwide installed capacity to approximately 1,136 GW \cite{b5}. This remarkable expansion has been driven by supportive policy frameworks, technological innovations, and declining levelized cost of energy, positioning wind power as one of the fastest-growing renewable energy sources worldwide \cite{b6}.
+
+Among various wind turbine generator configurations, the doubly fed induction generator (DFIG) has become the dominant technology in large-scale onshore wind farms, primarily due to its partial-scale back-to-back power converter architecture that enables flexible control of active and reactive power with reduced converter ratings \cite{b7}, \cite{b8}. This configuration allows the rotor-side converter (RSC) and grid-side converter (GSC) to independently regulate rotor currents and grid-injected currents, respectively, thereby achieving decoupled control of electromagnetic torque, stator active power, and reactive power over a wide operational speed range \cite{b9}.
+
+The economic advantage of requiring only 25--30\% rated power converters compared to full-scale converter systems, combined with superior power quality and grid-support capabilities, has made DFIG the preferred choice for variable-speed wind energy conversion systems (WECS) \cite{b10}.
+
+Despite extensive research on DFIG-based WECS including dynamic modeling, vector control strategies, grid-fault ride-through capability, and ancillary services provision, recent studies have revealed that these systems can exhibit complex nonlinear dynamic behaviors under certain operating conditions \cite{b11}--\cite{b13}. The inherent nonlinearity of the induction machine, coupled with the interaction between mechanical and electrical subsystems and the coupling between stator and rotor flux linkages, can lead to oscillatory transients and, under severe conditions, bifurcations and quasi-chaotic responses \cite{b14}, \cite{b15}.
+
+These phenomena become particularly pronounced under severe grid disturbances, highly turbulent wind speed profiles, parameter uncertainties (such as machine detuning), and converter saturation effects, all of which may degrade power quality, stress mechanical components, and compromise system stability \cite{b16}, \cite{b17}.
+
+The emergence of chaotic behavior in DFIG systems manifests as irregular power oscillations, torque ripple, and complex trajectories in the state space, which are detrimental to both electrical and mechanical performance \cite{b18}. Such dynamics are especially critical in the context of stringent grid-code requirements for low-voltage ride-through (LVRT), frequency support, and reactive power support \cite{b19}, \cite{b20}.
+
+Consequently, the analysis, mitigation, and control of nonlinear and potentially chaotic dynamics in DFIG-based wind turbines have become important research priorities for ensuring stable operation under wide-ranging operating scenarios and maximizing the contribution of wind energy to global electricity supply.
+
+Motivated by these challenges, this paper investigates the control of a variable-speed wind turbine equipped with a DFIG that exhibits chaotic-like behavior induced by machine parameter deviations and adverse operating scenarios, which can severely affect system stability and grid-injected power quality. A comprehensive nonlinear mathematical model is first developed to capture the intricate coupling among rotor currents, electromagnetic torque, and mechanical speed, and to identify the conditions under which complex or chaotic regimes emerge when the system is subjected to significant disturbances, such as abrupt wind-speed variations or degraded parameter settings. Moreover, the system is subjected to a highly realistic wind-speed profile to evaluate its ability to maintain stability and drive its dynamics toward accurate wind-path tracking, as assessed through the tracking error. Building on this framework, an innovative hybrid control architecture is then proposed, combining Model Predictive Control (MPC) with nonlinear state-feedback compensation to suppress chaotic dynamics, enhance robustness to uncertainties, and achieve high-precision tracking of reference rotor current and speed trajectories derived from Maximum Power Point Tracking (MPPT) objectives.
+
+\section{Wind Turbine Modeling}
+
+The aerodynamic power captured by a horizontal-axis wind turbine can be written as \cite{b21,b22,b23}
+\begin{equation}
+P_{a} = \frac{1}{2}\pi\rho R^{2}C_{p}(\lambda)\, v^{3}
+\label{eq1}
+\end{equation}
+where $\rho$ is the air density, $R$ is the rotor radius, $v$ is the wind speed, and $C_{p}(\lambda)$ is the power coefficient, which depends on the tip-speed ratio $\lambda$.
+
+The tip-speed ratio is defined by
+\begin{equation}
+\lambda = \frac{R\omega_{r}}{v}
+\label{eq2}
+\end{equation}
+with $\omega_{r}$ the rotor (mechanical) angular speed.
+
+The corresponding aerodynamic torque applied to the shaft is obtained from
+\begin{equation}
+T_{a} = \frac{P_{a}}{\omega_{r}} = \frac{1}{2}\pi\rho R^{2}C_{p}(\lambda)\,\frac{v^{3}}{\omega_{r}}
+\label{eq3}
+\end{equation}
+
+The rotational dynamics of the wind turbine--generator set are described by
+\begin{equation}
+J\frac{d\Omega_{m}}{dt} = T_{a} - T_{e} - D\Omega_{m}
+\label{eq4}
+\end{equation}
+where $J$ is the total inertia, $\Omega_{m}$ is the mechanical rotor speed, $T_{e}$ is the electromagnetic torque produced by the generator, and $D$ denotes the viscous friction coefficient.
+
+Relating mechanical and electrical rotor speeds by
+\begin{equation}
+\omega_{r} = n_{p}\Omega_{m}
+\label{eq5}
+\end{equation}
+with $n_{p}$ the number of pole pairs, and using $\frac{d\Omega_{m}}{dt} = \frac{1}{n_{p}}\frac{d\omega_{r}}{dt}$, \eqref{eq4} can be rewritten in electrical speed form as
+\begin{equation}
+\frac{J}{n_{p}}\frac{d\omega_{r}}{dt} = T_{a} - T_{e} - \frac{D}{n_{p}}\omega_{r}
+\label{eq6}
+\end{equation}
+
+For a DFIG expressed in the stator $dq$ reference frame, the electromagnetic torque is given by
+\begin{equation}
+T_{e} = \frac{3}{2}n_{p}\left( \psi_{ds}i_{qs} - \psi_{qs}i_{ds} \right)
+\label{eq7}
+\end{equation}
+where $\psi_{ds},\psi_{qs}$ are the stator flux components and $i_{ds},i_{qs}$ are the corresponding stator current components.
+
+Substituting \eqref{eq7} into \eqref{eq6} yields the final electromechanical dynamic equation of the rotor:
+\begin{equation}
+\frac{J}{n_{p}}\frac{d\omega_{r}}{dt} = T_{a} - \frac{3}{2}n_{p}\left( \psi_{ds}i_{qs} - \psi_{qs}i_{ds} \right) - \frac{D}{n_{p}}\omega_{r}
+\label{eq8}
+\end{equation}
+
+\section{Chaotic Doubly-Fed Induction Generator}
+
+According to \eqref{eq8} and the stator-flux/rotor-current coupling of the DFIG, a third-order state equation with $i_{dr}$, $i_{qr}$, and $\omega_{r}$ as state variables can be obtained \cite{b24}:
+\begin{equation}
+\begin{aligned}
+\dot{i}_{dr} &= \left( - \frac{R_{s}L_{m}^{2}}{\sigma L_{s}^{2}L_{r}} - \frac{R_{r}}{\sigma L_{r}} \right)i_{dr} + \left( \omega_{s} - \omega_{r} \right)i_{qr} \\
+&\quad- \frac{\omega_{r}L_{m}\psi_{s}}{\sigma L_{r}L_{s}} + \left( - \frac{L_{m}}{\sigma L_{s}L_{r}} \right)u_{ds} + \frac{1}{\sigma L_{r}}u_{dr} \\[4pt]
+\dot{i}_{qr} &= - \left( \omega_{s} - \omega_{r} \right)i_{dr} + \left( - \frac{R_{s}L_{m}^{2}}{\sigma L_{s}^{2}L_{r}} - \frac{R_{r}}{\sigma L_{r}} \right)i_{qr} \\
+&\quad+ \frac{R_{s}L_{m}\psi_{s}}{\sigma L_{s}^{2}L_{r}} + \left( - \frac{L_{m}}{\sigma L_{s}L_{r}} \right)u_{qs} + \frac{1}{\sigma L_{r}}u_{qr} \\[4pt]
+\dot{\omega}_{r} &= \left( \frac{n_{p}}{J} \right)\left( \frac{3n_{p}L_{m}\psi_{s}}{2L_{s}}\, i_{dr} - \frac{D}{n_{p}}\omega_{r} - T_{L} \right)
+\end{aligned}
+\label{eq9}
+\end{equation}
+
+We now rewrite \eqref{eq9} by introducing the following state variables:
+\begin{equation*}
+x_{1} = i_{dr},\quad x_{2} = i_{qr},\quad x_{3} = \omega_{r}.
+\end{equation*}
+
+Let the parameters $a_{1},a_{2},\ldots,a_{8}$ be defined accordingly. The resulting nonlinear system can then be expressed in the compact state-space form
+\begin{equation}
+\left\{ \begin{aligned}
+\dot{x}_{1} &= a_{1}x_{1} + \left( \omega_{s} - x_{3} \right)x_{2} + a_{2}x_{3} + \left( a_{3}u_{ds} + a_{4}u_{dr} \right), \\
+\dot{x}_{2} &= - \left( \omega_{s} - x_{3} \right)x_{1} + a_{1}x_{2} + a_{5} + \left( a_{3}u_{qs} + a_{4}u_{qr} \right), \\
+\dot{x}_{3} &= a_{6}x_{1} - a_{7}x_{3} - a_{8}.
+\end{aligned} \right.
+\label{eq10}
+\end{equation}
+
+The coefficients appearing in \eqref{eq10} are given by
+\begin{equation*}
+\begin{gathered}
+a_{1} = - \frac{R_{s}L_{m}^{2}}{\sigma L_{s}^{2}L_{r}} - \frac{R_{r}}{\sigma L_{r}},\quad a_{2} = - \frac{L_{m}\psi_{s}}{\sigma L_{r}L_{s}},\quad a_{3} = - \frac{L_{m}}{\sigma L_{s}L_{r}},\\
+a_{4} = \frac{1}{\sigma L_{r}},\quad a_{5} = \frac{R_{s}L_{m}\psi_{s}}{\sigma L_{s}^{2}L_{r}},\quad
+a_{6} = \frac{3n_{p}^{2}L_{m}\psi_{s}}{2JL_{s}},\\ a_{7} = \frac{D}{J},\quad a_{8} = \frac{n_{p}}{J}T_{L},
+\end{gathered}
+\end{equation*}
+with $\sigma = 1 - L_{m}^{2}/(L_{s}L_{r})$. The stator flux is aligned with the $q$ axis, so that $u_{ds} = -\omega_{s}\psi_{s}$ and $u_{qs} = 0$.
+
+\begin{table}[htbp]
+\caption{Main Parameters of the Chaotic DFIG System}
+\begin{center}
+\begin{tabular}{|c|c||c|c|}
+\hline
+\textbf{Parameter} & \textbf{Value} & \textbf{Parameter} & \textbf{Value} \\
+\hline
+$R_{s}$ & $5.0536 \times 10^{-5}\,\Omega$ & $n_{p}$ & $2$ \\
+\hline
+$R_{r}$ & $1.8781 \times 10^{-4}\,\Omega$ & $J$ & $31.18\,\text{kg}\cdot\text{m}^2$ \\
+\hline
+$L_{s}$ & $0.0833\,\text{H}$ & $D$ & $71.85\,\text{N}\cdot\text{m}\cdot\text{s/rad}$ \\
+\hline
+$L_{r}$ & $0.0844\,\text{H}$ & $T_{L}$ & $-11337\,\text{N}\cdot\text{m}$ \\
+\hline
+$L_{m}$ & $0.0811\,\text{H}$ & $u_{dr}$ & $2.539\,\text{V}$ \\
+\hline
+$\sigma$ & $0.0645$ & $u_{qr}$ & $-2.936\,\text{V}$ \\
+\hline
+$\omega_{s}$ & $100\pi\,\text{rad/s}$ & $u_{ds}$ & $-563.4\,\text{V}$ \\
+\hline
+$\psi_{s}$ & $1.7933\,\text{Wb}$ & $u_{qs}$ & $0\,\text{V}$ \\
+\hline
+\end{tabular}
+\label{tab1}
+\end{center}
+\end{table}
+
+The parameters listed in Table~\ref{tab1} are physically consistent: $L_{s},L_{r}>L_{m}$ and $\sigma = 0.0645 \in (0,1)$. They give $a_{1} = -0.0433$, $a_{2} = -320.83$, $a_{3} = -178.91$, $a_{4} = 183.76$, $a_{5} = 0.1946$, $a_{6} = 0.3360$, $a_{7} = 2.3044$, $a_{8} = -727.20$. The constant terms of \eqref{eq10} are therefore $a_{3}u_{ds}+a_{4}u_{dr} = 1.0126\times10^{5}$ and $a_{5}+a_{3}u_{qs}+a_{4}u_{qr} = -539.32$.
+
+System \eqref{eq10} has three equilibrium points, all unstable:
+\begin{itemize}
+\item $E_{1} = (-64.94,\,-379.12,\,306.11)$, a saddle-focus with eigenvalues $1.462 \pm 7.673j$ and $-5.315$;
+\item $E_{2} = (-9.97,\,-12442.5,\,314.12)$, a saddle with eigenvalues $-65.00$, $62.65$ and $-0.043$;
+\item $E_{3} = (55.50,\,-272.00,\,323.67)$, a saddle-focus with eigenvalues $0.547 \pm 10.511j$ and $-3.486$.
+\end{itemize}
+The divergence of the vector field is constant and negative, $\nabla\cdot f = 2a_{1} - a_{7} = -2.391$, so the system is dissipative.
+
+With these parameters, the dynamical system exhibits complex nonlinear behavior. The corresponding chaotic attractors generated from the initial condition $x(0) = (0.3,\, 0.6,\, 3.6)^{T}$ are illustrated in Fig.~\ref{fig1}.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig1.png}}
+\caption{The chaotic attractors: a) The projection of the chaotic attractor in plan $x_{1}-x_{2}$; b) the projection of the chaotic attractor in plan $x_{1}-x_{3}$; c) the projection of the chaotic attractor in plan $x_{2}-x_{3}$; d) 3D trajectory of the system.}
+\label{fig1}
+\end{figure}
+
+The phase portraits presented in Fig.~\ref{fig1} illustrate the complex nonlinear behavior of the DFIG system. The trajectory winds around the two saddle-foci $E_{1}$ and $E_{3}$. The rotor speed remains positive and close to synchronism ($296 \le \omega_{r} \le 336$~rad/s), while the rotor currents oscillate irregularly between about $-670$ and $+470$~A. The Lyapunov exponents, computed with the QR-based variational method, are $(0.202,\,-0.010,\,-2.582)$. Their sum equals the divergence $-2.391$, and the Kaplan--Yorke dimension is $2.08$. The positive largest Lyapunov exponent confirms the presence of chaotic dynamics. The three-dimensional attractor further highlights the bounded yet aperiodic evolution of the system states, which is a typical signature of chaos.
+
+\section{Reference Trajectory Generation and Tracking Error Formulation}
+
+A realistic wind excitation is essential for evaluating the dynamic performance of a DFIG-based wind energy conversion system. In this work, the wind speed is modeled as the combination of a mean component, several low-frequency harmonic components, and a stochastic turbulence term, yielding a physically representative turbulent wind signal. The wind-speed model is expressed as
+\begin{equation}
+v(t) = V_{mean} + \sum_{k = 1}^{3}A_{k}\sin\left( 2\pi f_{k}t \right) + v_{turb}(t)
+\label{eq11}
+\end{equation}
+here $V_{mean}$ denotes the average wind speed, $A_{k}$ and $f_{k}$ are the amplitudes and frequencies of the harmonic components, and $v_{turb}(t)$ is a smoothed Gaussian noise process representing atmospheric turbulence.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig2.png}}
+\caption{Wind-speed trajectory.}
+\label{fig2}
+\end{figure}
+
+Fig.~\ref{fig2} shows the generated wind-speed profile used to excite the DFIG system. The signal combines deterministic low-frequency variations with stochastic turbulence, providing a realistic representation of wind conditions. This complex excitation plays a key role in revealing the nonlinear and potentially chaotic behavior of the system.
+
+Based on this profile, the aerodynamic power reference is computed from the standard wind-power expression
+\begin{equation}
+P_{ref}(t) = \frac{1}{2}\rho\pi R^{2}C_{p}v^{3}(t)
+\label{eq12}
+\end{equation}
+where $\rho$ is the air density, $R$ the turbine radius, and $C_{p}$ the optimal power coefficient. Under stator-flux orientation, the active power is primarily governed by the $q$-axis rotor current, leading to the reference
+\begin{equation}
+i_{q,ref}(t) = \frac{2}{3}\,\frac{P_{ref}(t)}{V_{s}}\,\frac{L_{s}}{L_{m}}
+\label{eq13}
+\end{equation}
+
+The corresponding measured active power is
+\begin{equation}
+P_{m}(t) = \frac{3}{2}\,\frac{L_{m}}{L_{s}}V_{s}i_{q}(t)
+\label{eq14}
+\end{equation}
+
+The reference for the $d$-axis rotor current is derived from the stator reactive-power expression under stator-flux orientation,
+\begin{equation}
+i_{d,ref}(t) = - \,\frac{2L_{s}}{3L_{m}V_{s}}\left( Q_{s}(t) - \frac{3V_{s}^{2}}{2\omega_{s}L_{s}} \right)
+\label{eq15}
+\end{equation}
+and, by imposing $Q_{s}(t) = 0$, simplifies to the constant operating point
+\begin{equation}
+i_{d,ref} = \frac{V_{s}}{\omega_{s}L_{m}}
+\label{eq16}
+\end{equation}
+which ensures unity power-factor operation.
+
+The reference rotor speed is obtained from the optimal tip-speed ratio, giving
+\begin{equation}
+\omega_{r,ref}(t) = \frac{G\,\lambda_{opt}}{R}\, v(t)
+\label{eq17}
+\end{equation}
+
+The complete reference trajectory is therefore
+\begin{equation*}
+x_{r}(t) = \begin{bmatrix}
+i_{d,ref}(t) \\
+i_{q,ref}(t) \\
+\omega_{r,ref}(t)
+\end{bmatrix},
+\end{equation*}
+and the corresponding tracking errors are defined as
+\begin{equation*}
+e(t) = x(t) - x_{r}(t),\quad e_{i}(t) = x_{i}(t) - x_{r,i}(t),\quad i = 1,2,3.
+\end{equation*}
+
+A common practice in addressing the control problem of wind turbines is to use a linearization approach. However, due to the stochastic operating conditions and the inevitable uncertainties inherent in the system, such control methods come at the price of poor system performance and low reliability. Hence the need for nonlinear and robust control to take into account these control problems.
+
+\section{Hybrid Control of a Novel Chaotic DFIG-Based System}
+
+The controlled system takes the form
+\begin{equation}
+\begin{aligned}
+\dot{x}_{1} &= a_{1}x_{1} + \left( \omega_{s} - x_{3} \right)x_{2} - a_{2}x_{3} + 8517 + u_{1}, \\
+\dot{x}_{2} &= - \left( \omega_{s} - x_{3} \right)x_{1} + a_{5}x_{2} - 0.6228 + u_{2}, \\
+\dot{x}_{3} &= a_{8}x_{1} - a_{9}x_{3} - a_{10} + u_{3},
+\end{aligned}
+\label{eq18}
+\end{equation}
+where $x = \left\lbrack x_{1},x_{2},x_{3} \right\rbrack^{T} = \left\lbrack i_{dr},i_{qr},\omega_{r} \right\rbrack^{T}$. The objective is to force the nonlinear chaotic dynamics to follow a desired trajectory $x_{d}(t)$, constructed from wind-profile-based references for $i_{dr}$, $i_{qr}$, and $\omega_{r}$. The tracking error is defined as $e(t) = x(t) - x_{d}(t)$, and its stabilization ensures both chaos suppression and accurate MPPT behavior under turbulent wind fluctuations.
+
+The overall control structure implementing this hybrid strategy combining Model Predictive Control with nonlinear feedback compensation is illustrated in Fig.~\ref{fig3}, where the proposed controller interacts with the turbine dynamics and the MPPT block to achieve robust trajectory tracking under variable wind conditions.
+
+This hybrid framework harnesses the strengths of both techniques to overcome their individual limitations and improve overall system performance. Predictive control \cite{b25,b26,b27,b28,b29,b30} is particularly valued for its ease of configuration and implementation, which makes it a widely adopted technique for controlling chaotic systems. Its efficiency, robustness, and straightforward design process enable effective management of complex dynamics with relatively low computational effort. Feedback control excels in stabilizing inherently unstable and unpredictable chaotic dynamics by continuously adjusting the control input in real time based on the system's current state. Additionally, feedback control \cite{b31,b32} offers significant adaptability, allowing synchronization or steering of chaotic trajectories toward desired states, which is crucial for practical applications such as cryptography, robotics, and biological systems. By integrating these two approaches, the proposed hybrid control strategy capitalizes on the simplicity and robustness of predictive control alongside the real-time adaptability and energy efficiency of feedback control, thereby providing a more comprehensive solution for managing chaotic systems.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig3.png}}
+\caption{Proposed hybrid MPC--nonlinear feedback control architecture for DFIG-based wind turbines.}
+\label{fig3}
+\end{figure}
+
+\textit{Theorem 1:} The system \eqref{eq18} is asymptotically stable under the control law:
+\begin{equation}
+U = K_{1}\left( \dot{x} - x - \dot{x}_{ref} \right) + K_{2}\left( x - x_{ref} \right),
+\label{eq19}
+\end{equation}
+if and only if there exists a positive definite symmetric matrix $X = X^{T} = P > 0$ and a matrix $Y$ for any symmetric matrix $Q = Q^{T} > 0$, satisfying the inequality:
+\begin{equation*}
+\begin{vmatrix}
+B & I \\
+I & - Q^{-1}
+\end{vmatrix} < 0
+\end{equation*}
+with
+\begin{equation*}
+\begin{split}
+B = {}& Df(x_{f})^{T}P + PDf(x_{f}) + Df(x_{f})^{T}K_{1}^{T}P \\
+& + PK_{1}Df(x_{f}) + PK_{2} + K_{2}^{T}P - (PK_{2} + K_{2}^{T}P)
+\end{split}
+\end{equation*}
+
+\textit{Proof:} By linearizing the nonlinear system around the equilibrium $x_{f}$ and using the first-order Taylor expansion of $f(x)$, we obtain
+\begin{equation}
+\dot{\delta x}(t) = A\delta x(t) + \delta u(t),\quad A := Df\left( x_{f} \right).
+\label{eq20}
+\end{equation}
+
+With the control law \eqref{eq19} and in deviation coordinates about $x_{f}$ (so that $x_{ref} = \text{constant}$), the linearized closed loop is
+\begin{equation*}
+\begin{split}
+\delta\dot{x}(t) &= A\,\delta x(t) + K_{1}\left( A\delta x(t) - \delta x(t) \right) + K_{2}\delta x(t) \\
+&= \left( A + K_{1}A - K_{1} + K_{2} \right)\delta x(t) =: A_{ce}\,\delta x(t).
+\end{split}
+\end{equation*}
+
+We consider the Lyapunov function
+\begin{equation}
+V\left( x(t) \right) = x^{T}(t)\, P\, x(t),\quad P = P^{T} > 0.
+\label{eq21}
+\end{equation}
+
+Its derivative along the trajectories of $V$ is
+\begin{equation*}
+\begin{split}
+\dot{V}\left( x(t) \right) &= \dot{x}^{T}(t)Px(t) + x^{T}(t)P\dot{x}(t) \\
+&= x^{T}(t)\left( A_{ce}^{T}P + PA_{ce} \right)x(t) \\
+&= x^{T}(t)\Big( A^{T}P + PA + A^{T}K_{1}^{T}P + PK_{1}A \\
+&\quad- \left( K_{1}^{T}P + PK_{1} \right) + \left( PK_{2} + K_{2}^{T}P \right) \Big)x(t).
+\end{split}
+\end{equation*}
+
+Introduce the standard change of variables
+\begin{equation*}
+Y_{1} = PK_{1},\quad Y_{2} = PK_{2},
+\end{equation*}
+to eliminate the bilinear terms. The above then becomes
+\begin{equation*}
+\dot{V}\left( x(t) \right) = x^{T}(t)\, B\, x(t),
+\end{equation*}
+\begin{equation*}
+B := A^{T}P + PA + A^{T}Y_{1}^{T} + Y_{1}A + Y_{2} + Y_{2}^{T} - \left( Y_{1} + Y_{1}^{T} \right).
+\end{equation*}
+
+If the following LMI holds for some $Q = Q^{T} > 0$:
+\begin{equation*}
+B + Q < 0,
+\end{equation*}
+then
+\begin{equation*}
+\dot{V}\left( x(t) \right) \leq - \, x^{T}(t)\, Q\, x(t) < 0\quad\text{for all }x(t) \neq 0,
+\end{equation*}
+which proves that the closed-loop system is asymptotically stable.
+
+From the Schur complement, this condition is equivalent to the block matrix condition
+\begin{equation*}
+S = \begin{pmatrix}
+B & I \\
+I & - Q^{-1}
+\end{pmatrix} < 0.
+\end{equation*}
+
+The theorem guarantees stability for a general nonlinear control structure. In the specific chaotic DFIG application, the control input is implemented as
+\begin{equation}
+u = - f(x) + \dot{x}_{d} - K\left( x - x_{d} \right)
+\label{eq22}
+\end{equation}
+where $K = \text{diag}\left( k_{1},k_{2},k_{3} \right)$ is a stabilizing diagonal gain matrix selected to ensure rapid convergence of the tracking error.
+
+\section{Numerical Simulations}
+
+In this section, numerical simulations are presented to demonstrate and verify the performance of the proposed approach. To stabilize the chaotic system \eqref{eq10} to the equilibrium point, the system is rewritten as:
+\begin{equation}
+\dot{x}(t) = Ax(t) + f(x(t)) + u
+\label{eq23}
+\end{equation}
+where
+\begin{equation*}
+A = \begin{bmatrix}
+a_{1} & \left( w_{s} - x_{3} \right) & - x_{2} - a_{2} \\
+- \left( w_{s} - x_{3} \right) & a_{5} & x_{1} \\
+a_{8} & 0 & - a_{9}
+\end{bmatrix}
+\end{equation*}
+and
+\begin{equation*}
+f(x(t)) = \begin{bmatrix}
+- x_{2}x_{3} + x_{3}u_{ds} + a_{4}u_{dr} \\
+- x_{3}x_{1} + x_{5} + x_{3}u_{qs} + a_{4}u_{qr} \\
+- a_{8}
+\end{bmatrix}
+\end{equation*}
+
+The system \eqref{eq10} has a single equilibrium point, and the Jacobian matrix around this equilibrium point is
+\begin{equation*}
+J = \begin{bmatrix}
+0.0231 & 720.2775 & 23.6504 \\
+-720.2775 & 0.0231 & -0.00075366 \\
+48579 & 0 & -0.1
+\end{bmatrix}
+\end{equation*}
+
+Then, we apply the control input $u(t)$ proposed in Theorem 1. The feedback gains are determined by solving the LMIs from Theorem 1 using MATLAB 2024a with the appropriate toolbox. The obtained results are:
+\begin{equation*}
+k_{1} = \begin{bmatrix}
+-73.1801 & 38.6679 & -25.9740 \\
+38.6679 & -74.4617 & 21.9579 \\
+-7.9740 & 3.9579 & -21.8599
+\end{bmatrix}
+\end{equation*}
+\begin{equation*}
+k_{2} = \begin{bmatrix}
+-570.4974 & 36.6083 & 19.3025 \\
+36.6083 & -393.2214 & -572.8579 \\
+19.3025 & -224.8579 & -192.1064
+\end{bmatrix}
+\end{equation*}
+
+At $t = 5$~s, the control input is introduced to the system, causing a notable change in its dynamic response.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig4.png}}
+\caption{Time evolution of the state variables before and after control activation.}
+\label{fig4}
+\end{figure}
+
+Fig.~\ref{fig4} shows the time evolution of the system states before and after control activation. Prior to $t = 5$~s, the system exhibits chaotic oscillations. Once the control is applied, the states rapidly converge toward the equilibrium point, demonstrating the effectiveness of the proposed stabilization strategy.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig5.png}}
+\caption{Tracking performance of the state variables $i_{dr}$, $i_{qr}$, and $\omega_{r}$ under the proposed hybrid control scheme.}
+\label{fig5}
+\end{figure}
+
+Fig.~\ref{fig5} demonstrates the tracking capability of the proposed controller. The state variables closely follow their respective reference trajectories despite the presence of wind disturbances and system nonlinearities, indicating high tracking accuracy and robustness, and Fig.~\ref{fig6} presents the active power response of the DFIG system. The measured power closely follows the reference signal derived from MPPT, confirming the effectiveness of the proposed control strategy in maximizing energy extraction while maintaining system stability.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.48\textwidth]{fig6.png}}
+\caption{Active power tracking performance: comparison between measured power $P_{m}$ and reference power $P_{ref}$ under realistic turbulent wind profiles.}
+\label{fig6}
+\end{figure}
+
+\section{Conclusion}
+
+This paper investigated the nonlinear dynamics of a DFIG-based wind energy conversion system, highlighting the emergence of complex and chaotic behaviors under turbulent wind conditions, parameter variations, and adverse operating scenarios. Using phase portraits, Lyapunov exponents, and bifurcation analysis, the intrinsic sources of instability arising from the electromechanical coupling of the DFIG were identified. The results show that unmitigated chaotic dynamics can severely degrade power quality, MPPT performance, and overall system stability. To overcome these issues, a hybrid control strategy combining Model Predictive Control with nonlinear state-feedback compensation was proposed. The controller successfully suppresses chaotic oscillations, ensures accurate reference tracking, and demonstrates strong robustness to uncertainties and wind variability. Simulation results confirm fast convergence of key system variables toward their desired values, even under highly stochastic wind conditions. Overall, the proposed approach significantly improves the stability, reliability, and performance of DFIG-based wind turbines, emphasizing the role of advanced nonlinear control techniques in modern renewable energy systems.
+
+\section*{Conflict of Interest}
+The authors declare there are no conflicts of interest.
+
+\begin{thebibliography}{00}
+\bibitem{b1} International Energy Agency (IEA), \textit{World Energy Outlook 2024: Global Energy Demand and Renewable Energy Transition}, Paris, France, 2024. [Online]. Available: https://www.iea.org/reports/world-energy-outlook-2024
+\bibitem{b2} International Renewable Energy Agency (IRENA), \textit{Renewable Energy Statistics 2024}, Abu Dhabi, UAE, 2024. [Online]. Available: https://www.irena.org/publications/2024/Jul/Renewable-energy-statistics-2024
+\bibitem{b3} United Nations Environment Programme (UNEP), \textit{Emissions Gap Report 2024: The Need for Sustainable Energy Sources}, Nairobi, Kenya, 2024.
+\bibitem{b4} Global Wind Energy Council (GWEC), \textit{Global Wind Report 2024: Annual Market Update}, Brussels, Belgium, 2024. [Online]. Available: https://gwec.net/global-wind-report-2024/
+\bibitem{b5} International Energy Agency (IEA), \textit{Renewables 2024: Analysis and Forecast to 2028}, Paris, France, 2024. [Online]. Available: https://www.iea.org/reports/renewables-2024
+\bibitem{b6} S. Heier, \textit{Grid Integration of Wind Energy: Onshore and Offshore Conversion Systems}, 4th ed. Chichester, UK: Wiley, 2020.
+\bibitem{b7} R. Pena, J. C. Clare, and G. M. Asher, ``Doubly fed induction generator using back-to-back PWM converters and its application to variable-speed wind-energy generation,'' \textit{IEE Proc. Electric Power Applications}, vol. 143, no. 3, pp. 231--241, May 1996.
+\bibitem{b8} M. G. Simoes and F. A. Farret, \textit{Renewable Energy Systems: Design and Analysis with Induction Generators}, 2nd ed. Boca Raton, FL, USA: CRC Press, 2017.
+\bibitem{b9} S. Muller, M. Deicke, and R. W. De Doncker, ``Doubly fed induction generator systems for wind turbines,'' \textit{IEEE Industry Applications Magazine}, vol. 8, no. 3, pp. 26--33, May/Jun. 2002.
+\bibitem{b10} A. A. Chhipa, P. Chakrabarti, V. Bolshev, T. Chakrabarti, and G. N. Samarin, ``Modeling and control strategy of wind energy conversion system with grid-connected doubly-fed induction generator,'' \textit{Energies}, vol. 15, no. 18, p. 6694, Sep. 2022.
+\bibitem{b11} L. Xu and Y. Wang, ``Dynamic modeling and control of DFIG-based wind turbines under unbalanced network conditions,'' \textit{IEEE Trans. Power Systems}, vol. 22, no. 1, pp. 314--323, Feb. 2007.
+\bibitem{b12} A. Tapia, G. Tapia, J. X. Ostolaza, and J. R. Saenz, ``Modeling and control of a wind turbine driven doubly fed induction generator,'' \textit{IEEE Trans. Energy Conversion}, vol. 18, no. 2, pp. 194--204, Jun. 2003.
+\bibitem{b13} Y. Lei, A. Mullane, G. Lightbody, and R. Yacamini, ``Modeling of the wind turbine with a doubly fed induction generator for grid integration studies,'' \textit{IEEE Trans. Energy Conversion}, vol. 21, no. 1, pp. 257--264, Mar. 2006.
+\bibitem{b14} M. Rahimi and M. Parniani, ``Dynamic behavior and transient stability analysis of fixed speed wind turbines,'' \textit{Renewable Energy}, vol. 34, no. 12, pp. 2613--2624, Dec. 2009.
+\bibitem{b15} W. Qiao, G. K. Venayagamoorthy, and R. G. Harley, ``Real-time implementation of a STATCOM on a wind farm equipped with doubly fed induction generators,'' \textit{IEEE Trans. Industry Applications}, vol. 45, no. 1, pp. 98--107, Jan./Feb. 2009.
+\bibitem{b16} H. Nian, Y. Song, P. Zhou, and Y. He, ``Improved direct power control of a wind turbine driven doubly fed induction generator during transient grid voltage unbalance,'' \textit{IEEE Trans. Energy Conversion}, vol. 26, no. 3, pp. 976--986, Sep. 2011.
+\bibitem{b17} D. Xiang, L. Ran, P. J. Tavner, and S. Yang, ``Control of a doubly fed induction generator in a wind turbine during grid fault ride-through,'' \textit{IEEE Trans. Energy Conversion}, vol. 21, no. 3, pp. 652--662, Sep. 2006.
+\bibitem{b18} M. Rahimi and M. Parniani, ``Efficient control scheme of wind turbines with doubly fed induction generators for low-voltage ride-through capability enhancement,'' \textit{IET Renewable Power Generation}, vol. 4, no. 3, pp. 242--252, May 2010.
+\bibitem{b19} J. Morren and S. W. H. de Haan, ``Ride-through of wind turbines with doubly-fed induction generator during a voltage dip,'' \textit{IEEE Trans. Energy Conversion}, vol. 20, no. 2, pp. 435--441, Jun. 2005.
+\bibitem{b20} M. Tsili and S. Papathanassiou, ``A review of grid code technical requirements for wind farms,'' \textit{IET Renewable Power Generation}, vol. 3, no. 3, pp. 308--332, Sep. 2009.
+\bibitem{b21} A. Mechter, K. Kemih, and M. Ghanes, ``Backstepping control of a wind turbine for low wind speeds,'' \textit{Nonlinear Dynamics}, vol. 84, no. 4, pp. 2435--2445, 2016.
+\bibitem{b22} A. Mechter, K. Kemih, and M. Ghanes, ``Sliding mode control of a wind turbine with exponential reaching law,'' \textit{Acta Polytechnica Hungarica}, vol. 12, no. 3, pp. 167--183, 2015.
+\bibitem{b23} I. Bouguettah, M. Messadi, K. Kemih, \textit{et al.}, ``Adaptive passive fault tolerant control of DFIG-based wind turbine using a self-tuning fractional integral sliding mode control,'' \textit{Frontiers in Energy Research}, vol. 12, p. 1429877, 2024.
+\bibitem{b24} S. Regani, M. Messadi, and K. Kemih, ``Modeling and Nonlinear Dynamic Analysis of a DFIG-Based Wind Turbine System,'' submitted to \textit{Journal of Applied Nonlinear Dynamics}, Mar. 2026.
+\bibitem{b25} A. Senouci and A. Boukabou, ``Predictive control and synchronization of chaotic and hyperchaotic systems based on a T--S fuzzy model,'' \textit{Mathematics and Computers in Simulation}, vol. 105, pp. 62--78, 2014.
+\bibitem{b26} A. Boukabou, A. Chebbah, and N. Mansouri, ``Predictive control of continuous chaotic systems,'' \textit{International Journal of Bifurcation and Chaos}, vol. 18, no. 2, pp. 587--592, 2008.
+\bibitem{b27} M. Messadi and A. Mellit, ``Predictive control of a chaotic permanent magnet synchronous generator in a wind turbine system,'' \textit{Chinese Physics B}, vol. 24, no. 1, p. 010502, 2015.
+\bibitem{b28} H. Takhi, L. Moysis, N. Machkour, \textit{et al.}, ``Predictive control and synchronization of uncertain perturbed chaotic permanent-magnet synchronous generator and its microcontroller implementation,'' \textit{The European Physical Journal Special Topics}, vol. 231, no. 3, pp. 443--451, 2022.
+\bibitem{b29} M. Messadi and A. Mellit, ``Control of chaos in an induction motor system with LMI predictive control and experimental circuit validation,'' \textit{Chaos, Solitons \& Fractals}, vol. 97, pp. 51--58, 2017.
+\bibitem{b30} M. Messadi, K. Kemih, and H. Hamiche, ``A new secure communications scheme based on synchronization of hybrid chaotic system,'' \textit{Chaos Theory and Applications}, vol. 5, no. 3, pp. 160--166, 2023.
+\bibitem{b31} H. Takhi, K. Kemih, L. Moysis, \textit{et al.}, ``Passivity-based control and synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,'' \textit{International Journal of Dynamics and Control}, vol. 8, no. 3, pp. 973--990, 2020.
+\bibitem{b32} H. Ren and D. Liu, ``Nonlinear feedback control of chaos in permanent magnet synchronous motor,'' \textit{IEEE Trans. Circuits and Systems II: Express Briefs}, vol. 53, no. 1, pp. 45--50, 2006.
+\bibitem{b33} G. Chen, ``A simple adaptive feedback control method for chaos and hyper-chaos control,'' \textit{Applied Mathematics and Computation}, vol. 217, no. 17, pp. 7258--7264, 2011.
+\end{thebibliography}
+
+\end{document}
