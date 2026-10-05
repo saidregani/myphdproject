@@ -1,0 +1,357 @@
+function DFIG_FL_MPC
+% Hybrid feedback linearization + MPC control of a chaotic DFIG (ICRAMI 2026)
+%
+% Model (18): x = [idr; iqr; wr], inputs u1 = udr, u2 = uqr only
+%   x1' = a1 x1 + (ws - x3) x2 + a2 x3 + a3 uds + a4 u1
+%   x2' = -(ws - x3) x1 + a1 x2 + a5 + a3 uqs + a4 u2
+%   x3' = a6 x1 - a7 x3 - a8
+%
+% Part 1 : chaotic attractor in open loop (Fig. 1, Lyapunov exponents)
+% Part 2 : chaos suppression, control switched on at t = 10 s (Fig. 4, Table II)
+% Part 3 : MPPT tracking under turbulent wind (Figs. 2, 5, 6, Table III)
+%
+% Needs wind_profile.csv in the same folder for part 3.
+% No toolbox required (works in MATLAB and Octave).
+
+clc; close all;
+
+run_part1 = 1;
+run_part2 = 1;
+run_part3 = 1;
+
+%% ============================ PARAMETERS ============================
+% --- DFIG (Table I)
+Rs  = 5.0536e-5;   % stator resistance (Ohm)
+Rr  = 1.8781e-4;   % rotor resistance (Ohm)
+Ls  = 0.0833;      % stator inductance (H)
+Lr  = 0.0844;      % rotor inductance (H)
+Lm  = 0.0811;      % mutual inductance (H)
+ws  = 100*pi;      % stator pulsation (rad/s)
+psi = 1.7933;      % stator flux (Wb)
+np  = 2;           % pole pairs
+J   = 31.18;       % inertia (kg.m^2)
+D   = 71.85;       % viscous friction (N.m.s/rad), chaotic case
+TL  = -11337;      % load torque (N.m), chaotic case
+udr0 = 2.539;      % open-loop rotor voltage d (V)
+uqr0 = -2.936;     % open-loop rotor voltage q (V)
+uds = -ws*psi;     % stator flux on the q axis
+uqs = 0;
+
+x0 = [0.3; 0.6; 3.6];   % initial condition
+
+% --- turbine (part 3)
+rho  = 1.225;      % air density (kg/m^3)
+Rb   = 20;         % blade radius (m)
+G    = 86;         % gear ratio, pole pairs included: wr = G*lambda*v/R
+lopt = 8.1;        % optimal tip-speed ratio
+Dn   = 0.1;        % nominal damping in normal operation (N.m.s/rad)
+tf_wind = 2;       % time constant of the wind filter for the speed reference (s)
+
+% --- controller
+Ts   = 1e-3;       % sampling period (s)
+nsub = 4;          % RK4 sub-steps per sample
+lam  = 10;         % outer speed loop (1/s)
+lamI = 25;         % outer speed loop, integral (1/s^2)
+N    = 10;         % prediction horizon
+Q    = diag([1 3]);% state weight on [e, int e]
+r    = 1e-6;       % input weight
+SC   = 100;        % current scaling in the QP (A)
+Umax = 200;        % rotor voltage limit |udr|, |uqr| (V)
+
+% --- simulation
+T1    = 300;  T1_trans = 100;  T1_lyap = 200;   % part 1 (s)
+T2    = 16;   t_on = 10;                        % part 2 (s)
+w_star = 1.05*ws;                               % speed target of part 2
+
+%% ============================ COEFFICIENTS ============================
+sig = 1 - Lm^2/(Ls*Lr);
+a1 = -Rs*Lm^2/(sig*Ls^2*Lr) - Rr/(sig*Lr);
+a2 = -Lm*psi/(sig*Lr*Ls);
+a3 = -Lm/(sig*Ls*Lr);
+a4 = 1/(sig*Lr);
+a5 = Rs*Lm*psi/(sig*Ls^2*Lr);
+a6 = 3*np^2*Lm*psi/(2*J*Ls);
+a7 = D/J;
+a8 = np*TL/J;
+k1 = a3*uds;            % constant term of line 1 (without u1)
+k2 = a5 + a3*uqs;       % constant term of line 2 (without u2)
+
+fprintf('sigma = %.4f\n', sig);
+fprintf('a1 = %.4f  a2 = %.2f  a3 = %.2f  a4 = %.2f\n', a1, a2, a3, a4);
+fprintf('a5 = %.4f  a6 = %.4f  a7 = %.4f  a8 = %.2f\n', a5, a6, a7, a8);
+fprintf('a3*uds = %.4e\n\n', k1);
+
+% drift of (18) without the inputs, for a given a7 and a8
+F = @(x, a7, a8) [ a1*x(1) + (ws - x(3))*x(2) + a2*x(3) + k1;
+                  -(ws - x(3))*x(1) + a1*x(2) + k2;
+                   a6*x(1) - a7*x(3) - a8 ];
+
+%% ============================ MPC DESIGN ============================
+% error model of each current channel, xi = [e; int e]  (Eq. 21)
+A = [1 0; Ts 1];
+B = [Ts; Ts^2/2];
+
+% terminal weight P and gain K: Riccati solution = maximal-volume solution of LMI (23)
+P = Q;
+for it = 1:200000
+    Pn = A'*P*A - A'*P*B/(r + B'*P*B)*B'*P*A + Q;
+    if max(abs(Pn(:) - P(:))) < 1e-12*max(abs(P(:))), P = Pn; break; end
+    P = Pn;
+end
+K = -(r + B'*P*B)\(B'*P*A);
+
+% check of LMI (23) with X = inv(P), Y = K X
+X = inv(P);  Y = K*X;  Qh = chol(Q);
+M = [X, (A*X + B*Y)', X*Qh', sqrt(r)*Y';
+     A*X + B*Y, X, zeros(2), zeros(2,1);
+     Qh*X, zeros(2), eye(2), zeros(2,1);
+     sqrt(r)*Y, zeros(1,2), zeros(1,2), 1];
+Acl = A + B*K;
+fprintf('K = [%.1f, %.1f]\n', K);
+fprintf('min eig of LMI (23) = %.2e (>= 0)\n', min(eig((M + M')/2)));
+fprintf('Lyapunov residual = %.2e (<= 0), spectral radius = %.4f\n\n', ...
+        max(eig(Acl'*P*Acl - P + Q + r*(K'*K))), max(abs(eig(Acl))));
+
+% condensed prediction over the horizon: Xi = Phi*xi0 + Gam*v
+Phi = zeros(2*N, 2);  Gam = zeros(2*N, N);
+for i = 1:N
+    Phi(2*i-1:2*i, :) = A^i;
+    for j = 1:i
+        Gam(2*i-1:2*i, j) = A^(i-j)*B;
+    end
+end
+Qb = kron(eye(N), Q);
+Qb(end-1:end, end-1:end) = Q + P;          % terminal weight
+H  = Gam'*Qb*Gam + r*eye(N);               % QP Hessian
+Fq = Gam'*Qb*Phi;                          % QP linear term: f = Fq*xi0
+
+mpc.H = H;  mpc.Fq = Fq;  mpc.SC = SC;
+
+%% ============================ PART 1 : CHAOS ============================
+if run_part1
+    f0 = @(x) F(x, a7, a8) + [a4*udr0; a4*uqr0; 0];
+    Jac = @(x) [a1, ws - x(3), a2 - x(2); -(ws - x(3)), a1, x(1); a6, 0, -a7];
+    dt = 1e-3;  n1 = round(T1/dt);
+    X1 = zeros(3, n1+1);  X1(:,1) = x0;
+    for k = 1:n1
+        X1(:,k+1) = rk4(f0, X1(:,k), dt);
+    end
+    t1 = (0:n1)*dt;
+
+    % Lyapunov exponents (QR method)
+    fz = @(y) [f0(y(1:3)); reshape(Jac(y(1:3))*reshape(y(4:12),3,3), 9, 1)];
+    y = [X1(:,end); reshape(eye(3), 9, 1)];  S = zeros(3,1);
+    for k = 1:round(T1_lyap/dt)
+        y = rk4(fz, y, dt);
+        if mod(k, 50) == 0
+            [Qr, Rr_] = qr(reshape(y(4:12),3,3));
+            S = S + log(abs(diag(Rr_)));
+            y(4:12) = reshape(Qr*diag(sign(diag(Rr_))), 9, 1);
+        end
+    end
+    LE = sort(S/T1_lyap, 'descend');
+    fprintf('Lyapunov exponents: %.3f  %.3f  %.3f\n', LE);
+    fprintf('sum = %.3f, divergence 2a1 - a7 = %.3f, Kaplan-Yorke = %.2f\n\n', ...
+            sum(LE), 2*a1 - a7, 2 + LE(1)/abs(LE(3)));
+
+    m = t1 > T1_trans;
+    figure('Name', 'Fig. 1 - chaotic attractor');
+    subplot(2,2,1); plot(X1(1,m), X1(2,m), 'b', 'linewidth', 0.2); grid on
+    xlabel('x_1 = i_{dr} (A)'); ylabel('x_2 = i_{qr} (A)'); title('(a)')
+    subplot(2,2,2); plot(X1(1,m), X1(3,m), 'b', 'linewidth', 0.2); grid on
+    xlabel('x_1 = i_{dr} (A)'); ylabel('x_3 = \omega_r (rad/s)'); title('(b)')
+    subplot(2,2,3); plot(X1(2,m), X1(3,m), 'b', 'linewidth', 0.2); grid on
+    xlabel('x_2 = i_{qr} (A)'); ylabel('x_3 = \omega_r (rad/s)'); title('(c)')
+    subplot(2,2,4); plot3(X1(1,m), X1(2,m), X1(3,m), 'b', 'linewidth', 0.2); grid on
+    xlabel('x_1'); ylabel('x_2'); zlabel('x_3'); title('(d)'); view(-35, 25)
+end
+
+%% ============================ PART 2 : CHAOS SUPPRESSION ============================
+if run_part2
+    iq_star = psi/Lm;                            % unity power factor (Qs = 0)
+    id_star = (a7*w_star + a8)/a6;               % equilibrium of line 3
+    n2 = round(T2/Ts);
+    t2 = (1:n2)*Ts;  X2 = zeros(3, n2);  U2 = zeros(2, n2);
+    x = x0;  st.I = [0; 0];  st.I3 = 0;
+    for k = 1:n2
+        t = (k-1)*Ts;
+        if t < t_on
+            u = [udr0; uqr0];
+        else
+            ref = [w_star; 0; 0; iq_star; 0];    % [wref, dwref, ddwref, iqref, diqref]
+            [u, st] = control(x, ref, a8, 0, st, F, a4, a6, a7, lam, lamI, Ts, Umax, mpc);
+        end
+        x = plant(x, u, F, a7, a8, a4, Ts, nsub);
+        X2(:,k) = x;  U2(:,k) = u;
+    end
+
+    m  = t2 >= t_on;
+    ew = X2(3,m) - w_star;  tt = t2(m);
+    bad = find(abs(ew) > 0.01*w_star);
+    if isempty(bad), ts2 = 0; else, ts2 = tt(bad(end)) - t_on; end
+    fprintf('--- Chaos suppression (Table II)\n');
+    fprintf('target: idr* = %.1f A, iqr* = %.1f A, wr* = %.1f rad/s\n', id_star, iq_star, w_star);
+    fprintf('IAE of speed error      = %.2f rad\n', sum(abs(ew))*Ts);
+    fprintf('settling time (1%% band) = %.2f s\n', ts2);
+    fprintf('final speed error       = %.1e rad/s\n', abs(ew(end)));
+    fprintf('steady voltages udr, uqr = %.1f V, %.1f V\n\n', U2(1,end), U2(2,end));
+
+    xs = [id_star, iq_star, w_star];
+    lab = {'x_1 = i_{dr} (A)', 'x_2 = i_{qr} (A)', 'x_3 = \omega_r (rad/s)'};
+    figure('Name', 'Fig. 4 - chaos suppression');
+    for i = 1:3
+        subplot(3,1,i); plot(t2, X2(i,:), 'b', 'linewidth', 0.5); hold on
+        plot([0 T2], xs(i)*[1 1], 'k-.'); plot([t_on t_on], ylim, 'color', [0.5 0.5 0.5]);
+        ylabel(lab{i}); xlim([0 14]); grid on
+    end
+    xlabel('time (s)')
+end
+
+%% ============================ PART 3 : MPPT ============================
+if run_part3
+    a7n = Dn/J;                                  % normal operation: nominal damping
+    W = csvread('wind_profile.csv', 1, 0);
+    tw = W(:,1)';  v = W(:,2)';  dt = tw(2) - tw(1);
+    vf = v;
+    for k = 2:length(v), vf(k) = vf(k-1) + dt/tf_wind*(v(k) - vf(k-1)); end
+
+    Ta = @(v, x3) aero_torque(v, x3, rho, Rb, G, np);
+
+    % references (Section IV)
+    wref   = G*lopt*vf/Rb;                       % Eq. (17)
+    dwref  = gradient(wref, dt);
+    ddwref = gradient(dwref, dt);
+    dv     = gradient(v, dt);
+    a8ref  = -np*Ta(v, wref)/J;
+    idref  = (dwref + a7n*wref + a8ref)/a6;      % torque balance on the reference
+    iqref  = psi/Lm;                             % Eq. (16)
+
+    n3 = length(tw) - 1;
+    X3 = zeros(3, n3);  U3 = zeros(2, n3);
+    x = [0; 0; 0.9*wref(1)];  st.I = [0; 0];  st.I3 = 0;
+    for k = 1:n3
+        a8k = -np*Ta(v(k), x(3))/J;              % turbine torque replaces TL
+        fx  = F(x, a7n, a8k);
+        % time derivative of a8 (needed by the speed loop)
+        hx = 1e-3*max(abs(x(3)), 1);  hv = 1e-4*max(abs(v(k)), 1);
+        dTa = (Ta(v(k), x(3)+hx) - Ta(v(k), x(3)-hx))/(2*hx)*fx(3) ...
+            + (Ta(v(k)+hv, x(3)) - Ta(v(k)-hv, x(3)))/(2*hv)*dv(k);
+        da8 = -np*dTa/J;
+        ref = [wref(k); dwref(k); ddwref(k); iqref; 0];
+        [u, st] = control(x, ref, a8k, da8, st, F, a4, a6, a7n, lam, lamI, Ts, Umax, mpc);
+        x = plant(x, u, F, a7n, a8k, a4, Ts, nsub);
+        X3(:,k) = x;  U3(:,k) = u;
+    end
+
+    t3 = tw(2:end);
+    XR = [idref(2:end); iqref*ones(1, n3); wref(2:end)];
+    Pg = @(idr) -1.5*ws*psi*Lm/Ls*idr;           % stator active power (W)
+    Ps = Pg(X3(1,:))/1e3;  Pr = Pg(XR(1,:))/1e3; % kW
+    m = t3 >= 5;
+    rms_ = @(e) sqrt(mean(e.^2));
+    bad = find(abs(X3(3,:) - XR(3,:)) > 0.02*XR(3,1));
+    if isempty(bad), ts3 = 0; else, ts3 = t3(bad(end)); end
+    fprintf('--- MPPT tracking (Table III, t >= 5 s)\n');
+    fprintf('wref in [%.0f, %.0f] rad/s, Ps,ref in [%.0f, %.0f] kW\n', ...
+            min(wref), max(wref), min(Pr), max(Pr));
+    fprintf('RMS error wr  = %.3f rad/s\n', rms_(X3(3,m) - XR(3,m)));
+    fprintf('RMS error idr = %.2f A\n', rms_(X3(1,m) - XR(1,m)));
+    fprintf('RMS error iqr = %.3f A\n', rms_(X3(2,m) - XR(2,m)));
+    fprintf('RMS error Ps  = %.2f kW (%.2f %% of mean Ps)\n', rms_(Ps(m) - Pr(m)), ...
+            100*rms_(Ps(m) - Pr(m))/mean(Ps(m)));
+    fprintf('speed settling time (2%% band) = %.2f s\n', ts3);
+    fprintf('voltage limit reached after start-up: %.2f %% of the time\n', ...
+            100*mean(any(abs(U3(:,m)) >= Umax - 1e-6, 1)));
+
+    figure('Name', 'Fig. 2 - wind');
+    plot(tw, v, 'b', tw, vf, 'r', 'linewidth', 0.8); grid on
+    xlabel('time (s)'); ylabel('wind speed (m/s)'); legend('v(t)', 'filtered')
+
+    lab = {'i_{dr} (A)', 'i_{qr} (A)', '\omega_r (rad/s)'};
+    figure('Name', 'Fig. 5 - MPPT tracking');
+    for i = 1:3
+        subplot(3,1,i); plot(t3, XR(i,:), 'r', 'linewidth', 1.2); hold on
+        plot(t3, X3(i,:), 'b', 'linewidth', 0.5); ylabel(lab{i}); grid on
+    end
+    subplot(3,1,1); ylim([-700 700]); legend('reference', 'FL-MPC')
+    subplot(3,1,2); ylim([10 35]);
+    xlabel('time (s)')
+
+    figure('Name', 'Fig. 6 - stator power');
+    subplot(3,1,[1 2]); plot(t3, Pr, 'r', 'linewidth', 1.2); hold on
+    plot(t3, Ps, 'b', 'linewidth', 0.5); ylabel('P_s (kW)'); ylim([0 550]); grid on
+    legend('P_{s,ref}', 'P_s (FL-MPC)')
+    subplot(3,1,3); plot(t3, Ps - Pr, 'b', 'linewidth', 0.5); ylim([-30 30]); grid on
+    ylabel('error (kW)'); xlabel('time (s)')
+end
+end
+
+%% ============================ FUNCTIONS ============================
+function [u, st] = control(x, ref, a8, da8, st, F, a4, a6, a7, lam, lamI, Ts, Umax, mpc)
+% outer speed loop (19) + feedback compensation (20) + MPC (22)
+wref = ref(1); dwref = ref(2); ddwref = ref(3); iqref = ref(4); diqref = ref(5);
+fx = F(x, a7, a8);
+e3 = x(3) - wref;
+idr  = (dwref + a7*wref + a8 - lam*e3 - lamI*st.I3)/a6;                    % Eq. (19)
+didr = (ddwref + a7*dwref + da8 - lam*(fx(3) - dwref) - lamI*e3)/a6;
+e = [x(1) - idr; x(2) - iqref];
+h = [-fx(1) + didr; -fx(2) + diqref];          % u = (h + v)/a4, Eq. (20)
+lim = a4*Umax;
+v = zeros(2,1);
+for i = 1:2
+    xi = [e(i); st.I(i)]/mpc.SC;
+    v(i) = mpc.SC*mpc_move(mpc, xi, (-lim - h(i))/mpc.SC, (lim - h(i))/mpc.SC);
+end
+u = min(max((h + v)/a4, -Umax), Umax);
+st.I  = st.I + (abs(u) < Umax - 1e-9).*e*Ts;   % integral frozen at the limit
+st.I3 = st.I3 + e3*Ts;
+end
+
+function v0 = mpc_move(mpc, xi, lb, ub)
+% box-constrained QP: min 0.5 v'Hv + f'v, lb <= v <= ub  (active-set method)
+% only the first move is returned (receding horizon)
+H = mpc.H;  f = mpc.Fq*xi;  n = length(f);
+if lb > ub, lb = (lb + ub)/2; ub = lb; end
+v = -H\f;
+if all(v >= lb & v <= ub), v0 = v(1); return; end
+free = true(n,1);  v = min(max(v, lb), ub);
+for it = 1:5*n
+    if any(free)
+        v(free) = -H(free,free)\(f(free) + H(free,~free)*v(~free));
+    end
+    out = free & (v < lb | v > ub);
+    if any(out)
+        v(out) = min(max(v(out), lb), ub);  free(out) = false;
+        continue
+    end
+    g = H*v + f;                                % multipliers of the active bounds
+    wrong = ~free & ((v <= lb & g < 0) | (v >= ub & g > 0));
+    if ~any(wrong), break; end
+    [~, j] = max(abs(g).*wrong);  free(j) = true;
+end
+v0 = v(1);
+end
+
+function x = plant(x, u, F, a7, a8, a4, Ts, nsub)
+% RK4 integration of (18) over one sample
+f = @(z) F(z, a7, a8) + [a4*u(1); a4*u(2); 0];
+h = Ts/nsub;
+for i = 1:nsub
+    x = rk4(f, x, h);
+end
+end
+
+function x = rk4(f, x, h)
+k1 = f(x); k2 = f(x + h/2*k1); k3 = f(x + h/2*k2); k4 = f(x + h*k3);
+x = x + h/6*(k1 + 2*k2 + 2*k3 + k4);
+end
+
+function T = aero_torque(v, x3, rho, R, G, np)
+% aerodynamic torque on the generator shaft, Eq. (3)
+Wm  = max(x3, 1)/np;
+lam = R*x3./(G*max(v, 0.5));
+lam = min(max(lam, 2), 13);
+li  = 1./(1./lam - 0.035);
+Cp  = max(0.5176*(116./li - 5).*exp(-21./li) + 0.0068*lam, 0);
+T   = 0.5*rho*pi*R^2*Cp.*v.^3./Wm;
+end
