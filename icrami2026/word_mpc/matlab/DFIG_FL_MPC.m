@@ -59,7 +59,7 @@ SC   = 100;        % current scaling in the QP (A)
 Umax = 200;        % rotor voltage limit |udr|, |uqr| (V)
 
 % --- simulation
-T1    = 300;  T1_trans = 100;  T1_lyap = 200;   % part 1 (s)
+T1    = 300;  T1_trans = 100;  T1_lyap = 1000;  % part 1 (s), long averaging for the exponents
 T2    = 16;   t_on = 10;                        % part 2 (s)
 w_star = 1.05*ws;                               % speed target of part 2
 
