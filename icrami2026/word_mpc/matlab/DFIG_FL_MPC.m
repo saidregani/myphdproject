@@ -275,7 +275,7 @@ if run_part3
     end
     subplot(3,1,1); ylim([-700 700]); legend('reference', 'FL-MPC')
     subplot(3,1,2); ylim([10 35]);
-    xlabel('time (s)')
+    subplot(3,1,3); xlabel('time (s)')
 
     figure('Name', 'Fig. 6 - stator power');
     subplot(3,1,[1 2]); plot(t3, Pr, 'r', 'linewidth', 1.2); hold on
