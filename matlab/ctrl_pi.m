@@ -1,6 +1,7 @@
 function [u, S, lg] = ctrl_pi(m, S, P)
 %CTRL_PI  Classical vector control: PI speed loop + PI current loops
 %(MSC), PI DC-bus loop + PI current loops (GSC), with dq decoupling.
+%Type 'PIFF' adds the feed-forward of P_msc in the DC-bus loop.
 Ts = P.Ts;
 [wr, ~, S] = mppt_ref(m.vw, S, P);
 we = P.p*m.w;
@@ -21,8 +22,11 @@ if norm(vs - vsl) < 1e-9, S.Is = S.Is + Ts*S.Kis*es; end
 
 %% DC bus + grid side
 ev  = m.Vdc - P.Vdc_ref;
-igr = [clamp(S.Kpv*ev + S.Iv, -P.Imax_g, P.Imax_g); -2*P.Qref/(3*m.vg(1))];
-if abs(S.Kpv*ev + S.Iv) < P.Imax_g, S.Iv = S.Iv + Ts*S.Kiv*ev; end
+iff = 0;
+if S.ff, iff = (S.u(1)*m.isd + S.u(2)*m.isq)/m.vg(1); end   % P_msc/(1.5 v_gd)
+igd = S.Kpv*ev + S.Iv + iff;
+igr = [clamp(igd, -P.Imax_g, P.Imax_g); -2*P.Qref/(3*m.vg(1))];
+if abs(igd) < P.Imax_g, S.Iv = S.Iv + Ts*S.Kiv*ev; end
 ig  = [m.igd; m.igq];
 eg  = ig - igr;
 vi  = m.vg - P.wg*P.Lf*[ig(2); -ig(1)] - S.Kpg*eg - S.Ig;

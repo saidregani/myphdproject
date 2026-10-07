@@ -13,7 +13,7 @@ h   = P.hsw;  nsub = round(Tc/h);
 vwf = @(t) 10 + 0.5*(1 + tanh((t - 0.45)/0.05));
 [x, u] = init_state(P, Pp, vwf(0));
 S   = ctrl_init(Pc, ctrlType, x, vwf(0), u);
-if strcmp(ctrlType, 'PI'), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
+if strncmp(ctrlType, 'PI', 2), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
 
 N    = round(Tend/h);
 dec  = 5;  nlog = floor(N/dec);

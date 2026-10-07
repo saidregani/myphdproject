@@ -1,18 +1,18 @@
 function out = simulate(P, ctrlType, scenario)
 %SIMULATE  Closed-loop simulation of the complete PMSG wind chain.
-%   ctrlType: 'PI' | 'FPBC'
+%   ctrlType: 'PI' | 'PIFF' | 'FPBC0' | 'FPBC'
 %   scenario: 'nominal' | 'robust' (plant parameters differ from the values
 %             known by the controller, 10 % error on the Cp model,
-%             + 20 % grid voltage dip at t = 8 s)
+%             + grid voltage dip (P.ksag at P.tsag, default 20 % at 8 s))
 Pp = plant_true(P, scenario);
 if strcmp(scenario, 'robust'), P.kTw = 0.9; end   % 10 % error on the Cp model
-vgfun = @(t) P.Vgm*[1 - 0.2*(strcmp(scenario,'robust') && t >= 8 && t < 8.2); 0];
+vgfun = @(t) P.Vgm*[1 - P.ksag*(strcmp(scenario,'robust') && t >= P.tsag && t < P.tsag + P.dsag); 0];
 
 vw0 = wind_speed(0);
 [x, u] = init_state(P, Pp, vw0);       % steady-state MPPT operating point
 
 S = ctrl_init(P, ctrlType, x, vw0, u);
-if strcmp(ctrlType, 'PI'), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
+if strncmp(ctrlType, 'PI', 2), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
 
 N    = round(P.Tend/P.Ts);
 dec  = 10;                                  % logging decimation

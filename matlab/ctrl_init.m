@@ -1,8 +1,10 @@
 function S = ctrl_init(P, type, x0, vw0, u0)
 %CTRL_INIT  Controller gains and internal states.
-%   type = 'PI'  : classical vector control (cascaded PI loops)
+%   type = 'PI'   : classical vector control (cascaded PI loops)
+%   type = 'PIFF' : same + feed-forward of P_msc in the DC-bus loop
 %   type = 'FPBC': flatness (outer) + passivity-based (inner) control
 %                  with ANN online gain tuning
+%   type = 'FPBC0': same as FPBC with the ANN disabled (fixed gains)
 S.type = type;
 S.u    = u0;                                  % last applied voltages
 % common MPPT reference generator
@@ -19,8 +21,9 @@ wnv = 60; zv = 1;            % DC-bus loop natural freq / damping
 
 Tw0 = 1.5*P.p*P.psi*x0(2) + P.B*x0(3);
 
+S.ff = strcmp(type, 'PIFF');
 switch type
-  case 'PI'
+  case {'PI', 'PIFF'}
     % current loops: Kp = L/tau, Ki = L/(4 tau^2) -> double pole 1/(2 tau)
     S.Kps = P.Ls/tau_i;  S.Kis = P.Ls/(4*tau_i^2);
     S.Kpg = P.Lf/tau_i;  S.Kig = P.Lf/(4*tau_i^2);
@@ -30,9 +33,9 @@ switch type
     S.Kpv = 2*zv*wnv*P.C*P.Vdc_ref/(1.5*P.Vgm);
     S.Kiv = wnv^2   *P.C*P.Vdc_ref/(1.5*P.Vgm);
     % integrator states (stored as integral-term values)
-    S.Iw = Tw0;  S.Iv = x0(5);  S.Is = [0; 0];  S.Ig = [0; 0];
+    S.Iw = Tw0;  S.Iv = x0(5)*(~S.ff);  S.Is = [0; 0];  S.Ig = [0; 0];
 
-  case 'FPBC'
+  case {'FPBC', 'FPBC0'}
     % outer loops (flatness): e_dot + k1 e + k2 int(e) = 0  (same poles as PI)
     S.k11 = 2*zw*wnw;  S.k12 = wnw^2;      % speed   (flat output Omega)
     S.k21 = 2*zv*wnv;  S.k22 = wnv^2;      % DC bus  (flat output energy y2)
@@ -44,11 +47,22 @@ switch type
     S.tau_d = 2e-3;
     S.is_f = [0; x0(2)];  S.ig_f = [x0(5); 0];
     S.en_s = 0; S.en_g = 0; S.en_w = 0; S.en_v = 0;   % ANN de/dt
-    % ANN gain tuners: (gmin, gmax, learning rate, leakage)
-    S.nn_s = rbf_init(0.5, 3, 100, 5);
-    S.nn_g = rbf_init(0.5, 3, 100, 5);
-    S.nn_w = rbf_init(0.5, 3, 20, 1);
-    S.nn_v = rbf_init(0.5, 3, 50, 3);
+    % ANN gain tuners: error normalisation (fraction of rated value at
+    % which the normalised error is 1), then (gmin, gmax, learning rate, leakage)
+    A = P.ann;
+    S.ni = A.ni;  S.nw = A.nw;  S.nv = A.nv;
+    S.nn_s = rbf_init(0.5, A.gmax, A.eta_i, A.sig_i);
+    S.nn_g = rbf_init(0.5, A.gmax, A.eta_i, A.sig_i);
+    S.nn_w = rbf_init(0.5, A.gmax, A.eta_w, A.sig_w);
+    S.nn_v = rbf_init(0.5, A.gmax, A.eta_v, A.sig_v);
+    % ANN 2: RBF approximation of the aerodynamic torque model error
+    [c1, c2] = meshgrid(linspace(0.6, 1.4, 5), linspace(0.5, 1.1, 5));
+    S.Ctw = [c1(:)'; c2(:)'];  S.Wtw = zeros(25, 1);
+    S.gtw = A.eta_tw;  S.stw = A.sig_tw;
+    if strcmp(type, 'FPBC0')
+      S.gtw = 0;
+      S.nn_s.off = true; S.nn_g.off = true; S.nn_w.off = true; S.nn_v.off = true;
+    end
   otherwise
     error('unknown controller type');
 end

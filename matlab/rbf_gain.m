@@ -5,6 +5,7 @@ function [g, net] = rbf_gain(net, en, den, Ts)
 % large; the sigma-modification leakage brings it back to nominal (g = 1)
 % in steady state and keeps the weights bounded. g stays in [gmin, gmax]
 % (> 0), so the Lyapunov proofs of the passivity-based loops still hold.
+if net.off, g = 1; return; end
 x   = [clamp(en, -1.5, 1.5); clamp(den, -1.5, 1.5)];
 d2  = sum((net.C - x*ones(1, size(net.C, 2))).^2, 1);
 phi = exp(-d2' / (2*net.width^2));

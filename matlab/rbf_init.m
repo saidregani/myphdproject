@@ -11,4 +11,5 @@ net.gmax  = gmax;
 net.b0    = log((1 - gmin)/(gmax - 1));% g = 1 when w = 0
 net.eta   = eta;                       % learning rate
 net.sigma = sigma;                     % leakage (sigma-modification)
+net.off   = false;                     % true -> fixed gain g = 1 (no ANN)
 end

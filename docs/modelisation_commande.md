@@ -123,23 +123,34 @@ Fonction de stockage : H = ½ e_sᵀ L_s e_s + ½ K_i z_sᵀ z_s
 ⇒ **dH/dt = −(R_s + R_a(t)) ‖e_s‖² ≤ 0**  (car e_sᵀ𝐉e_s = 0). Même résultat pour l'onduleur.
 
 ### 3.4 ANN pour régler les paramètres en ligne
-* Un réseau RBF par boucle.
-* Entrées : erreur normalisée e_n et sa dérivée. 9 neurones gaussiens. Sortie sigmoïde → g ∈ [0,5 ; 3].
-* Gains réglés : R_a = g_s R_a0, R_b = g_g R_b0, k₁₁ = g_Ω k₁₁⁰, k₂₁ = g_v k₂₁⁰.
-* Apprentissage en ligne : critère E = ½ e_n². Comme ∂E/∂K ≈ −e² T_s/L < 0, la mise à jour est
-  ẇ = η e_n² ∂g/∂w − σ w. Le gain augmente pendant les transitoires et revient au nominal en régime établi
-  (σ-modification, poids bornés).
-* **Argument de stabilité** : l'ANN ne modifie que les gains proportionnels / d'amortissement.
-  * Pour les boucles de courant, dH/dt = −(R + R_a(t))‖e‖² ≤ 0 pour **tout** R_a(t) > 0.
-  * Pour les boucles plates, V = ½e² + ½k₂ z² donne dV/dt = −k₁(t) e² ≤ 0.
-  * Donc l'ANN améliore les transitoires sans casser la stabilité, puisque g est borné et positif.
+Deux réseaux RBF, avec deux rôles :
 
-### 3.5 Commande de référence (comparaison)
-Commande vectorielle classique à PI (vitesse, courants MSC/GSC avec découplage, bus DC). Elle est réglée sur les mêmes
-pôles nominaux (courants τ = 2 ms, vitesse ω_n = 2 rad/s, ζ = 0,9, bus DC ω_n = 60 rad/s).
+**ANN 1 — réglage des gains.** Un RBF par boucle règle les gains proportionnels / d'amortissement.
+* Gains réglés : R_a = g_s R_a0, R_b = g_g R_b0, k₁₁ = g_Ω k₁₁⁰, k₂₁ = g_v k₂₁⁰.
+* Entrées : erreur normalisée e_n et sa dérivée. 9 neurones. Sortie sigmoïde → g ∈ [0,5 ; 3].
+* Apprentissage : ẇ = η e_n² ∂g/∂w − σ w, car ∂E/∂K ≈ −e² T_s/L < 0. Le gain monte pendant les transitoires
+  puis revient au nominal.
+* Stabilité : dH/dt = −(R + R_a(t))‖e‖² ≤ 0 pour tout R_a(t) > 0. Même chose pour les boucles plates
+  (dV/dt = −k₁(t)e²).
+
+**ANN 2 — correction du modèle aérodynamique.** La platitude est basée sur le modèle, et C_p(λ) n'est jamais connu
+exactement.
+* Un RBF (25 neurones sur (λ/λ_opt, v/11)) apprend l'erreur : T_w = T̂_w,modèle + T_n Ŵᵀφ(λ, v) + ε.
+* Loi d'apprentissage de Lyapunov : dŴ/dt = −γ φ e_Ω − σŴ, avec e_Ω = Ω* − Ω.
+* Avec V = ½J e² + ½J k₁₂ z² + W̃ᵀW̃/(2γ), le terme croisé s'annule : dV/dt = −J k₁₁ e² (à ε et σ près).
+
+### 3.5 Commandes de comparaison
+Toutes sont réglées sur les mêmes pôles nominaux (courants τ = 2 ms, vitesse ω_n = 2 rad/s, ζ = 0,9, bus DC ω_n = 60 rad/s).
+
+| Nom | Description | Rôle dans l'article |
+|---|---|---|
+| PI | commande vectorielle classique (PI vitesse, PI bus DC, PI courants + découplage) | référence |
+| PI+FF | PI + anticipation de P_msc dans la boucle bus DC | référence **équitable** (même information que la platitude) |
+| Plate+PBC | commande proposée **sans ANN** (gains fixes) | montre l'apport de l'ANN |
+| Plate+PBC+ANN | commande proposée complète | — |
 
 ## 4. Simulation (`matlab/`)
-* `main.m` — **modèle moyen**, 10 s, 4 cas : PI / Plate+PBC+ANN × nominal / robustesse.
+* `main.m` — **modèle moyen**, 10 s, 4 commandes (PI, PI+FF, Plate+PBC, Plate+PBC+ANN) × 2 scénarios (nominal / robustesse).
   * Scénario **nominal** : vent 8 → 10 → 11 → 9 m/s + turbulence.
   * Scénario **robustesse** : la machine réelle a R_s ×1,5, L_s ×1,2, ψ_f ×0,92, et le filtre R_f ×1,5, L_f ×1,25.
     Les contrôleurs ne connaissent que les valeurs nominales. Le modèle C_p utilisé par la platitude a 10 % d'erreur.
@@ -166,30 +177,38 @@ Erreurs de courant RMS en A : [t < 1 s] / [t ≥ 1 s].
 | Scénario | Commande | IAE Ω | ISE V_dc | max abs(ΔV_dc) [V] | RMS e_s [A] | RMS e_g [A] | C_p moyen | Énergie [kWh] |
 |---|---|---|---|---|---|---|---|---|
 | nominal | PI | 0,0905 | 421,6 | 13,3 | 0,23 / 0,06 | 1,20 / 0,12 | 0,4652 | 3,503 |
+| nominal | PI+FF | 0,0905 | 0,11 | 1,7 | 0,23 / 0,06 | 1,26 / 0,12 | 0,4652 | 3,503 |
+| nominal | Plate+PBC | 0,0000 | 0,04 | 0,2 | 0,04 / 0,00 | 0,14 / 0,00 | 0,4654 | 3,484 |
 | nominal | Plate+PBC+ANN | 0,0000 | 0,04 | 0,2 | 0,04 / 0,00 | 0,14 / 0,00 | 0,4654 | 3,484 |
 | robustesse | PI | 0,0976 | 1264,9 | 116,6 | 4,16 / 0,20 | 8,94 / 4,40 | 0,4652 | 3,479 |
-| robustesse | Plate+PBC+ANN | 0,0179 | 3,7 | 15,2 | 10,51 / 0,22 | 13,15 / 9,99 | 0,4656 | 3,466 |
+| robustesse | PI+FF | 0,0976 | 8,7 | 18,3 | 4,16 / 0,20 | 8,85 / 12,16 | 0,4652 | 3,479 |
+| robustesse | Plate+PBC | 0,0181 | 4,0 | 15,2 | 10,59 / 0,22 | 13,79 / 10,08 | 0,4656 | 3,466 |
+| robustesse | Plate+PBC+ANN | **0,0048** | **3,7** | 15,4 | 10,52 / 0,25 | 13,18 / 10,06 | 0,4654 | 3,463 |
 
 ### 6.2 Modèle commuté MLI (`main_mli.m`, f_sw = 5 kHz)
 | Commande | THD i_ga (régime établi) |
 |---|---|
 | PI | 0,31 % |
-| Plate+PBC+ANN | 0,56 % |
+| Plate+PBC+ANN | 0,61 % |
 
 Les deux sont largement sous la limite de 5 % (IEEE 519).
 
 ### 6.3 Lecture (à garder honnête dans l'article)
-* **Bus DC** : c'est le gain principal. En nominal, l'écart max est de 0,2 V contre 13 V pour le PI.
-  Pendant le creux de tension, il est de 15 V contre 117 V. Ce gain vient de la loi plate en énergie, qui inverse
-  le modèle avec P_msc (anticipation). Un relecteur peut demander un PI avec la même anticipation.
-* **Vitesse / MPPT** : le suivi est quasi parfait en nominal, mais seulement parce que T_w est calculé avec le modèle
-  C_p exact et le vent mesuré. Avec 10 % d'erreur sur le modèle (scénario robustesse), l'IAE reste environ 5 fois
-  plus petit que celui du PI. Le C_p moyen est à peine meilleur. L'énergie injectée est légèrement plus faible
-  (≈ 0,5 %), parce que la loi plate stocke plus d'énergie cinétique dans le rotor pendant les rafales.
-* **Courants** : en robustesse, la PBC utilise les paramètres nominaux dans ses anticipations.
-  * Pendant la première seconde, ses erreurs sont plus grandes que celles du PI.
-  * Pendant le creux réseau, l'erreur sur i_g est plus grande, parce que i_gd* saute instantanément.
-  * En dehors de ces deux phases, elle est équivalente au PI.
-* **ANN** : les gains montent pendant les transitoires (démarrage, rafales, creux à 8 s) puis reviennent à 1.
-* **THD** : légèrement plus élevé qu'avec le PI. L'ondulation MLI de P_msc passe par l'anticipation de la boucle plate
-  (un filtre sur P_msc est une amélioration possible).
+* **Bus DC, face à un PI équitable (PI+FF)** : l'avantage est réel mais modéré.
+  * ISE V_dc : 3,7 contre 8,7 (÷ 2,3).
+  * Écart max pendant le creux : 15 V contre 18 V. En nominal : 0,2 V contre 1,7 V.
+  * Face au PI sans anticipation, l'écart est énorme (117 V), mais cette comparaison n'est pas équitable.
+* **Apport de l'ANN** :
+  * En nominal, il n'apporte rien : le modèle est exact.
+  * En robustesse (10 % d'erreur sur C_p), l'ANN 2 divise l'IAE de vitesse par 3,8 (0,0181 → 0,0048).
+    C'est la contribution principale de l'ANN.
+  * L'ANN 1 (gains) a un effet faible : les erreurs restent sous le seuil de normalisation. Il ne s'active que
+    pendant les grands transitoires.
+* **Vitesse / MPPT** : l'IAE est 20 fois plus petit que le PI (0,0048 contre 0,0976). Mais le C_p moyen est
+  quasiment identique, et l'énergie injectée est ≈ 0,5 % plus faible (le rotor stocke plus d'énergie cinétique
+  pendant les rafales). Il ne faut pas annoncer un gain d'énergie.
+* **Courants** : la PBC utilise les paramètres nominaux dans ses anticipations.
+  * Au démarrage avec désaccord paramétrique, ses erreurs sont plus grandes que celles du PI.
+  * Pendant le creux, l'erreur sur i_g est comparable à celle du PI+FF.
+  * Toutes ces erreurs restent < 0,5 % du courant nominal.
+* **THD** : 0,61 % contre 0,31 %. Plus élevé, mais négligeable.

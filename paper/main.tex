@@ -23,11 +23,13 @@ the filter as flat outputs. The inner current loops of both converters use
 passivity-based control (PBC), which preserves the workless (skew-symmetric)
 coupling of the machine and filter models and injects damping. The
 proportional and damping gains of every loop are tuned online by
-radial-basis-function neural networks. Because the closed-loop storage
-functions decrease for any bounded positive gain, the neural tuner improves
-transients without affecting stability. Average and switched (5~kHz SVPWM)
+radial-basis-function neural networks, and a second RBF network learns the
+error of the aerodynamic model used by the flatness law. Because the
+closed-loop storage functions decrease for any bounded positive gain, the
+neural tuning does not affect stability. Average and switched (5~kHz SVPWM)
 simulations under wind variations, parameter mismatch and a 20\% grid voltage
-dip are compared with conventional PI vector control.
+dip are compared with PI vector control with and without power feed-forward,
+and with the proposed scheme without neural networks.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -92,6 +94,12 @@ $\dot{\mathbf z}_s=\mathbf e_s$: $\dot H=-(R_s+R_a(t))\|\mathbf e_s\|^2\le0$ for
 $K(t)=g(t)K_0$, $g=g_{min}+(g_{max}-g_{min})\,\mathrm{sig}(\mathbf w^T\boldsymbol\phi(e_n,\dot e_n))$,
 $\dot{\mathbf w}=\eta e_n^2\,\partial g/\partial\mathbf w-\sigma\mathbf w$, applied to
 $R_a, R_b, k_{11}, k_{21}$.
+\subsection{Online RBF compensation of the aerodynamic model error}
+Since $C_p(\lambda)$ is never known exactly, $T_w=\hat T_w+T_n\mathbf W^{*T}\boldsymbol\phi(\lambda,v)+\varepsilon$
+and the speed law uses $\hat T_w+T_n\hat{\mathbf W}^T\boldsymbol\phi$ with
+$\dot{\hat{\mathbf W}}=-\gamma\boldsymbol\phi e_\Omega-\sigma\hat{\mathbf W}$. With
+$V=\tfrac12Je_\Omega^2+\tfrac12Jk_{12}z^2+\tilde{\mathbf W}^T\tilde{\mathbf W}/(2\gamma)$ the cross term cancels and
+$\dot V=-Jk_{11}e_\Omega^2$ up to $\varepsilon$ and the leakage term.
 
 \section{Simulation Results}
 % Table I: system parameters (docs/modelisation_commande.md, Sec. 1)
