@@ -1,11 +1,11 @@
 function plot_results(a, b, outdir, tag)
-%PLOT_RESULTS  Comparison figures (a = PI, b = APBC+ANN).
+%PLOT_RESULTS  Comparison figures (a = PI, b = flatness+PBC+ANN).
 t = a.t;  lw = 1.1;
 f = figure('Visible', 'off', 'Position', [50 50 1100 900]);
 subplot(4,2,1); plot(t, a.vw, 'k', 'LineWidth', lw); grid on;
 ylabel('v_w [m/s]'); title('Wind speed');
 subplot(4,2,2); plot(t, a.lg(:,1), 'k--', t, a.x(:,3), 'b', t, b.x(:,3), 'r', 'LineWidth', lw);
-grid on; ylabel('\omega_m [rad/s]'); title('Rotor speed'); legend('ref','PI','APBC-ANN','Location','best');
+grid on; ylabel('\omega_m [rad/s]'); title('Rotor speed'); legend('ref','PI','Flat+PBC+ANN','Location','best');
 subplot(4,2,3); plot(t, a.Cp, 'b', t, b.Cp, 'r', 'LineWidth', lw); grid on;
 ylabel('C_p'); title('Power coefficient'); ylim([0.3 0.5]);
 subplot(4,2,4); plot(t, a.Te/1e6, 'b', t, b.Te/1e6, 'r', t, b.Tw/1e6, 'k:', 'LineWidth', lw);
@@ -22,10 +22,14 @@ legend('MSC current','GSC current','speed','DC bus','Location','best');
 print(f, fullfile(outdir, ['fig_' tag '.png']), '-dpng', '-r110'); close(f);
 
 f = figure('Visible', 'off', 'Position', [50 50 1000 500]);
-P = b.P; Pp = b.Pp;
-subplot(2,2,1); plot(t, b.lg(:,6)/P.Rs, 'r', t, Pp.Rs/P.Rs*ones(size(t)), 'k--'); grid on; title('\hat R_s / R_{s,nom}');
-subplot(2,2,2); plot(t, b.lg(:,7)/P.Ls, 'r', t, Pp.Ls/P.Ls*ones(size(t)), 'k--'); grid on; title('\hat L_s / L_{s,nom}');
-subplot(2,2,3); plot(t, b.lg(:,8)/P.psi, 'r', t, Pp.psi/P.psi*ones(size(t)), 'k--'); grid on; title('\hat\psi / \psi_{nom}'); xlabel('t [s]');
-subplot(2,2,4); plot(t, b.lg(:,9)/1e6, 'r', t, b.Tw/1e6, 'k--'); grid on; title('\hat T_w [MN.m]'); xlabel('t [s]');
-print(f, fullfile(outdir, ['fig_' tag '_estimates.png']), '-dpng', '-r110'); close(f);
+P = b.P;
+subplot(2,2,1); plot(t, b.lg(:,6)/1e3, 'r', t, 0.5*P.C*P.Vdc_ref^2/1e3*ones(size(t)), 'k--'); grid on;
+title('Flat output y_2 = W_{dc} + W_{Lf} [kJ]');
+subplot(2,2,2); plot(t, b.lg(:,7)/1e6, 'r', t, b.Tw/1e6, 'k--'); grid on;
+title('T_w used by the flatness law [MN.m]'); legend('model','true');
+subplot(2,2,3); plot(t, b.x(:,5) - b.lg(:,4), 'r', t, a.x(:,5) - a.lg(:,4), 'b'); grid on;
+title('i_{gd} tracking error [A]'); xlabel('t [s]'); legend('Flat+PBC+ANN','PI');
+subplot(2,2,4); plot(t, b.x(:,2) - b.lg(:,3), 'r', t, a.x(:,2) - a.lg(:,3), 'b'); grid on;
+title('i_{sq} tracking error [A]'); xlabel('t [s]');
+print(f, fullfile(outdir, ['fig_' tag '_details.png']), '-dpng', '-r110'); close(f);
 end

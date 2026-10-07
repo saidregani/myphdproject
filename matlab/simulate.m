@@ -1,30 +1,18 @@
 function out = simulate(P, ctrlType, scenario)
 %SIMULATE  Closed-loop simulation of the complete PMSG wind chain.
-%   ctrlType: 'PI' | 'APBC'
+%   ctrlType: 'PI' | 'FPBC'
 %   scenario: 'nominal' | 'robust' (plant parameters differ from the values
-%             known by the controller + 20 % grid voltage dip at t = 8 s)
-Pp = P;                                  % "true" plant parameters
-if strcmp(scenario, 'robust')
-  Pp.Rs  = 1.5*P.Rs;   Pp.Ls = 1.2*P.Ls;  Pp.psi = 0.92*P.psi;
-  Pp.Rf  = 1.5*P.Rf;   Pp.Lf = 1.25*P.Lf;
-end
+%             known by the controller, 10 % error on the Cp model,
+%             + 20 % grid voltage dip at t = 8 s)
+Pp = plant_true(P, scenario);
+if strcmp(scenario, 'robust'), P.kTw = 0.9; end   % 10 % error on the Cp model
 vgfun = @(t) P.Vgm*[1 - 0.2*(strcmp(scenario,'robust') && t >= 8 && t < 8.2); 0];
 
-% steady-state initial condition at t = 0 (MPPT operating point)
 vw0 = wind_speed(0);
-w0  = P.lopt*vw0/P.R;
-Tw0 = 0.5*Pp.rho*pi*Pp.R^2*aero_cp(P.lopt, 0)*vw0^3/w0;
-isq0 = (Tw0 - Pp.B*w0)/(1.5*Pp.p*Pp.psi);
-we0 = Pp.p*w0;
-us0 = [we0*Pp.Ls*isq0; we0*Pp.psi - Pp.Rs*isq0];
-Pg0 = 1.5*us0(2)*isq0;
-igd0 = Pg0/(1.5*P.Vgm);
-ui0 = [P.Vgm + Pp.Rf*igd0; Pp.wg*Pp.Lf*igd0];
-x  = [0; isq0; w0; P.Vdc_ref; igd0; 0];
-u  = [us0; ui0];
+[x, u] = init_state(P, Pp, vw0);       % steady-state MPPT operating point
 
 S = ctrl_init(P, ctrlType, x, vw0, u);
-if strcmp(ctrlType, 'PI'), ctrl = @ctrl_pi; else, ctrl = @ctrl_apbc_ann; end
+if strcmp(ctrlType, 'PI'), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
 
 N    = round(P.Tend/P.Ts);
 dec  = 10;                                  % logging decimation

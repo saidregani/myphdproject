@@ -1,4 +1,4 @@
-# Chaîne éolienne PMSG 2 MW « back-to-back » : modélisation et commande APBC-ANN
+# Chaîne éolienne PMSG 2 MW « back-to-back » : modélisation et commande Plate + Passive + ANN
 
 > Note de travail de la réunion avec l'encadrant (sujet de conférence, **date limite de l'article complet : 10 octobre** ;
 > conférence en Algérie les 14–15 décembre ; notification le 10 décembre).
@@ -6,7 +6,7 @@
 ## 1. Système étudié
 
 ```
- vent ─► Turbine ─► PMSG ─► Redresseur (MSC) ─► Bus DC (C) ─► Onduleur (GSC) ─► Filtre L ─► Réseau
+ vent ─► Turbine ─► PMSG ─► Redresseur MLI (MSC) ─► Bus DC (C) ─► Onduleur MLI (GSC) ─► Filtre L ─► Réseau
         (R = 40 m)  (entraînement            Vdc = 1200 V                     (Rf, Lf)    690 V / 50 Hz
                      direct)
 ```
@@ -59,86 +59,137 @@ P = (3/2) v_gd i_gd,  Q = −(3/2) v_gd i_gq
 
 Limite de tension des convertisseurs (MLI vectorielle) : |v| ≤ V_dc/√3.
 
-## 3. Stratégie de commande proposée : APBC-ANN
+## 3. Stratégie de commande proposée : commande plate + commande passive + ANN
 
-Idée de l'encadrant : la **commande passive (PBC)** et la **commande adaptative** sont chacune classiques pour
-cette chaîne, mais **leur association** (avec un **réseau de neurones** qui règle les paramètres en ligne)
-n'a pas été proposée. Structure :
+Idée de l'encadrant : la **commande par platitude (flatness)** et la **commande passive (PBC)** sont chacune
+classiques, mais **leur association**, avec un **réseau de neurones (ANN) qui règle les paramètres (gains) en ligne**,
+n'a pas été faite pour cette chaîne. Répartition :
 
-| Boucle | Erreur | Loi PBC (amortissement injecté) | Lois d'adaptation (Lyapunov) | ANN |
-|---|---|---|---|---|
-| Vitesse (MPPT) | e_Ω = Ω − Ω* | T_e* = T̂_w − BΩ − J dΩ*/dt + k_Ω(t) e_Ω | dT̂_w/dt = γ_T e_Ω | k_Ω = g_Ω·k_Ω0 |
-| Courants MSC | e_s = i_s − i_s* | v_s = −L̂_s di_s*/dt − R̂_s i_s* + ω_e L̂_s 𝐉 i_s* + ω_e ψ̂ e_q + K_a(t) e_s | dR̂_s/dt = −γ_R e_sᵀ i_s* ; dL̂_s/dt = γ_L e_sᵀ(ω_e 𝐉 i_s* − di_s*/dt) ; dψ̂/dt = γ_ψ ω_e e_sq | K_a = g_s·K_a0 |
-| Bus DC (énergie) | e_W = ½C(V_dc² − V_dc*²) | P_gsc* = P_msc + d̂ + k_v(t) e_W | dd̂/dt = γ_d e_W | k_v = g_v·k_v0 |
-| Courants GSC | e_g = i_g − i_g* | v_i = L̂_f di_g*/dt + R̂_f i_g* − ω_g L̂_f 𝐉 i_g* + v_g − K_b(t) e_g | dR̂_f/dt = −γ_Rf e_gᵀ i_g* ; dL̂_f/dt = γ_Lf e_gᵀ(ω_g 𝐉 i_g* − di_g*/dt) | K_b = g_g·K_b0 |
+* **Boucles externes → platitude** (vitesse/MPPT côté MSC, énergie du bus DC côté GSC).
+* **Boucles internes de courant → passivité** (redresseur MLI et onduleur MLI + filtre L).
+* **ANN (RBF)** → réglage en ligne des gains proportionnels / d'amortissement de chaque boucle.
 
-Références : Ω* = λ_opt v/R (filtrée), i_sd* = 0, i_sq* = T_e*/(1,5 p ψ̂), i_gd* = 2P_gsc*/(3 v_gd), i_gq* = −2Q*/(3 v_gd).
+### Schéma bloc
 
-### 3.1 Preuve de stabilité (boucle de courant MSC — les autres sont identiques)
-En injectant la loi de commande dans le modèle :
+```
+                    ┌──────────── ANN (RBF) : g_Ω, g_s, g_v, g_g ────────────┐
+                    ▼                                                        ▼
+ v ─►┌──────┐ Ω*,Ω̇* ┌────────────────────┐ T_e* ┌───────────┐ i_s* ┌────────────────────┐ v_s* ┌──────┐ ┌───────────────┐
+     │ MPPT │──────►│ PLATITUDE vitesse  │─────►│ i_sq*=T_e*│─────►│ PASSIVE courant MSC│─────►│SVPWM │►│ Redresseur MLI│
+     └──────┘       │ y1 = Ω             │      │ /(1.5pψ)  │      │ (PBC + amort. R_a) │      └──────┘ └───────────────┘
+                    └────────────────────┘      │ i_sd* = 0 │      └────────────────────┘
+                                                └───────────┘
+ V_dc* ─►┌──────────────────────────┐ P_g* ┌─────────────┐ i_g* ┌────────────────────┐ v_i* ┌──────┐ ┌─────────────┐
+         │ PLATITUDE bus DC         │─────►│ i_gd*=2P/3v │─────►│ PASSIVE courant GSC│─────►│SVPWM │►│ Onduleur MLI│► Filtre L ► Réseau
+         │ y2 = ½CV_dc² + ¾L_f|i_g|²│      │ i_gq*=−2Q/3v│      │ (PBC + amort. R_b) │      └──────┘ └─────────────┘
+         └──────────────────────────┘      └─────────────┘      └────────────────────┘
+```
 
-L_s ė_s = −(R_s + K_a(t)) e_s + ω_e L_s 𝐉 e_s − R̃_s i_s* + L̃_s(ω_e 𝐉 i_s* − di_s*/dt) + ω_e ψ̃ e_q,   (θ̃ = θ − θ̂)
+### 3.1 Boucle de vitesse — commande par platitude (côté MSC)
+Sortie plate y₁ = Ω. Toutes les grandeurs s'expriment en fonction de y₁ et de ses dérivées :
+T_e = T_w(Ω, v) − BΩ − J Ω̇. La loi par platitude est donc :
 
-Fonction de stockage : V = ½ e_sᵀ L_s e_s + R̃_s²/(2γ_R) + L̃_s²/(2γ_L) + ψ̃²/(2γ_ψ)
+T_e* = T̂_w − BΩ − J·ν₁,  ν₁ = Ω̇* + k₁₁(t)(Ω* − Ω) + k₁₂ ∫(Ω* − Ω)
 
-Avec les lois d'adaptation du tableau et e_sᵀ𝐉e_s = 0 :
+* Ω* = λ_opt v/R (MPPT), Ω̇* vient d'un filtre de référence d'ordre 2.
+* T̂_w est calculé par le modèle aérodynamique C_p(λ) à partir du vent mesuré.
+* Erreur : ė + k₁₁ e + k₁₂ ∫e = 0, avec k₁₁ = 2ζω_n et k₁₂ = ω_n² (ω_n = 2 rad/s, ζ = 0,9).
+* Références de courant : i_sq* = T_e*/(1,5 p ψ_f) et i_sd* = 0.
 
-**dV/dt = −(R_s + K_a(t)) ‖e_s‖² ≤ 0**  ⇒ e_s, θ̃ bornés, et (Barbalat) e_s → 0.
+### 3.2 Boucle bus DC — commande par platitude (côté GSC)
+Sortie plate y₂ = énergie stockée = ½ C V_dc² + ¾ L_f (i_gd² + i_gq²).
 
-**Point clé de l'article** : la dérivée reste négative **pour tout gain K_a(t) > 0**. Le réseau de neurones peut donc
-modifier les gains en ligne sans jamais casser la preuve de stabilité, à condition que le gain reste borné et
-positif — garanti par la sortie sigmoïde g ∈ [g_min, g_max] = [0,5 ; 3].
+dy₂/dt = P_msc − P_g − 1,5 R_f |i_g|²,  avec P_g = 1,5 v_gd i_gd
 
-Boucle de vitesse : J ė_Ω = −k_Ω(t) e_Ω + T̃_w ; V = ½J e_Ω² + T̃_w²/(2γ_T) ⇒ dV/dt = −k_Ω e_Ω² (T_w lentement variable).
-Bus DC : ė_W = −k_v(t) e_W + d̃ ; V = ½ e_W² + d̃²/(2γ_d) ⇒ dV/dt = −k_v e_W².
-(Les saturations de couple/courant/tension sont traitées par gel de l'adaptation ; à mentionner comme limite.)
+⇒ P_g* = P_msc − 1,5 R_f |i_g|² − ν₂,  ν₂ = k₂₁(t)(y₂* − y₂) + k₂₂ ∫(y₂* − y₂)
 
-### 3.2 Réglage en ligne des gains par ANN (RBF)
-* Entrées : erreur normalisée e_n et sa dérivée ; 9 neurones gaussiens (grille 3×3) ; sortie sigmoïde → g ∈ [0,5 ; 3].
-* Critère : E = ½ e_n². Comme L ė = −K e + …, on a ∂E/∂K ≈ −e² T_s/L < 0 : la descente de gradient
-  augmente le gain quand l'erreur est grande (transitoires).
-* Mise à jour : ẇ = η e_n² ∂g/∂w − σ w (σ-modification : retour au gain nominal en régime établi et poids bornés).
+⇒ i_gd* = 2P_g*/(3 v_gd),  i_gq* = −2Q*/(3 v_gd)  (Q* = 0)
 
-### 3.3 Commande de référence (comparaison)
-Commande vectorielle classique à PI (vitesse, courants MSC/GSC avec découplage, bus DC), réglée **sur les mêmes
-pôles nominaux** que l'APBC (courants τ = 2 ms, vitesse ω_n = 2 rad/s, ζ = 0,9, bus DC ω_n = 60 rad/s).
+* y₂* = ½ C V_dc*² + ¾ L_f |i_g*|².
+* Gains : k₂₁ = 2ζω_n, k₂₂ = ω_n², avec ω_n = 60 rad/s.
+
+### 3.3 Boucles de courant — commande passive (PBC)
+La PBC exploite la structure Euler-Lagrange : le couplage ω L 𝐉 i est « sans travail » (𝐉 antisymétrique).
+Elle impose une dynamique désirée en préservant ce couplage et en injectant de l'amortissement (+ action intégrale).
+
+* Redresseur MLI : v_s* = −L_s di_s*/dt − R_s i_s* + ω_e L_s 𝐉 i_s* + ω_e ψ_f e_q + R_a(t) e_s + K_i z_s
+* Onduleur MLI : v_i* = L_f di_g*/dt + R_f i_g* − ω_g L_f 𝐉 i_g* + v_g − R_b(t) e_g − K_ig z_g
+* Notations : e = i − i*, ż = e.
+
+Dynamique de l'erreur (MSC) : L_s ė_s = −(R_s + R_a(t)) e_s + ω_e L_s 𝐉 e_s − K_i z_s
+
+Fonction de stockage : H = ½ e_sᵀ L_s e_s + ½ K_i z_sᵀ z_s
+
+⇒ **dH/dt = −(R_s + R_a(t)) ‖e_s‖² ≤ 0**  (car e_sᵀ𝐉e_s = 0). Même résultat pour l'onduleur.
+
+### 3.4 ANN pour régler les paramètres en ligne
+* Un réseau RBF par boucle.
+* Entrées : erreur normalisée e_n et sa dérivée. 9 neurones gaussiens. Sortie sigmoïde → g ∈ [0,5 ; 3].
+* Gains réglés : R_a = g_s R_a0, R_b = g_g R_b0, k₁₁ = g_Ω k₁₁⁰, k₂₁ = g_v k₂₁⁰.
+* Apprentissage en ligne : critère E = ½ e_n². Comme ∂E/∂K ≈ −e² T_s/L < 0, la mise à jour est
+  ẇ = η e_n² ∂g/∂w − σ w. Le gain augmente pendant les transitoires et revient au nominal en régime établi
+  (σ-modification, poids bornés).
+* **Argument de stabilité** : l'ANN ne modifie que les gains proportionnels / d'amortissement.
+  * Pour les boucles de courant, dH/dt = −(R + R_a(t))‖e‖² ≤ 0 pour **tout** R_a(t) > 0.
+  * Pour les boucles plates, V = ½e² + ½k₂ z² donne dV/dt = −k₁(t) e² ≤ 0.
+  * Donc l'ANN améliore les transitoires sans casser la stabilité, puisque g est borné et positif.
+
+### 3.5 Commande de référence (comparaison)
+Commande vectorielle classique à PI (vitesse, courants MSC/GSC avec découplage, bus DC). Elle est réglée sur les mêmes
+pôles nominaux (courants τ = 2 ms, vitesse ω_n = 2 rad/s, ζ = 0,9, bus DC ω_n = 60 rad/s).
 
 ## 4. Simulation (`matlab/`)
-* `main.m` : lance les 4 cas (PI / APBC-ANN × nominal / robustesse), affiche le tableau de comparaison et sauvegarde
-  les figures dans `results/`.
-* Scénario **nominal** : profil de vent 8 → 10 → 11 → 9 m/s + turbulence.
-* Scénario **robustesse** : machine réelle R_s ×1,5, L_s ×1,2, ψ_f ×0,92 ; filtre R_f ×1,5, L_f ×1,25 (les
-  contrôleurs ne connaissent que les valeurs nominales) + creux de tension réseau de 20 % à t = 8 s pendant 200 ms.
-* Modèle **moyen** (pas de MLI), RK4, T_s = 100 µs. Fonctionne sous MATLAB et GNU Octave.
-* Pour Simulink : chaque contrôleur (`ctrl_pi.m`, `ctrl_apbc_ann.m`) peut être mis dans un bloc *MATLAB Function*,
-  et `plant_rhs.m` peut être remplacé par le modèle commuté (Simscape Electrical : PMSM + ponts IGBT + filtre L).
+* `main.m` — **modèle moyen**, 10 s, 4 cas : PI / Plate+PBC+ANN × nominal / robustesse.
+  * Scénario **nominal** : vent 8 → 10 → 11 → 9 m/s + turbulence.
+  * Scénario **robustesse** : la machine réelle a R_s ×1,5, L_s ×1,2, ψ_f ×0,92, et le filtre R_f ×1,5, L_f ×1,25.
+    Les contrôleurs ne connaissent que les valeurs nominales. Le modèle C_p utilisé par la platitude a 10 % d'erreur.
+    Creux de tension réseau de 20 % à t = 8 s pendant 200 ms.
+* `main_mli.m` — **modèle commuté** : redresseur MLI + onduleur MLI deux niveaux.
+  * SVPWM, porteuse 5 kHz, échantillonnage régulier double mise à jour, pas d'intégration 1 µs.
+  * Vent de 10 m/s puis 11 m/s à t = 0,45 s. THD de i_ga mesuré en régime établi (0,1–0,3 s).
+* Fonctionne sous MATLAB et GNU Octave.
+* Pour Simulink : `ctrl_fpbc_ann.m` et `ctrl_pi.m` → bloc *MATLAB Function* ; `plant_rhs.m` → modèle Simscape
+  (PMSM + ponts IGBT + filtre L).
 
 ## 5. Plan pour la soumission (10 octobre)
 1. Valider les paramètres 2 MW avec une référence (Wu et al., *Power Conversion and Control of Wind Energy Systems*, ou
    un article IEEE sur PMSG 2 MW) et les citer.
-2. Vérifier avec l'encadrant l'interprétation « commande adaptative » (dans l'audio : « par l'attitude »).
-3. Figures : vitesse/MPPT, C_p, V_dc, P/Q réseau, courants, gains ANN, estimation des paramètres.
-4. Tableau d'indices (IAE vitesse, ISE V_dc, erreur de courant RMS, énergie produite).
-5. Rédaction : Introduction → Modélisation → Commande APBC-ANN (+ preuve) → Résultats → Conclusion.
+2. Figures : schéma bloc, vitesse/MPPT, C_p, V_dc, P/Q réseau, courants, gains ANN, formes d'onde MLI + THD.
+3. Tableau d'indices (IAE vitesse, ISE V_dc, erreur de courant RMS, énergie produite).
+4. Rédaction : Introduction → Modélisation → Commande plate + passive + ANN (+ preuve) → Résultats → Conclusion.
 
-## 6. Premiers résultats (Octave, `matlab/main.m`)
+## 6. Résultats
 
-Erreurs de courant RMS en A : [t < 1 s, phase d'apprentissage] / [t ≥ 1 s].
+### 6.1 Modèle moyen (`main.m`, 10 s)
+Erreurs de courant RMS en A : [t < 1 s] / [t ≥ 1 s].
 
 | Scénario | Commande | IAE Ω | ISE V_dc | max abs(ΔV_dc) [V] | RMS e_s [A] | RMS e_g [A] | C_p moyen | Énergie [kWh] |
 |---|---|---|---|---|---|---|---|---|
 | nominal | PI | 0,0905 | 421,6 | 13,3 | 0,23 / 0,06 | 1,20 / 0,12 | 0,4652 | 3,503 |
-| nominal | APBC-ANN | 0,0697 | 0,05 | 0,6 | 0,01 / 0,01 | 0,01 / 0,01 | 0,4667 | 3,497 |
+| nominal | Plate+PBC+ANN | 0,0000 | 0,04 | 0,2 | 0,04 / 0,00 | 0,14 / 0,00 | 0,4654 | 3,484 |
 | robustesse | PI | 0,0976 | 1264,9 | 116,6 | 4,16 / 0,20 | 8,94 / 4,40 | 0,4652 | 3,479 |
-| robustesse | APBC-ANN | 0,0679 | 6,8 | 17,8 | 13,85 / 0,02 | 20,56 / 9,55 | 0,4667 | 3,476 |
+| robustesse | Plate+PBC+ANN | 0,0179 | 3,7 | 15,2 | 10,51 / 0,22 | 13,15 / 9,99 | 0,4656 | 3,466 |
 
-Lecture :
-* **Bus DC** : c'est le gain principal (écart max 0,6 V contre 13 V en nominal ; 18 V contre 117 V pendant le creux
-  de tension). Ce gain vient surtout de l'anticipation de P_msc dans la loi énergétique PBC. Un relecteur peut demander
-  une comparaison avec un PI qui utilise la même anticipation.
-* **Vitesse / MPPT** : IAE réduit d'environ 25 % grâce au terme J dΩ*/dt ; C_p et énergie sont pratiquement identiques
-  (la boucle de vitesse adaptative est équivalente à un PI quand T_w est constant).
-* **Courants** : l'APBC est meilleure une fois les paramètres appris (estimations → R_s ≈ 1,6, L_s = 1,20, ψ = 0,92 × nominal).
-  Elle est moins bonne pendant la première seconde (apprentissage). Pendant le creux réseau, l'erreur de i_g est plus
-  grande parce que la référence i_gd* saute instantanément.
-* Le gain ANN de vitesse monte à ≈ 2 lors des rafales et revient à 1 (σ-modification).
+### 6.2 Modèle commuté MLI (`main_mli.m`, f_sw = 5 kHz)
+| Commande | THD i_ga (régime établi) |
+|---|---|
+| PI | 0,31 % |
+| Plate+PBC+ANN | 0,56 % |
+
+Les deux sont largement sous la limite de 5 % (IEEE 519).
+
+### 6.3 Lecture (à garder honnête dans l'article)
+* **Bus DC** : c'est le gain principal. En nominal, l'écart max est de 0,2 V contre 13 V pour le PI.
+  Pendant le creux de tension, il est de 15 V contre 117 V. Ce gain vient de la loi plate en énergie, qui inverse
+  le modèle avec P_msc (anticipation). Un relecteur peut demander un PI avec la même anticipation.
+* **Vitesse / MPPT** : le suivi est quasi parfait en nominal, mais seulement parce que T_w est calculé avec le modèle
+  C_p exact et le vent mesuré. Avec 10 % d'erreur sur le modèle (scénario robustesse), l'IAE reste environ 5 fois
+  plus petit que celui du PI. Le C_p moyen est à peine meilleur. L'énergie injectée est légèrement plus faible
+  (≈ 0,5 %), parce que la loi plate stocke plus d'énergie cinétique dans le rotor pendant les rafales.
+* **Courants** : en robustesse, la PBC utilise les paramètres nominaux dans ses anticipations.
+  * Pendant la première seconde, ses erreurs sont plus grandes que celles du PI.
+  * Pendant le creux réseau, l'erreur sur i_g est plus grande, parce que i_gd* saute instantanément.
+  * En dehors de ces deux phases, elle est équivalente au PI.
+* **ANN** : les gains montent pendant les transitoires (démarrage, rafales, creux à 8 s) puis reviennent à 1.
+* **THD** : légèrement plus élevé qu'avec le PI. L'ondulation MLI de P_msc passe par l'anticipation de la boucle plate
+  (un filtre sur P_msc est une amélioration possible).

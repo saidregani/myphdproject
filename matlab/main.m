@@ -1,4 +1,4 @@
-%MAIN  2 MW PMSG back-to-back wind chain: PI vs adaptive PBC + ANN.
+%MAIN  2 MW PMSG back-to-back wind chain: PI vs flatness + PBC + ANN.
 % Runs both controllers on the nominal and robustness scenarios, prints a
 % comparison table and saves figures in ../results.
 clear; close all; clc;
@@ -6,7 +6,7 @@ P = pmsg_params();
 outdir = fullfile('..', 'results');
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 
-ctrls = {'PI', 'APBC'};  scen = {'nominal', 'robust'};
+ctrls = {'PI', 'FPBC'};  scen = {'nominal', 'robust'};
 R = struct();
 for s = 1:2
   for c = 1:2
@@ -28,6 +28,6 @@ for s = 1:2
 end
 
 for s = 1:2
-  plot_results(R.(scen{s}).PI, R.(scen{s}).APBC, outdir, scen{s});
+  plot_results(R.(scen{s}).PI, R.(scen{s}).FPBC, outdir, scen{s});
 end
 save(fullfile(outdir, 'results.mat'), 'R', '-v7');

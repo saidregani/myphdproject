@@ -9,6 +9,7 @@ function P = pmsg_params()
 %paper that will be cited.
 
 %% Turbine (aerodynamics + drive train)
+P.kTw    = 1;              % accuracy of the Cp model used by the controller
 P.rho    = 1.225;          % air density                    [kg/m^3]
 P.R      = 40;             % rotor radius                   [m]
 P.lopt   = 8.1;            % optimal tip-speed ratio (beta = 0)
@@ -47,4 +48,6 @@ P.Te_max =  1.2*P.Tn;
 %% Simulation
 P.Ts     = 1e-4;           % control sample time = integration step [s]
 P.Tend   = 10;             % [s]
+P.fsw    = 5e3;            % PWM carrier frequency (switched model) [Hz]
+P.hsw    = 1e-6;           % integration step of the switched model [s]
 end

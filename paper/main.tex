@@ -5,8 +5,8 @@
 \usepackage{amsmath,amssymb,graphicx,booktabs}
 \begin{document}
 
-\title{Adaptive Passivity-Based Control with Online ANN Gain Tuning of a
-2~MW Direct-Drive PMSG Wind Energy Conversion System}
+\title{Combined Flatness-Based and Passivity-Based Control with Online ANN
+Parameter Tuning of a 2~MW Direct-Drive PMSG Wind Energy Conversion System}
 
 \author{\IEEEauthorblockN{Said Regani, [Supervisor]}
 \IEEEauthorblockA{[Laboratory], [University], Algeria}}
@@ -15,34 +15,36 @@
 
 \begin{abstract}
 This paper proposes a hybrid control strategy for a grid-connected 2~MW
-direct-drive permanent-magnet synchronous generator (PMSG) wind turbine
-equipped with a back-to-back converter and an L filter. Passivity-based
-control (PBC), which exploits the workless (skew-symmetric) coupling of the
-machine and filter models, is combined with Lyapunov-based adaptation of the
-uncertain electrical parameters (stator resistance and inductance, flux
-linkage, filter resistance and inductance), of the aerodynamic torque and of
-the DC-link power disturbance. The damping-injection gains of every loop are
-then tuned online by radial-basis-function neural networks. Because the
-closed-loop storage function decreases for any positive damping gain, the
-neural tuner improves transients without affecting the stability proof.
-Simulations under wind variations, parameter mismatch and a 20\% grid voltage
-dip show [X]\% lower DC-link voltage deviation than conventional PI vector
-control, with identical MPPT performance.
+direct-drive permanent-magnet synchronous generator (PMSG) wind turbine with a
+back-to-back PWM rectifier/PWM inverter and an L filter. The outer loops
+(rotor speed for MPPT and DC-link energy) are designed by differential
+flatness, using the rotor speed and the total energy stored in the DC link and
+the filter as flat outputs. The inner current loops of both converters use
+passivity-based control (PBC), which preserves the workless (skew-symmetric)
+coupling of the machine and filter models and injects damping. The
+proportional and damping gains of every loop are tuned online by
+radial-basis-function neural networks. Because the closed-loop storage
+functions decrease for any bounded positive gain, the neural tuner improves
+transients without affecting stability. Average and switched (5~kHz SVPWM)
+simulations under wind variations, parameter mismatch and a 20\% grid voltage
+dip are compared with conventional PI vector control.
 \end{abstract}
 
 \begin{IEEEkeywords}
-PMSG, wind energy, back-to-back converter, passivity-based control, adaptive
-control, neural network, MPPT, DC-link voltage.
+PMSG, wind energy, back-to-back converter, flatness-based control,
+passivity-based control, neural network, MPPT, DC-link voltage.
 \end{IEEEkeywords}
 
 \section{Introduction}
 % - PMSG direct drive, back-to-back converter: context, advantages.
 % - PI vector control: sensitive to parameter variations, tuning.
-% - PBC (Ortega et al.) used for PMSG / grid converters; adaptive control used
-%   separately; their combination with online ANN tuning has not been reported.
-% - Contributions: (i) unified adaptive PBC for MSC, DC bus and GSC;
-%   (ii) Lyapunov proof valid for time-varying gains; (iii) RBF online tuning;
-%   (iv) comparison with PI on a 2 MW system.
+% - Flatness-based control (Fliess et al.; Thounthong et al. for DC-bus energy)
+%   and PBC (Ortega et al.) are each used for converters / PMSG, but their
+%   association with online ANN parameter tuning has not been reported.
+% - Contributions: (i) flatness outer loops (speed, DC energy) + PBC inner
+%   current loops for the complete back-to-back chain; (ii) stability argument
+%   valid for time-varying gains; (iii) RBF online tuning; (iv) comparison with
+%   PI on a 2 MW system, average and switched models.
 
 \section{Modelling of the Wind Energy Conversion System}
 \subsection{Turbine}
@@ -63,36 +65,39 @@ T_e=\tfrac32 p\psi_f i_{sq}
 L_f\dot{\mathbf i}_g=-R_f\mathbf i_g+\omega_gL_f\mathbf J\mathbf i_g+\mathbf v_i-\mathbf v_g
 \end{equation}
 
-\section{Proposed Adaptive PBC with ANN Gain Tuning}
-\subsection{Machine-side current loop}
+\section{Proposed Flatness + Passivity-Based Control with ANN Tuning}
+\subsection{Speed loop: flatness-based MPPT}
+Flat output $y_1=\Omega$; $T_e=T_w-B\Omega-J\dot\Omega$, hence
 \begin{equation}
-\mathbf v_s=-\hat L_s\dot{\mathbf i}_s^*-\hat R_s\mathbf i_s^*+\omega_e\hat L_s\mathbf J\mathbf i_s^*
-+\omega_e\hat\psi\mathbf e_q+K_a(t)\mathbf e_s
+T_e^*=\hat T_w-B\Omega-J\big(\dot\Omega^*+k_{11}(t)e_\Omega+k_{12}\!\textstyle\int e_\Omega\big),\quad
+e_\Omega=\Omega^*-\Omega
 \end{equation}
+with $\Omega^*=\lambda_{opt}v/R$, $i_{sq}^*=T_e^*/(1.5p\psi_f)$, $i_{sd}^*=0$.
+\subsection{DC-link loop: flatness-based energy control}
+Flat output $y_2=\tfrac12CV_{dc}^2+\tfrac34L_f\|\mathbf i_g\|^2$,
+$\dot y_2=P_{msc}-\tfrac32v_{gd}i_{gd}-\tfrac32R_f\|\mathbf i_g\|^2$, hence
 \begin{equation}
-\dot{\hat R}_s=-\gamma_R\mathbf e_s^T\mathbf i_s^*,\;
-\dot{\hat L}_s=\gamma_L\mathbf e_s^T(\omega_e\mathbf J\mathbf i_s^*-\dot{\mathbf i}_s^*),\;
-\dot{\hat\psi}=\gamma_\psi\omega_e e_{sq}
+i_{gd}^*=\frac{2}{3v_{gd}}\Big(P_{msc}-\tfrac32R_f\|\mathbf i_g\|^2-k_{21}(t)e_y-k_{22}\!\textstyle\int e_y\Big),
 \end{equation}
-\textbf{Proposition.} With
-$V=\tfrac12\mathbf e_s^TL_s\mathbf e_s+\sum\tilde\theta^2/(2\gamma_\theta)$,
-$\dot V=-(R_s+K_a(t))\|\mathbf e_s\|^2\le0$ for any $K_a(t)>0$.
-% proof: substitute, use e^T J e = 0 (see docs/modelisation_commande.md)
-\subsection{Speed (MPPT) loop}
-$T_e^*=\hat T_w-B\Omega-J\dot\Omega^*+k_\Omega(t)e_\Omega$, $\dot{\hat T}_w=\gamma_Te_\Omega$,
-$\Omega^*=\lambda_{opt}v/R$.
-\subsection{DC-link energy loop and grid-side current loop}
-$P_{gsc}^*=P_{msc}+\hat d+k_v(t)e_W$, $\dot{\hat d}=\gamma_de_W$;
-$\mathbf v_i=\hat L_f\dot{\mathbf i}_g^*+\hat R_f\mathbf i_g^*-\omega_g\hat L_f\mathbf J\mathbf i_g^*+\mathbf v_g-K_b(t)\mathbf e_g$.
-\subsection{Online RBF tuning of the damping gains}
+$e_y=y_2^*-y_2$, $i_{gq}^*=-2Q^*/(3v_{gd})$.
+\subsection{Current loops: passivity-based control}
+\begin{align}
+\mathbf v_s^*&=-L_s\dot{\mathbf i}_s^*-R_s\mathbf i_s^*+\omega_eL_s\mathbf J\mathbf i_s^*+\omega_e\psi_f\mathbf e_q+R_a(t)\mathbf e_s+K_i\mathbf z_s\\
+\mathbf v_i^*&=L_f\dot{\mathbf i}_g^*+R_f\mathbf i_g^*-\omega_gL_f\mathbf J\mathbf i_g^*+\mathbf v_g-R_b(t)\mathbf e_g-K_{ig}\mathbf z_g
+\end{align}
+\textbf{Proposition.} With $H=\tfrac12\mathbf e_s^TL_s\mathbf e_s+\tfrac12K_i\mathbf z_s^T\mathbf z_s$,
+$\dot{\mathbf z}_s=\mathbf e_s$: $\dot H=-(R_s+R_a(t))\|\mathbf e_s\|^2\le0$ for any $R_a(t)>0$
+(since $\mathbf e^T\mathbf J\mathbf e=0$); same for the GSC.
+\subsection{Online RBF tuning of the controller parameters}
 $K(t)=g(t)K_0$, $g=g_{min}+(g_{max}-g_{min})\,\mathrm{sig}(\mathbf w^T\boldsymbol\phi(e_n,\dot e_n))$,
-$\dot{\mathbf w}=\eta e_n^2\,\partial g/\partial\mathbf w-\sigma\mathbf w$.
+$\dot{\mathbf w}=\eta e_n^2\,\partial g/\partial\mathbf w-\sigma\mathbf w$, applied to
+$R_a, R_b, k_{11}, k_{21}$.
 
 \section{Simulation Results}
 % Table I: system parameters (docs/modelisation_commande.md, Sec. 1)
 % Fig. 1: system + control block diagram
 % Fig. 2: results/fig_nominal.png ; Fig. 3: results/fig_robust.png
-% Fig. 4: results/fig_robust_estimates.png
+% Fig. 4: results/fig_robust_details.png ; Fig. 5: results/fig_mli.png (PWM, THD)
 % Table II: indices printed by matlab/main.m
 
 \section{Conclusion}
