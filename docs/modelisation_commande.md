@@ -14,19 +14,40 @@
 * Chaîne de conversion « **back-to-back** », PMSG à **attaque directe** (direct drive, sans multiplicateur).
 * Éolienne standard de **2 MW** : R = 40 m, Ω_n = 2,23 rad/s, couple nominal T_n = P_n/Ω_n ≈ 0,9 MN·m
   (λ_opt = 8,1, C_p,max = 0,48 → vitesse du vent nominale ≈ 11 m/s).
-* Tous les paramètres sont dans `matlab/pmsg_params.m`. Les données de la turbine sont celles données par l'encadrant ;
-  les données de la machine, du filtre et du bus sont un dimensionnement en p.u. cohérent (S_b = 2 MVA, 690 V)
-  **à recouper avec un article de référence avant soumission**.
+* Tous les paramètres sont dans `matlab/pmsg_params.m`.
+  * **Turbine** : données de l'encadrant + modèle C_p standard (Heier).
+  * **PMSG (cas pôles lisses), bus DC, réseau, filtre, fréquence MLI** : tirés de la référence [1].
+  * **J, B, R_f** : non donnés dans [1], ce sont nos hypothèses.
 
-| Grandeur | Valeur | Grandeur | Valeur |
-|---|---|---|---|
-| P_n | 2 MW | p (paires de pôles) | 30 |
-| R | 40 m | R_s | 0,8 mΩ |
-| Ω_n | 2,23 rad/s | L_s = L_d = L_q | 1,07 mH (0,3 p.u.) |
-| T_n | 0,897 MN·m | ψ_f | 7,57 Wb |
-| J | 2,8·10⁶ kg·m² (H ≈ 3,5 s) | C | 20 mF |
-| λ_opt / C_p,max | 8,1 / 0,48 | V_dc* | 1200 V |
-| Réseau | 690 V, 50 Hz | R_f / L_f | 2 mΩ / 0,2 mH |
+| Grandeur | Valeur | Source |
+|---|---|---|
+| P_n | 2 MW | encadrant ; [1] Tab. I |
+| R | 40 m | encadrant |
+| Ω_n | 2,23 rad/s | encadrant |
+| T_n | 0,897 MN·m | encadrant (P_n/Ω_n) |
+| λ_opt / C_p,max | 8,1 / 0,48 | [1] éq. (3), Fig. 1 |
+| p (paires de pôles) | 26 | [1] Tab. I (non-salient) |
+| R_s | 0,78 mΩ | [1] Tab. I |
+| L_s = L_d = L_q | 1,57 mH | [1] Tab. I |
+| ψ_f | 9,18 Wb | [1] Tab. I |
+| C | 20 mF | [1] Tab. I |
+| V_dc* | 1200 V | [1] Fig. 4a, Fig. 12 |
+| Réseau | 690 V, 50 Hz | [1] Tab. I |
+| L_f | 0,15 mH | [1] Fig. 4a |
+| f_MLI | 2160 Hz | [1] Sec. IV |
+| J | 2,8·10⁶ kg·m² (H ≈ 3,5 s) | hypothèse |
+| B | 1000 N·m·s/rad | hypothèse |
+| R_f | 2 mΩ | hypothèse |
+
+Vérification de cohérence : avec ψ_f = 9,18 Wb à 9,75 Hz (fréquence nominale de [1]), on a
+E = 9,18 × 2π × 9,75 = 562 V. C'est bien la tension crête de phase du réseau 690 V (563 V).
+
+Remarque : dans [1], le générateur fait 2,2 MVA et tourne à 2,355 rad/s nominal. Ici il travaille avec la turbine de
+l'encadrant (2 MW, 2,23 rad/s), donc légèrement en dessous de ses valeurs nominales.
+
+[1] S. M. M. Hasan, A. H. M. Shatil, « Design and Comparison of Grid Connected Permanent Magnet Synchronous Generator
+Non-salient Pole and Salient Pole Rotor Wind Turbine », *AIUB Journal of Science and Engineering (AJSE)*, vol. 20,
+n° 2, pp. 40–46, 2021.
 
 ## 2. Modélisation du système complet
 
@@ -156,59 +177,58 @@ Toutes sont réglées sur les mêmes pôles nominaux (courants τ = 2 ms, vitess
     Les contrôleurs ne connaissent que les valeurs nominales. Le modèle C_p utilisé par la platitude a 10 % d'erreur.
     Creux de tension réseau de 20 % à t = 8 s pendant 200 ms.
 * `main_mli.m` — **modèle commuté** : redresseur MLI + onduleur MLI deux niveaux.
-  * SVPWM, porteuse 5 kHz, échantillonnage régulier double mise à jour, pas d'intégration 1 µs.
+  * SVPWM, porteuse 2160 Hz [1], échantillonnage régulier double mise à jour, pas d'intégration ≈ 1 µs.
   * Vent de 10 m/s puis 11 m/s à t = 0,45 s. THD de i_ga mesuré en régime établi (0,1–0,3 s).
 * Fonctionne sous MATLAB et GNU Octave.
 * Pour Simulink : `ctrl_fpbc_ann.m` et `ctrl_pi.m` → bloc *MATLAB Function* ; `plant_rhs.m` → modèle Simscape
   (PMSM + ponts IGBT + filtre L).
 
 ## 5. Plan pour la soumission (10 octobre)
-1. Valider les paramètres 2 MW avec une référence (Wu et al., *Power Conversion and Control of Wind Energy Systems*, ou
-   un article IEEE sur PMSG 2 MW) et les citer.
+1. ✅ Paramètres de la machine pris de [1] (Hasan & Shatil, AJSE 2021).
 2. Figures : schéma bloc, vitesse/MPPT, C_p, V_dc, P/Q réseau, courants, gains ANN, formes d'onde MLI + THD.
 3. Tableau d'indices (IAE vitesse, ISE V_dc, erreur de courant RMS, énergie produite).
 4. Rédaction : Introduction → Modélisation → Commande plate + passive + ANN (+ preuve) → Résultats → Conclusion.
 
 ## 6. Résultats
 
+Paramètres de la machine selon [1].
+
 ### 6.1 Modèle moyen (`main.m`, 10 s)
 Erreurs de courant RMS en A : [t < 1 s] / [t ≥ 1 s].
 
 | Scénario | Commande | IAE Ω | ISE V_dc | max abs(ΔV_dc) [V] | RMS e_s [A] | RMS e_g [A] | C_p moyen | Énergie [kWh] |
 |---|---|---|---|---|---|---|---|---|
-| nominal | PI | 0,0905 | 421,6 | 13,3 | 0,23 / 0,06 | 1,20 / 0,12 | 0,4652 | 3,503 |
-| nominal | PI+FF | 0,0905 | 0,11 | 1,7 | 0,23 / 0,06 | 1,26 / 0,12 | 0,4652 | 3,503 |
-| nominal | Plate+PBC | 0,0000 | 0,04 | 0,2 | 0,04 / 0,00 | 0,14 / 0,00 | 0,4654 | 3,484 |
-| nominal | Plate+PBC+ANN | 0,0000 | 0,04 | 0,2 | 0,04 / 0,00 | 0,14 / 0,00 | 0,4654 | 3,484 |
-| robustesse | PI | 0,0976 | 1264,9 | 116,6 | 4,16 / 0,20 | 8,94 / 4,40 | 0,4652 | 3,479 |
-| robustesse | PI+FF | 0,0976 | 8,7 | 18,3 | 4,16 / 0,20 | 8,85 / 12,16 | 0,4652 | 3,479 |
-| robustesse | Plate+PBC | 0,0181 | 4,0 | 15,2 | 10,59 / 0,22 | 13,79 / 10,08 | 0,4656 | 3,466 |
-| robustesse | Plate+PBC+ANN | **0,0048** | **3,7** | 15,4 | 10,52 / 0,25 | 13,18 / 10,06 | 0,4654 | 3,463 |
+| nominal | PI | 0,0905 | 422,2 | 13,3 | 0,20 / 0,05 | 1,61 / 0,16 | 0,4652 | 3,504 |
+| nominal | PI+FF | 0,0905 | 0,15 | 2,5 | 0,20 / 0,05 | 1,68 / 0,16 | 0,4652 | 3,504 |
+| nominal | Plate+PBC | 0,0000 | 0,02 | 0,15 | 0,04 / 0,00 | 0,15 / 0,00 | 0,4654 | 3,485 |
+| nominal | Plate+PBC+ANN | 0,0000 | 0,02 | 0,15 | 0,04 / 0,00 | 0,15 / 0,00 | 0,4654 | 3,485 |
+| robustesse | PI | 0,0976 | 1278,8 | 119,6 | 3,06 / 0,17 | 9,11 / 4,51 | 0,4652 | 3,481 |
+| robustesse | PI+FF | 0,0976 | 9,4 | 18,3 | 3,06 / 0,17 | 8,95 / 12,29 | 0,4652 | 3,481 |
+| robustesse | Plate+PBC | 0,0181 | 2,6 | 10,9 | 9,40 / 0,18 | 16,34 / 10,13 | 0,4656 | 3,469 |
+| robustesse | Plate+PBC+ANN | **0,0048** | **2,3** | 11,0 | 9,37 / 0,21 | 15,67 / 10,11 | 0,4654 | 3,465 |
 
-### 6.2 Modèle commuté MLI (`main_mli.m`, f_sw = 5 kHz)
+### 6.2 Modèle commuté MLI (`main_mli.m`, f_MLI = 2160 Hz [1])
 | Commande | THD i_ga (régime établi) |
 |---|---|
-| PI | 0,31 % |
-| Plate+PBC+ANN | 0,61 % |
+| PI | 2,29 % |
+| Plate+PBC+ANN | 2,29 % |
 
-Les deux sont largement sous la limite de 5 % (IEEE 519).
+Les deux sont sous la limite de 5 % (IEEE 519). [1] annonce < 2 %, mais son modèle inclut un transformateur
+35 kV/690 V et une ligne, dont les inductances filtrent davantage.
 
 ### 6.3 Lecture (à garder honnête dans l'article)
-* **Bus DC, face à un PI équitable (PI+FF)** : l'avantage est réel mais modéré.
-  * ISE V_dc : 3,7 contre 8,7 (÷ 2,3).
-  * Écart max pendant le creux : 15 V contre 18 V. En nominal : 0,2 V contre 1,7 V.
-  * Face au PI sans anticipation, l'écart est énorme (117 V), mais cette comparaison n'est pas équitable.
+* **Bus DC, face à un PI équitable (PI+FF)** :
+  * ISE V_dc : 2,3 contre 9,4 (÷ 4).
+  * Écart max pendant le creux : 11 V contre 18 V. En nominal : 0,15 V contre 2,5 V.
+  * Face au PI sans anticipation (120 V), la comparaison n'est pas équitable.
 * **Apport de l'ANN** :
   * En nominal, il n'apporte rien : le modèle est exact.
   * En robustesse (10 % d'erreur sur C_p), l'ANN 2 divise l'IAE de vitesse par 3,8 (0,0181 → 0,0048).
     C'est la contribution principale de l'ANN.
-  * L'ANN 1 (gains) a un effet faible : les erreurs restent sous le seuil de normalisation. Il ne s'active que
-    pendant les grands transitoires.
-* **Vitesse / MPPT** : l'IAE est 20 fois plus petit que le PI (0,0048 contre 0,0976). Mais le C_p moyen est
-  quasiment identique, et l'énergie injectée est ≈ 0,5 % plus faible (le rotor stocke plus d'énergie cinétique
-  pendant les rafales). Il ne faut pas annoncer un gain d'énergie.
-* **Courants** : la PBC utilise les paramètres nominaux dans ses anticipations.
-  * Au démarrage avec désaccord paramétrique, ses erreurs sont plus grandes que celles du PI.
-  * Pendant le creux, l'erreur sur i_g est comparable à celle du PI+FF.
-  * Toutes ces erreurs restent < 0,5 % du courant nominal.
-* **THD** : 0,61 % contre 0,31 %. Plus élevé, mais négligeable.
+  * L'ANN 1 (gains) a un effet faible : il ne s'active que pendant les grands transitoires.
+* **Vitesse / MPPT** : l'IAE est 20 fois plus petit que le PI. Mais le C_p moyen est quasiment identique, et
+  l'énergie injectée est ≈ 0,5 % plus faible (le rotor stocke plus d'énergie cinétique). Il ne faut pas annoncer de
+  gain d'énergie.
+* **Courants** : avec désaccord paramétrique, la PBC (qui utilise les valeurs nominales) a des erreurs plus grandes
+  que le PI au démarrage et pendant le creux. Elles restent < 0,7 % du courant nominal.
+* **THD** : identique au PI (2,29 %).

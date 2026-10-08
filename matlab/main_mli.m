@@ -1,5 +1,5 @@
 %MAIN_MLI  Validation with the switched model (PWM rectifier + PWM inverter,
-% fsw = 5 kHz): waveforms and THD of the grid current, PI vs Flat+PBC+ANN.
+% fsw = P.fsw): waveforms and THD of the grid current, PI vs Flat+PBC+ANN.
 clear; close all; clc;
 P = pmsg_params();
 outdir = fullfile('..', 'results');

@@ -9,7 +9,7 @@ if nargin < 3, Tend = 0.8; end   % must be > 0.3 s (THD window)
 Pp  = P;
 Tc  = 1/(2*P.fsw);                  % controller sample time
 Pc  = P;  Pc.Ts = Tc;               % controller works at Tc
-h   = P.hsw;  nsub = round(Tc/h);
+nsub = round(Tc/P.hsw);  h = Tc/nsub;  % integer number of steps per sample
 vwf = @(t) 10 + 0.5*(1 + tanh((t - 0.45)/0.05));
 [x, u] = init_state(P, Pp, vwf(0));
 S   = ctrl_init(Pc, ctrlType, x, vwf(0), u);
