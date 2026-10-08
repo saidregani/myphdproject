@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}\usepackage{mathptmx}
+\pdfminorversion=4
+\newcommand{\rev}[1]{\par\medskip\noindent\textbf{Reviewer:} \emph{#1}\par\smallskip\noindent\textbf{Response:} }
+\begin{document}
+\begin{center}
+{\Large\bfseries Response to the Reviewer (Third Round)}\\[4pt]
+Flatness and Passivity-Based Control with Adaptive Neural Compensation of a Direct-Drive PMSG Wind Energy Conversion System\\[2pt]
+S. Regani, M. Messadi, K. Kemih
+\end{center}
+
+We thank the reviewer for the careful re-evaluation. The remaining clarifications have been made as
+follows; the paper keeps its six-page length (the abstract and one paragraph of Section~VI-C were
+condensed).
+
+\rev{1. The local nature of the stability guarantees should be emphasized, particularly regarding actuator saturation and model uncertainties.}
+A paragraph was added after Proposition~3 (Section~V-C). It states that Propositions~2--3 are local
+guarantees, which assume:
+\begin{itemize}
+\item an exact model of the electrical part;
+\item no saturation;
+\item trajectories that remain in the operating region.
+\end{itemize}
+It also states that the behavior with saturations (start-up, grid dip, $\Gamma=20$, initial speed
+errors) and with parameter mismatch is assessed only numerically, in Section~VI. The conclusion lists
+an analysis including saturations as future work.
+
+\rev{2. The justification for neglecting the energy-reference derivative should explicitly distinguish steady-state and transient operating conditions.}
+Section~V-A now states explicitly that the bound of 1.4~V holds only in steady operation, where
+$|\dot y_2^*|\le2.7$~kW. In the transients, $|\dot y_2^*|$ reaches 29~kW at start-up and 52~kW during
+the grid dip. The same $L_1$ bound then gives conservative values of 15 and 27~V. The simulated
+deviations, which include this effect, are 10.4 and 3.6~V.
+
+\rev{3. The interpretation of IEEE 519 harmonic limits should clearly distinguish converter-terminal measurements from compliance at the point of common coupling.}
+Section~VI-D now states that the TDD values are computed at the converter terminals of a single unit
+and do not by themselves establish compliance at the PCC. Compliance at the PCC also depends on the
+short-circuit ratio, the transformer, the collector network and the other units. The text also keeps
+the switching interharmonics, and the resulting need for an $LCL$ filter, separate from the harmonic
+indices ("Separately, \dots"; "independently of the harmonic indices, \dots").
+
+\rev{4. Reference [15] should be updated to reflect its current publication status.}
+At the time of this revision, [15] is still under review at \emph{Mathematics} and has no DOI. It is
+cited as such. It will be replaced by the full citation with its DOI as soon as it is accepted, and
+in any case before the camera-ready version. No stability result of the paper depends on it.
+
+\rev{Minor remark 4: balanced presentation of the benefits.}
+The abstract and the conclusion now state both sides:
+\begin{itemize}
+\item the proposed control improves the MPPT tracking (3.8 times smaller IAE) and the DC-link
+behavior during the dip (3.6 vs 11.6~V);
+\item PI gives smaller RMS current errors (0.84 vs 3.07~A for $i_{sq}$) and, with feedforward, a smaller
+start-up DC-link deviation (3.9 vs 10.4~V).
+\end{itemize}
+\end{document}

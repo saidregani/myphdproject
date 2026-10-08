@@ -36,18 +36,15 @@ BP 98 Ouled Aissa, Jijel 18000, Algeria}
 
 \begin{abstract}
 This paper proposes a control strategy for a grid-connected 2~MW direct-drive permanent magnet
-synchronous generator (PMSG) wind turbine with a back-to-back converter and an $L$ filter. The outer
-loops are designed by differential flatness: the rotor speed is the flat output of the maximum power
-point tracking (MPPT) loop, and the energy stored in the DC link and in the filter is the flat output of
-the DC-link loop. The inner current loops of both converters use passivity-based control (PBC), which
-keeps the workless coupling of the machine and filter models and injects damping; a storage function
-proves their stability. An adaptive 6-10-2 neural network, updated online with dead-zone,
-$\sigma$-modification and back-propagation, adds a compensation signal to the flat loops without
-changing the nominal gains. Simulations under turbulent wind, parameter mismatch, a 10\,\% error on
-the aerodynamic model and a 20\,\% grid voltage dip are compared with PI vector control. The proposed
-control tracks the MPPT speed 3.8 times more accurately and limits the DC-link deviation during the dip
-to 3.6~V, against 11.6~V with PI and power feedforward, while the neural compensation reduces the
-integral absolute speed error by 38\,\%.
+synchronous generator (PMSG) wind turbine with a back-to-back converter and an $L$ filter. The speed and
+DC-link loops are designed by differential flatness, with the rotor speed and the stored energy as flat
+outputs; the current loops of both converters use passivity-based control (PBC). An adaptive 6-10-2
+neural network with normalized, $\sigma$-modified update laws adds a compensation signal to the flat
+loops without changing the nominal gains. Simulations under turbulent wind, parameter mismatch, a
+10\,\% aerodynamic model error and a 20\,\% grid voltage dip are compared with PI vector control. The
+proposed control tracks the MPPT speed 3.8 times more accurately and limits the DC-link deviation
+during the dip to 3.6~V, against 11.6~V with PI and power feedforward, while PI keeps smaller current
+errors; the neural compensation reduces the integral absolute speed error by 38\,\%.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -270,7 +267,9 @@ $\dot y_2^*=\frac32L_f\bv{i}_g^{*T}\dot{\bv{i}}_g^*$ is neglected. It enters (\r
 input, and the impulse response of $s/(s^2+k_{21}s+k_{22})$ has an $L_1$ norm of
 $2/(e\,\omega_v)=12.3$~ms, so its effect is $|e_y|\le12.3\,\text{ms}\cdot\sup|\dot y_2^*|$. In simulation,
 $|\dot y_2^*|\le2.7$~kW (0.14\,\% of $P_n$) outside the transients, i.e. less than 34~J or 1.4~V on
-$V_{dc}$; it reaches 29~kW at start-up and 52~kW during the grid dip. Adding $\dot y_2^*$ to $\nu_2$
+$V_{dc}$. This bound holds only in steady operation: $|\dot y_2^*|$ reaches 29~kW at start-up and
+52~kW during the grid dip, giving conservative bounds of 15 and 27~V, whereas the simulated deviations,
+which include this effect, are 10.4 and 3.6~V. Adding $\dot y_2^*$ to $\nu_2$
 reduces the ISE of $V_{dc}$ by 3\,\% but raises the dip deviation from 3.6 to 5.3~V (numerical
 differentiation of $\bv{i}_g^*$), so it is omitted. The gains are $k_{11}=2\zeta_\Omega\omega_\Omega$, $k_{12}=\omega_\Omega^2$,
 $k_{21}=2\zeta_v\omega_v$, $k_{22}=\omega_v^2$ (Table~\ref{tab:ctrl}).
@@ -409,7 +408,10 @@ network, and does not rely on~\cite{regani2026}. It does not prove that $\Delta 
 $\Delta$, i.e., that the network reduces the bound; this is assessed in Section~VI.
 
 The bounds grow with $\Gamma/\sigma$: in simulation, $\Gamma\ge20$ saturates the network output and the
-DC-link loop oscillates with a bounded amplitude; $\Gamma=5$ is used.
+DC-link loop oscillates with a bounded amplitude; $\Gamma=5$ is used. Propositions~2--3 are local
+guarantees: they assume an exact model of the electrical part, no saturation and trajectories in the
+operating region. The behavior with saturations (start-up, grid dip, $\Gamma=20$, initial speed
+errors) and with parameter mismatch is only assessed numerically in Section~VI.
 
 \begin{table}[t]
 \caption{Controller and Adaptive ANN Parameters}
@@ -504,8 +506,7 @@ the PBC feedforward uses nominal parameters; all errors remain below 0.3\,\% of 
 Fig.~\ref{fig:ann} shows that, without knowing the 10\,\% model error, the network converges in less
 than one second to $\Delta T_e\approx0.065$~MN$\cdot$m, close to the mean of the actual error
 $T_w-\hat T_w$ (0.047 to 0.077~MN$\cdot$m); the slowly varying part is handled by the integral action
-of (\ref{eq:flat1}). The IAE of the speed decreases by 38\,\%, mainly during the start-up transient,
-where the peak speed error drops from 6.6 to 5.2~mrad/s. Table~\ref{tab:ann} reports additional tests.
+of (\ref{eq:flat1}). The speed IAE decreases by 38\,\%, mainly at start-up (peak error 6.6 to 5.2~mrad/s).
 
 \begin{figure}[t]
 \centering
@@ -516,7 +517,7 @@ and speed error with and without the network.}
 \end{figure}
 
 \begin{table}[t]
-\caption{Additional Tests of the Neural Compensation (Robustness Case; Five Wind Realizations: Mean, Spread $<10^{-5}$ rad and $0.01$~V$^2$s; $\Omega_0$: Initial Speed)}
+\caption{Tests of the Neural Compensation (Robustness Case; 5 Winds: Mean, Spread $<10^{-5}$~rad, $0.01$~V$^2$s)}
 \label{tab:ann}
 \centering
 \setlength{\tabcolsep}{3pt}\footnotesize
@@ -542,10 +543,10 @@ $\Omega_0{=}0.9\Omega^*$: PI+FF & 0.1142 & 23.8 & 14.2\\
 \end{tabular}
 \end{table}
 
-Over five turbulence realizations, the IAE is reduced by $38\pm0.1$\,\% and the ISE of $V_{dc}$ by
+In Table~\ref{tab:ann}, over five turbulence realizations, the IAE is reduced by $38\pm0.1$\,\% and the ISE of $V_{dc}$ by
 4\,\%; the current errors and the dip deviation increase slightly (Table~\ref{tab:res}). A larger
 $\Gamma$ improves the speed tracking at the expense of the current and DC-link errors; a larger dead
-zone or $\sigma$ reduces the compensation. Starting 10\,\% below the MPPT speed, the network reduces the IAE by
+zone or $\sigma$ reduces the compensation. Starting 10\,\% below the MPPT speed ($\Omega_0=0.9\Omega^*$), the network reduces the IAE by
 10\,\% with a well-damped response; starting 10\,\% above, all controllers saturate the grid current
 and the DC link rises by over 120~V, which requires a braking chopper or pitch control.
 
@@ -555,11 +556,13 @@ A switched model of the two-level converters (space-vector modulation, 2160~Hz c
 analyzed by FFT over ten periods in steady state; as in IEEE~519~\cite{ieee519}, the harmonics
 $h=2,\dots,50$ are referred to the rated current $I_L$ at the converter terminals. The total demand
 distortion (TDD) is 0.12, 0.07 and 0.13\,\%, and the largest harmonic 0.11\,\% of $I_L$, below the
-limits (5\,\% TDD, 0.3\,\% for $35\le h\le50$ in the strictest class). The switching components are
-not covered by these indices: since $f_{sw}/f_g=43.2$, they are interharmonics, mainly at
+limits (5\,\% TDD, 0.3\,\% for $35\le h\le50$ in the strictest class). These terminal values of a single unit do not by
+themselves establish compliance at the point of common coupling, which also depends on the
+short-circuit ratio, the transformer, the collector network and the other units. Separately, the
+switching components are not covered by these indices: since $f_{sw}/f_g=43.2$, they are interharmonics, mainly at
 $f_{sw}\pm2f_g$ and $f_{sw}\pm4f_g$ (2.2 and 1.6\,\% of $I_L$ each) and near $2f_{sw}$, about 4.6\,\% of
 $I_L$ in total up to 5~kHz, nearly independent of the load. With a grid-synchronized carrier they would
-exceed the 0.3\,\% limit, so an $LCL$ filter is required at this switching frequency. PI control gives a
+exceed the 0.3\,\% limit, so, independently of the harmonic indices, an $LCL$ filter is required at this switching frequency. PI control gives a
 TDD of 0.09--0.11\,\% and the same switching components within 0.1\,\% of $I_L$: this ripple is set by
 the modulation and the filter, not by the control.
 
@@ -573,8 +576,9 @@ data from the literature. Its control combines flatness for the speed and DC-lin
 passivity-based current control for both converters, with a cascade stability proof, and a normalized
 adaptive neural compensation with guaranteed bounded parameters. Compared with PI vector control tuned
 on the same poles, it tracks the MPPT speed 3.8 times more accurately under model errors and limits the
-DC-link deviation during a 20\,\% grid dip to 3.6~V (11.6~V with PI and feedforward), at the price of
-larger current errors. The network reduces the speed error by 38\,\%. Future work will address a
+DC-link deviation during a 20\,\% grid dip to 3.6~V (11.6~V with PI and feedforward). PI, however,
+gives smaller RMS current errors (0.84 vs 3.07~A for $i_{sq}$) and, with feedforward, a smaller
+start-up DC-link deviation (3.9 vs 10.4~V). The network reduces the speed error by 38\,\%. Future work will address a
 braking chopper and pitch control, an $LCL$ filter, saturations in the stability analysis, and
 experimental validation.
 
