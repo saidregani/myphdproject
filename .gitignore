@@ -14,3 +14,10 @@ Cours_PMSG_explication_FR.pdf
 Platitude_en_detail.pdf
 paper_overleaf.zip
 Paper_PMSG_FPBC_ANN.pdf
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.out
+paper/response/*.aux
+paper/response/*.log
+paper_overleaf.zip

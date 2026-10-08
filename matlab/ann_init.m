@@ -13,5 +13,7 @@ nn.sigma = A.sigma;    % regularisation (sigma-modification) coefficients
 nn.delta = A.delta;    % dead-zone threshold on the normalised error
 nn.ysat  = A.ysat;     % output saturation
 nn.KAI   = A.KAI;      % ANN coefficient
+nn.norm  = isfield(A, 'norm') && A.norm;   % normalized adaptation gain
+nn.rmax  = Inf;  if isfield(A, 'rmax'), nn.rmax = A.rmax; end   % learning region
 nn.on    = true;
 end

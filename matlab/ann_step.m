@@ -12,9 +12,10 @@ h   = tanh(nn.W1*zn + nn.b1);
 y   = nn.W2*h + nn.b2;
 uAI = nn.KAI*min(max(y, -nn.ysat), nn.ysat);
 if ~learn, return; end
-ra  = en*(norm(en) > nn.delta);
+ra  = en*(norm(en) > nn.delta && norm(en) <= nn.rmax);
 dh  = (1 - h.^2).*(nn.W2'*ra);
 G = nn.eta;  s = nn.sigma;
+if nn.norm, G = G/(1 + zn'*zn); end            % normalized gradient
 nn.W2 = nn.W2 + Ts*(-G*ra*h'  - s*nn.W2);
 nn.b2 = nn.b2 + Ts*(-G*ra     - s*nn.b2);
 nn.W1 = nn.W1 + Ts*(-G*dh*zn' - s*nn.W1);

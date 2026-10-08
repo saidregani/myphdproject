@@ -10,7 +10,8 @@ Pp  = P;
 Tc  = 1/(2*P.fsw);                  % controller sample time
 Pc  = P;  Pc.Ts = Tc;               % controller works at Tc
 nsub = round(Tc/P.hsw);  h = Tc/nsub;  % integer number of steps per sample
-vwf = @(t) 10 + 0.5*(1 + tanh((t - 0.45)/0.05));
+if ~isfield(P, 'mli_v'), P.mli_v = 10; end            % wind speed of the test [m/s]
+vwf = @(t) P.mli_v + 0.5*(1 + tanh((t - 0.45)/0.05));
 [x, u] = init_state(P, Pp, vwf(0));
 S   = ctrl_init(Pc, ctrlType, x, vwf(0), u);
 if strncmp(ctrlType, 'PI', 2), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end

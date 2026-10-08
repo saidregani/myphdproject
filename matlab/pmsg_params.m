@@ -54,6 +54,7 @@ P.ann.eta   = 5;      % learning rate (Gamma); >= 20 destabilises the DC loop
 P.ann.sigma = 0.01;   % regularisation coefficients
 P.ann.delta = 0.1;    % dead-zone threshold (normalised error)
 P.ann.KAI   = 1;      % ANN coefficient
+P.ann.norm  = 1;      % normalized adaptation gain Gamma/(1+|z|^2) (robust to large errors)
 P.ann.ysat  = 3;      % output saturation
 P.ann.e_w = 0.01;  P.ann.e_y = 300;  P.ann.e_i = 0.01;  % S_in: 1 % speed, 300 J (~1 % Vdc), 1 % current
 P.ann.tz  = [0.5; 0.02; 2e-3];   % time scales of the derivative inputs [s]

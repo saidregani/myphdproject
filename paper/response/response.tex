@@ -1,0 +1,84 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb,xcolor,enumitem}
+\usepackage[T1]{fontenc}\usepackage{mathptmx}
+\pdfminorversion=4
+\newcommand{\rev}[1]{\par\smallskip\noindent\textbf{Reviewer:} \emph{#1}\par\smallskip\noindent\textbf{Response:} }
+\begin{document}
+\begin{center}
+{\Large\bfseries Response to the Reviewer}\\[4pt]
+Flatness and Passivity-Based Control with Adaptive Neural Compensation of a Direct-Drive PMSG Wind Energy Conversion System\\[2pt]
+S. Regani, M. Messadi, K. Kemih
+\end{center}
+
+We thank the reviewer for the careful reading and the constructive comments. All of them have been
+addressed. Section, equation, table and figure numbers refer to the revised manuscript.
+
+\section*{Major comments}
+
+\rev{1. Originality: the paper combines known techniques; the contributions must be stated clearly.}
+We agree that flatness, PBC and adaptive neural compensation are individually known. The Introduction
+now ends with an explicit list of contributions: (i) a DC-link flat output that includes the energy of
+the $L$ filter, which gives an exact generator-power feedforward and linear error dynamics;
+(ii) PBC current laws for both converters and a cascade proof that the complete nominal interconnection
+is exponentially stable (new Proposition~2); (iii) the transfer of the neural compensation of
+our earlier work from the rotor currents of a DFIG to the two flat loops of a PMSG;
+(iv) a quantitative comparison with PI vector control and an extended validation.
+
+\rev{2. Sign inconsistency in the DC-link control derivation.}
+We thank the reviewer for this remark. The implemented law was correct, but the text stated the
+imposed error dynamics with the wrong sign. The derivation in Section~V-A now states that the law
+imposes $\dot e_y=-\nu_2$, i.e. $\dot y_2=\nu_2$, and shows explicitly that inserting the law in the
+$y_2$ dynamics gives $\dot y_2=\nu_2-\Delta P_g$, hence
+$\dot e_y+k_{21}e_y+k_{22}\int e_y=\Delta P_g$. We also state that $\dot y_2^*$ is neglected because
+$V_{dc}^*$ is constant and the filter energy varies slowly. The signs of all equations were checked
+against the simulation code.
+
+\rev{3. Stability of the whole interconnection.}
+Proposition~1 (PBC, Barbalat) only shows convergence of the current errors. We added Proposition~2 with
+its proof: with $V_s=H+\varepsilon\,\mathbf e^T L\mathbf z$ the inner loops are exponentially stable
+(for bounded electrical speed), and the outer flat loops are exponentially stable linear systems driven
+by $\frac{3p\psi_f}{2J}e_{sq}$ and $\frac32 v_{gd}e_{gd}$. The cascade of exponentially stable
+systems is exponentially stable. This provides, locally (outside the saturations), the assumption
+required by the uniform ultimate boundedness result of the neural compensation. The assumptions
+(exact model, no saturation, ideal PLL) are stated explicitly.
+
+\rev{4. Comparison with conventional (PI) and/or nonlinear controllers.}
+A new Section~VI compares the proposed control with PI vector control (PI speed, DC-voltage and current
+loops with $dq$ decoupling) tuned on the same poles, with and without power feedforward (PI+FF), in the
+nominal and robustness cases (Table~III, Fig.~3). Under parameter errors the proposed control tracks
+the speed 3.8 times more accurately (IAE 0.0109/0.0068 rad vs 0.0419 rad) and limits the DC-link
+deviation during a 20\,\% grid dip to 3.6~V vs 11.6~V (PI+FF) and 62~V (PI). The table also reports
+the drawbacks honestly: PI gives smaller current errors, and PI+FF a smaller start-up DC-link
+deviation. The PI tuning and the common MPPT reference and limits are described in Section~VI-A.
+
+\rev{5. More extensive validation (wind profiles, initial conditions, switched model).}
+Added: five turbulence realizations (Table~IV, mean and spread), an initial speed 10\,\% below the
+MPPT value (Table~IV) and 10\,\% above it (text), and a switched model with SVPWM at 2160~Hz and a
+1~$\mu$s step at 8, 9 and 10~m/s (Section~VI-D) with the grid-current THD (4.4, 3.1 and 2.3\,\%,
+below the 5\,\% limit of IEEE~519).
+
+\rev{6. ANN trade-offs and sensitivity to $\Gamma$, $\delta$, $\sigma$.}
+Table~IV gives the sensitivity to $\Gamma\in\{1,2,5,10,20\}$, $\delta\in\{0.05,0.1,0.2\}$ and
+$\sigma\in\{0.001,0.01,0.1\}$. A larger $\Gamma$ improves the speed tracking but increases the current
+errors and becomes oscillatory at $\Gamma=20$; $\Gamma=5$ is retained as a compromise. During this study
+we found that the original constant-gain update could oscillate for large initial errors; the update
+laws now use the normalized gain $\Gamma/(1+\|\mathbf z\|^2)$, which removes the problem and keeps the
+boundedness proof. The text states clearly that the network mainly improves the speed loop
+($-38$\,\% IAE) and slightly increases the current errors and the dip deviation.
+
+\section*{Minor comments}
+\begin{enumerate}[leftmargin=*]
+\item \emph{Readability of Fig.~2.} The block diagram was redrawn with larger fonts and a clearer
+signal flow.
+\item \emph{Typography of Eq.~(22).} Corrected (rewritten as an aligned equation).
+\item \emph{Normalization of the ANN inputs.} Section~V-C now gives all scaling factors (speed,
+energy and current errors, filter time constant of the derivatives and their scaling).
+\item \emph{Status of reference [15].} Updated to its current status (submitted to \emph{Mathematics}; it will be replaced by the full citation if accepted before the camera-ready version).
+\item \emph{THD computation.} Specified: FFT of the phase-$a$ grid current over ten grid periods in
+steady state, harmonics up to the 40th order.
+\item \emph{Computational complexity.} Section~VI-D now gives the operation count (about 200
+multiply--accumulate operations and ten $\tanh$ evaluations per step, i.e. a few MFLOP/s at 10~kHz),
+compatible with a standard DSP.
+\end{enumerate}
+\end{document}

@@ -8,10 +8,13 @@ Pp = plant_true(P, scenario);
 if strcmp(scenario, 'robust'), P.kTw = 0.9; end   % 10 % error on the Cp model
 vgfun = @(t) P.Vgm*[1 - P.ksag*(strcmp(scenario,'robust') && t >= P.tsag && t < P.tsag + P.dsag); 0];
 
-vw0 = wind_speed(0);
+if ~isfield(P, 'wind_seed'), P.wind_seed = 12345; end   % turbulence realization
+if ~isfield(P, 'w0_factor'), P.w0_factor = 1; end      % initial speed / MPPT speed
+vw0 = wind_speed(0, P.wind_seed);
 [x, u] = init_state(P, Pp, vw0);       % steady-state MPPT operating point
 
 S = ctrl_init(P, ctrlType, x, vw0, u);
+x(3) = P.w0_factor*x(3);               % optional initial-speed offset
 if strncmp(ctrlType, 'PI', 2), ctrl = @ctrl_pi; else, ctrl = @ctrl_fpbc_ann; end
 
 N    = round(P.Tend/P.Ts);
@@ -23,7 +26,7 @@ out.Cp = zeros(nlog,1); out.vg = zeros(nlog,1);
 k = 0;
 for n = 0:N-1
   t  = n*P.Ts;
-  vw = wind_speed(t);
+  vw = wind_speed(t, P.wind_seed);
   vg = vgfun(t);
   m  = struct('isd',x(1),'isq',x(2),'w',x(3),'Vdc',x(4),'igd',x(5), ...
               'igq',x(6),'vg',vg,'vw',vw);

@@ -1,4 +1,4 @@
-function v = wind_speed(t)
+function v = wind_speed(t, seed)
 %WIND_SPEED  Turbulent wind profile, same form as Eq. (80) of the authors'
 %Mathematics paper (DFIG):
 %   v(t) = Vmean + sum_k A_k sin(2 pi f_k t) + v_turb(t),  Vmean = 8 m/s
@@ -6,8 +6,10 @@ function v = wind_speed(t)
 %them): A = [1.5 0.2 0.3] m/s, f = [0.03 0.16 0.17] Hz (fit error 0.02 m/s).
 %v_turb: smoothed Gaussian noise (std 0.01 m/s, time constant 0.05 s),
 %reproducible (own generator, same result in MATLAB and Octave).
-persistent vt dt
-if isempty(vt), [vt, dt] = turbulence(); end
+%Optional seed selects another turbulence realization (default 12345).
+if nargin < 2, seed = 12345; end
+persistent vt dt s0
+if isempty(vt) || s0 ~= seed, [vt, dt] = turbulence(seed); s0 = seed; end
 A = [1.5 0.2 0.3];  f = [0.03 0.16 0.17];
 v = 8 + A*sin(2*pi*f'*t) + vturb_at(t, vt, dt);
 end
@@ -17,9 +19,9 @@ s = mod(t, (numel(vt) - 1)*dt)/dt;  k = floor(s);  a = s - k;
 x = (1 - a)*vt(k + 1) + a*vt(k + 2);
 end
 
-function [vt, dt] = turbulence()
+function [vt, dt] = turbulence(seed)
 dt = 1e-3;  N = 20001;  tau = 0.05;  sig = 0.01;
-seed = 12345;  u = zeros(N, 2);
+u = zeros(N, 2);
 for k = 1:2*N                                  % Park-Miller generator
   seed = mod(16807*seed, 2147483647);  u(k) = seed/2147483647;
 end

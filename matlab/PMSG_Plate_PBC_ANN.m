@@ -167,9 +167,10 @@ G.tau_v = 0.3;   G.wn_ref = 1.5;
 %  Signal d'apprentissage (direction de la commande) : r = Bᵀe = [eΩ ; ey]
 %  Zone morte : pas d'apprentissage si |e| ≤ δ
 %  Lois d'adaptation (σ-modification + rétropropagation) :
-%     dW2/dt = −Γ·r·hᵀ − σ·W2          db2/dt = −Γ·r − σ·b2
+%     Γn = Γ/(1 + |z|²)  (gain normalisé : apprentissage lent si les erreurs sont grandes)
+%     dW2/dt = −Γn·r·hᵀ − σ·W2         db2/dt = −Γn·r − σ·b2
 %     δh     = (1 − h²) ⊙ (W2ᵀ·r)
-%     dW1/dt = −Γ·δh·zᵀ − σ·W1         db1/dt = −Γ·δh − σ·b1
+%     dW1/dt = −Γn·δh·zᵀ − σ·W1        db1/dt = −Γn·δh − σ·b1
 %  Stabilité : erreur uniformément ultimement bornée (Théorème 2 de [2]).
 A.Gamma = 5;      % gain d'adaptation (Γ ≥ 20 déstabilise la boucle du bus DC)
 A.sigma = 0.01;   % coefficient de régularisation (σ-modification)
@@ -499,10 +500,11 @@ y = A.KAI*min(max(nn.W2*h + nn.b2, -A.ysat), A.ysat); % sortie saturée
 if ~apprendre, return; end                           % pas d'adaptation si saturation
 r  = e*(norm(e) > A.delta);                          % signal d'apprentissage + zone morte
 dh = (1 - h.^2).*(nn.W2'*r);                         % rétropropagation
-nn.W2 = nn.W2 + Ts*(-A.Gamma*r*h'   - A.sigma*nn.W2);
-nn.b2 = nn.b2 + Ts*(-A.Gamma*r      - A.sigma*nn.b2);
-nn.W1 = nn.W1 + Ts*(-A.Gamma*dh*zn' - A.sigma*nn.W1);
-nn.b1 = nn.b1 + Ts*(-A.Gamma*dh     - A.sigma*nn.b1);
+G  = A.Gamma/(1 + zn'*zn);                           % gain normalisé (robuste aux grandes erreurs)
+nn.W2 = nn.W2 + Ts*(-G*r*h'   - A.sigma*nn.W2);
+nn.b2 = nn.b2 + Ts*(-G*r      - A.sigma*nn.b2);
+nn.W1 = nn.W1 + Ts*(-G*dh*zn' - A.sigma*nn.W1);
+nn.b1 = nn.b1 + Ts*(-G*dh     - A.sigma*nn.b1);
 end
 
 function y = saturer(x, lo, hi)
