@@ -9,7 +9,7 @@ Diagram: `../../results/simulink_diagram.png`.
 cd matlab/simulink
 build_pmsg_simulink          % creates PMSG_FPBC_ANN.slx
 CTRL_SEL = 2; ANN_ON = 1; ROBUST = 0; PI_FF = 0;
-sim('PMSG_FPBC_ANN');
+out = sim('PMSG_FPBC_ANN');
 plot_simulink
 ```
 

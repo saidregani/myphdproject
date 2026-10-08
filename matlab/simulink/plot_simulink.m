@@ -1,4 +1,13 @@
 %PLOT_SIMULINK  Plots the logged signals after sim('PMSG_FPBC_ANN').
+% Works whether the logs are in the workspace or inside out = sim(...).
+if exist('out', 'var') && isa(out, 'Simulink.SimulationOutput')
+  for f = {'x_log', 'wr_log', 'pq_log', 'cp_log', 'uai_log', 'vw_log'}
+    try, eval([f{1} ' = out.get(''' f{1} ''');']); catch, end
+  end
+end
+if ~exist('x_log', 'var')
+  error('No results found: run  out = sim(''PMSG_FPBC_ANN'');  first.');
+end
 t  = x_log.time;  x = x_log.signals.values;   % [isd isq Omega Vdc igd igq]
 figure('Name', 'PMSG_FPBC_ANN');
 subplot(3,2,1); plot(vw_log.time, vw_log.signals.values); grid on; ylabel('v [m/s]'); title('Wind');

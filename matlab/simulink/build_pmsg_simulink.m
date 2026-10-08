@@ -42,6 +42,10 @@ ini = ['clear blk_mppt blk_flat_speed blk_pbc_msc blk_flat_dc blk_pbc_gsc blk_an
        '[X0, U0] = init_state(P, Pp, wind_speed(0));'];
 set_param(mdl, 'PreLoadFcn', pre, 'InitFcn', ini, ...
   'Solver', 'ode4', 'FixedStep', 'P.Ts', 'StopTime', 'P.Tend');
+try   % R2019a+: send To Workspace variables to the base workspace
+  set_param(mdl, 'ReturnWorkspaceOutputs', 'off');
+catch
+end
 evalin('base', ini);              % (paths already set above)
 
 %% ===================== PLANT (average model) =========================
