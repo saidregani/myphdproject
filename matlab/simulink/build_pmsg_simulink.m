@@ -37,7 +37,8 @@ pre = ['p = fileparts(which(''' mdl '''));' ...
        'if ~exist(''CTRL_SEL'',''var''), CTRL_SEL = 2; end;' ...
        'if ~exist(''ANN_ON'',''var''), ANN_ON = 1; end;' ...
        'if ~exist(''PI_FF'',''var''), PI_FF = 0; end;'];
-ini = ['P = pmsg_params(); Pp = plant_pp(P, ROBUST);' ...
+ini = ['clear blk_mppt blk_flat_speed blk_pbc_msc blk_flat_dc blk_pbc_gsc blk_ann blk_pi;' ...
+       'P = pmsg_params(); Pp = plant_pp(P, ROBUST);' ...
        '[X0, U0] = init_state(P, Pp, wind_speed(0));'];
 set_param(mdl, 'PreLoadFcn', pre, 'InitFcn', ini, ...
   'Solver', 'ode4', 'FixedStep', 'P.Ts', 'StopTime', 'P.Tend');
@@ -211,11 +212,33 @@ add_block('simulink/Ports & Subsystems/Subsystem', path, 'Position', pos);
 Simulink.SubSystem.deleteContents(path);
 end
 function mf(sys, name, code, pos)
+% MATLAB Function block whose body calls one blk_*.m file. The call is
+% declared extrinsic (executed by the MATLAB interpreter, no code
+% generation), so the outputs are pre-allocated with their sizes.
 path = [sys '/' name];
 add_block('simulink/User-Defined Functions/MATLAB Function', path, 'Position', pos);
+code  = sprintf(code);
+lines = strsplit(code, newline);
+fn    = regexp(code, 'blk_\w+', 'match', 'once');
+tok   = regexp(lines{1}, 'function\s*\[?([^\]=]*)\]?\s*=', 'tokens', 'once');
+outs  = strsplit(strtrim(tok{1}), {',', ' '});
+outs  = outs(~cellfun(@isempty, outs));
+pre   = sprintf('coder.extrinsic(''%s'');', fn);
+for k = 1:numel(outs)
+  pre = [pre sprintf(' %s = zeros(%d, 1);', outs{k}, outsize(outs{k}))]; %#ok<AGROW>
+end
+if ~isempty(strfind(code, 'v = blk_pi')), pre = [pre ' v = zeros(4, 1);']; end
+code  = strjoin([lines(1), {pre}, lines(2:end)], newline);
 rt = sfroot;
 ch = rt.find('-isa', 'Stateflow.EMChart', 'Path', path);
-ch.Script = sprintf(code);
+ch.Script = code;
+end
+function n = outsize(name)
+% sizes of the block outputs (all other outputs are scalars)
+switch name
+  case {'dis', 'vs', 'es', 'vi', 'igr', 'uAI', 'vg', 'dig'}, n = 2;
+  otherwise, n = 1;
+end
 end
 function inp(sys, name, k, xy)
 add_block('simulink/Sources/In1', [sys '/' name], 'Port', num2str(k), ...
