@@ -15,7 +15,15 @@ function build_pmsg_simulink()
 %   ANN_ON   = 0/1             PI_FF    = 0/1 (P_msc feed-forward)
 %   ROBUST   = 0/1 (parameter mismatch + 10 % Cp error + 20 % grid dip)
 here = fileparts(mfilename('fullpath'));
-addpath(here, fullfile(here, '..'));
+[ok, a] = fileattrib(fullfile(here, '..'));        % absolute path of matlab/
+if ~ok || ~exist(fullfile(a.Name, 'pmsg_params.m'), 'file')
+  error(['pmsg_params.m not found in %s.\nKeep the repository structure: ' ...
+         'matlab/ (pmsg_params.m, aero_cp.m, ann_step.m, ...) and matlab/simulink/ (this file).'], ...
+        fullfile(here, '..'));
+end
+root = a.Name;
+addpath(here, root);
+assignin('base', 'PMSG_SIM_ROOT', root);
 mdl = 'PMSG_FPBC_ANN';
 if bdIsLoaded(mdl), close_system(mdl, 0); end
 if exist(fullfile(here, [mdl '.slx']), 'file'), delete(fullfile(here, [mdl '.slx'])); end
@@ -23,7 +31,8 @@ new_system(mdl);  open_system(mdl);
 
 assignin('base', 'ROBUST', 0);   assignin('base', 'CTRL_SEL', 2);
 assignin('base', 'ANN_ON', 1);   assignin('base', 'PI_FF', 0);
-pre = ['p = fileparts(which(''' mdl ''')); addpath(p, fullfile(p, ''..''));' ...
+pre = ['p = fileparts(which(''' mdl '''));' ...
+       'if ~isempty(p), [~, a] = fileattrib(fullfile(p, ''..'')); addpath(p, a.Name); end;' ...
        'if ~exist(''ROBUST'',''var''), ROBUST = 0; end;' ...
        'if ~exist(''CTRL_SEL'',''var''), CTRL_SEL = 2; end;' ...
        'if ~exist(''ANN_ON'',''var''), ANN_ON = 1; end;' ...
@@ -32,7 +41,7 @@ ini = ['P = pmsg_params(); Pp = plant_pp(P, ROBUST);' ...
        '[X0, U0] = init_state(P, Pp, wind_speed(0));'];
 set_param(mdl, 'PreLoadFcn', pre, 'InitFcn', ini, ...
   'Solver', 'ode4', 'FixedStep', 'P.Ts', 'StopTime', 'P.Tend');
-evalin('base', pre);  evalin('base', ini);
+evalin('base', ini);              % (paths already set above)
 
 %% ===================== PLANT (average model) =========================
 pl = [mdl '/Plant: Turbine-PMSG-Back-to-back-L filter-Grid'];
