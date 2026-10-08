@@ -4,8 +4,8 @@ PhD project: control of a **2 MW direct-drive PMSG wind turbine** connected to t
 **back-to-back converter** (rectifier → DC bus → inverter → L filter → grid).
 
 Proposed control: **flatness-based control** (outer loops: speed/MPPT, DC-bus energy) + **passivity-based
-control** (inner current loops of the PWM rectifier and PWM inverter) + **RBF neural networks (ANN)** that tune
-the controller parameters online. Compared with classical PI vector control.
+control** (inner current loops of the PWM rectifier and PWM inverter) + **adaptive ANN compensation**
+(6-10-2 MLP, u = u_N + u_AI, same scheme as the authors' Mathematics paper on DFIG). Compared with classical PI vector control.
 
 | Folder | Content |
 |---|---|

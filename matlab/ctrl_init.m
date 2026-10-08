@@ -3,7 +3,7 @@ function S = ctrl_init(P, type, x0, vw0, u0)
 %   type = 'PI'   : classical vector control (cascaded PI loops)
 %   type = 'PIFF' : same + feed-forward of P_msc in the DC-bus loop
 %   type = 'FPBC': flatness (outer) + passivity-based (inner) control
-%                  with ANN online gain tuning
+%                  + adaptive ANN compensation u = u_N + u_AI
 %   type = 'FPBC0': same as FPBC with the ANN disabled (fixed gains)
 S.type = type;
 S.u    = u0;                                  % last applied voltages
@@ -46,23 +46,15 @@ switch type
     % dirty-derivative filters for the current references
     S.tau_d = 2e-3;
     S.is_f = [0; x0(2)];  S.ig_f = [x0(5); 0];
-    S.en_s = 0; S.en_g = 0; S.en_w = 0; S.en_v = 0;   % ANN de/dt
-    % ANN gain tuners: error normalisation (fraction of rated value at
-    % which the normalised error is 1), then (gmin, gmax, learning rate, leakage)
+    % adaptive ANN compensator (6-10-2), see ann_init.m / ann_step.m
     A = P.ann;
-    S.ni = A.ni;  S.nw = A.nw;  S.nv = A.nv;
-    S.nn_s = rbf_init(0.5, A.gmax, A.eta_i, A.sig_i);
-    S.nn_g = rbf_init(0.5, A.gmax, A.eta_i, A.sig_i);
-    S.nn_w = rbf_init(0.5, A.gmax, A.eta_w, A.sig_w);
-    S.nn_v = rbf_init(0.5, A.gmax, A.eta_v, A.sig_v);
-    % ANN 2: RBF approximation of the aerodynamic torque model error
-    [c1, c2] = meshgrid(linspace(0.6, 1.4, 5), linspace(0.5, 1.1, 5));
-    S.Ctw = [c1(:)'; c2(:)'];  S.Wtw = zeros(25, 1);
-    S.gtw = A.eta_tw;  S.stw = A.sig_tw;
-    if strcmp(type, 'FPBC0')
-      S.gtw = 0;
-      S.nn_s.off = true; S.nn_g.off = true; S.nn_w.off = true; S.nn_v.off = true;
-    end
+    S.nn  = ann_init(6, 10, 2, A);
+    S.nn.on = strcmp(type, 'FPBC');                  % FPBC0: nominal only
+    S.uAI = [0; 0];  S.satw = false;  S.satv = false;
+    S.sw = A.e_w*P.wn;                               % input normalisation S_in
+    S.sy = A.e_y;  S.si = A.e_i*S.Ibs;
+    S.tz = A.tz;   S.tau_z = A.tau_z;  S.e_f = [0; 0; 0];
+    S.uT = A.uT*P.Tn;  S.uP = A.uP*P.Pn;             % output scaling
   otherwise
     error('unknown controller type');
 end

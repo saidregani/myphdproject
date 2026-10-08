@@ -49,13 +49,16 @@ P.Imax_g = 1.3 * P.Pn/(1.5*P.Vgm);       % GSC current limit (peak) [A]
 P.Te_min = 0;                            % no motoring for MPPT
 P.Te_max =  1.2*P.Tn;
 
-%% ANN (RBF) online gain tuning
-P.ann.ni = 0.05;  P.ann.nw = 0.02;  P.ann.nv = 0.01;   % error normalisation
-P.ann.gmax  = 3;                                       % max gain multiplier
-P.ann.eta_i = 100; P.ann.sig_i = 5;                    % current loops
-P.ann.eta_w = 20;  P.ann.sig_w = 1;                    % speed loop
-P.ann.eta_v = 50;  P.ann.sig_v = 3;                    % DC-bus loop
-P.ann.eta_tw = 2;  P.ann.sig_tw = 0.01;                % Tw-model error network
+%% Adaptive ANN compensator (6-10-2 MLP, Mathematics paper scheme)
+P.ann.eta   = 5;      % learning rate (Gamma); >= 20 destabilises the DC loop
+P.ann.sigma = 0.01;   % regularisation coefficients
+P.ann.delta = 0.1;    % dead-zone threshold (normalised error)
+P.ann.KAI   = 1;      % ANN coefficient
+P.ann.ysat  = 3;      % output saturation
+P.ann.e_w = 0.01;  P.ann.e_y = 300;  P.ann.e_i = 0.01;  % S_in: 1 % speed, 300 J (~1 % Vdc), 1 % current
+P.ann.tz  = [0.5; 0.02; 2e-3];   % time scales of the derivative inputs [s]
+P.ann.tau_z = 5e-3;              % derivative filter [s]
+P.ann.uT = 0.1;  P.ann.uP = 0.1; % u_AI = K_AI*y*[0.1 Tn; 0.1 Pn]
 
 %% Grid voltage dip (robust scenario)
 P.tsag = 8;  P.dsag = 0.2;  P.ksag = 0.2;   % start [s], duration [s], depth [pu]

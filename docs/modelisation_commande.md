@@ -88,13 +88,14 @@ n'a pas été faite pour cette chaîne. Répartition :
 
 * **Boucles externes → platitude** (vitesse/MPPT côté MSC, énergie du bus DC côté GSC).
 * **Boucles internes de courant → passivité** (redresseur MLI et onduleur MLI + filtre L).
-* **ANN (RBF)** → réglage en ligne des gains proportionnels / d'amortissement de chaque boucle.
+* **ANN adaptatif (6-10-2)** → compensation en ligne u_AI ajoutée aux boucles plates, sans toucher aux gains nominaux
+  (même méthode que [2]).
 
 ### Schéma bloc
 
 ```
-                    ┌──────────── ANN (RBF) : g_Ω, g_s, g_v, g_g ────────────┐
-                    ▼                                                        ▼
+                    ┌──── ANN adaptatif 6-10-2 : u_AI = [ΔT_e ; ΔP_g] ────┐
+                    ▼ (+ΔT_e)                                       (+ΔP_g) ▼
  v ─►┌──────┐ Ω*,Ω̇* ┌────────────────────┐ T_e* ┌───────────┐ i_s* ┌────────────────────┐ v_s* ┌──────┐ ┌───────────────┐
      │ MPPT │──────►│ PLATITUDE vitesse  │─────►│ i_sq*=T_e*│─────►│ PASSIVE courant MSC│─────►│SVPWM │►│ Redresseur MLI│
      └──────┘       │ y1 = Ω             │      │ /(1.5pψ)  │      │ (PBC + amort. R_a) │      └──────┘ └───────────────┘
@@ -143,22 +144,29 @@ Fonction de stockage : H = ½ e_sᵀ L_s e_s + ½ K_i z_sᵀ z_s
 
 ⇒ **dH/dt = −(R_s + R_a(t)) ‖e_s‖² ≤ 0**  (car e_sᵀ𝐉e_s = 0). Même résultat pour l'onduleur.
 
-### 3.4 ANN pour régler les paramètres en ligne
-Deux réseaux RBF, avec deux rôles :
+### 3.4 Compensation adaptative par ANN (même méthode que l'article *Mathematics* [2])
+L'ANN **ne remplace pas** la commande nominale et **ne modifie pas ses gains**. Il ajoute un signal de compensation :
 
-**ANN 1 — réglage des gains.** Un RBF par boucle règle les gains proportionnels / d'amortissement.
-* Gains réglés : R_a = g_s R_a0, R_b = g_g R_b0, k₁₁ = g_Ω k₁₁⁰, k₂₁ = g_v k₂₁⁰.
-* Entrées : erreur normalisée e_n et sa dérivée. 9 neurones. Sortie sigmoïde → g ∈ [0,5 ; 3].
-* Apprentissage : ẇ = η e_n² ∂g/∂w − σ w, car ∂E/∂K ≈ −e² T_s/L < 0. Le gain monte pendant les transitoires
-  puis revient au nominal.
-* Stabilité : dH/dt = −(R + R_a(t))‖e‖² ≤ 0 pour tout R_a(t) > 0. Même chose pour les boucles plates
-  (dV/dt = −k₁(t)e²).
+**u = u_N + u_AI**,  u_AI = [ΔT_e ; ΔP_g], ajouté aux entrées des deux boucles plates (T_e* et P_g*).
 
-**ANN 2 — correction du modèle aérodynamique.** La platitude est basée sur le modèle, et C_p(λ) n'est jamais connu
-exactement.
-* Un RBF (25 neurones sur (λ/λ_opt, v/11)) apprend l'erreur : T_w = T̂_w,modèle + T_n Ŵᵀφ(λ, v) + ε.
-* Loi d'apprentissage de Lyapunov : dŴ/dt = −γ φ e_Ω − σŴ, avec e_Ω = Ω* − Ω.
-* Avec V = ½J e² + ½J k₁₂ z² + W̃ᵀW̃/(2γ), le terme croisé s'annule : dV/dt = −J k₁₁ e² (à ε et σ près).
+* **Entrées (6)** : z = [e_Ω, e_y2, e_isq, ė_Ω, ė_y2, ė_isq]ᵀ, normalisées : z_n = S_in⁻¹ z.
+* **Structure 6-10-2** : h = tanh(W₁ z_n + b₁), y = W₂ h + b₂, u_AI = K_AI · sat(y).
+* **Signal d'apprentissage** (direction de commande) : r = Bᵀe = [e_Ω ; e_y2]. T_e et P_g entrent avec un signe
+  positif dans ė_Ω et ė_y2.
+* **Zone morte** : r_a = r si ‖e‖ > δ, sinon r_a = 0.
+* **Lois d'adaptation** :
+  * Ẇ₂ = −Γ r_a hᵀ − σW₂,  ḃ₂ = −Γ r_a − σb₂
+  * δ_h = (1 − h²) ⊙ (W₂ᵀ r_a)
+  * Ẇ₁ = −Γ δ_h z_nᵀ − σW₁,  ḃ₁ = −Γ δ_h − σb₁
+* **Stabilité** (comme le Théorème 2 de [2]) : la commande nominale est stable (boucles plates + PBC, §3.1–3.3).
+  Avec une erreur d'approximation bornée, les termes σ et la zone morte, l'erreur est **uniformément ultimement
+  bornée** (V = ½eᵀPe + ‖Θ̃‖²/(2Γ), dV/dt ≤ −α‖e‖² + c_ε‖e‖).
+* **Réglage** : Γ = 5, σ = 0,01, δ = 0,1 (en erreur normalisée), K_AI = 1, saturation 3, ce qui donne
+  u_AI ∈ [−0,3 T_n ; 0,3 T_n] et [−0,3 P_n ; 0,3 P_n].
+  Avec Γ ≥ 20, la boucle bus DC devient instable, donc il faut garder une marge.
+
+[2] S. Regani, M. Messadi, K. Kemih, « A Novel Chaos Control Approach with Adaptive ANN Compensation for a
+DFIG-Based Wind Turbine », *Mathematics* (soumis).
 
 ### 3.5 Commandes de comparaison
 Toutes sont réglées sur les mêmes pôles nominaux (courants τ = 2 ms, vitesse ω_n = 2 rad/s, ζ = 0,9, bus DC ω_n = 60 rad/s).
@@ -191,7 +199,7 @@ Toutes sont réglées sur les mêmes pôles nominaux (courants τ = 2 ms, vitess
 
 ## 6. Résultats
 
-Paramètres de la machine selon [1].
+Paramètres de la machine selon [1]. ANN selon [2] (Γ = 5).
 
 ### 6.1 Modèle moyen (`main.m`, 10 s)
 Erreurs de courant RMS en A : [t < 1 s] / [t ≥ 1 s].
@@ -204,31 +212,30 @@ Erreurs de courant RMS en A : [t < 1 s] / [t ≥ 1 s].
 | nominal | Plate+PBC+ANN | 0,0000 | 0,02 | 0,15 | 0,04 / 0,00 | 0,15 / 0,00 | 0,4654 | 3,485 |
 | robustesse | PI | 0,0976 | 1278,8 | 119,6 | 3,06 / 0,17 | 9,11 / 4,51 | 0,4652 | 3,481 |
 | robustesse | PI+FF | 0,0976 | 9,4 | 18,3 | 3,06 / 0,17 | 8,95 / 12,29 | 0,4652 | 3,481 |
-| robustesse | Plate+PBC | 0,0181 | 2,6 | 10,9 | 9,40 / 0,18 | 16,34 / 10,13 | 0,4656 | 3,469 |
-| robustesse | Plate+PBC+ANN | **0,0048** | **2,3** | 11,0 | 9,37 / 0,21 | 15,67 / 10,11 | 0,4654 | 3,465 |
+| robustesse | Plate+PBC | 0,0181 | 2,59 | 10,9 | 9,40 / 0,18 | 16,34 / 10,13 | 0,4656 | 3,469 |
+| robustesse | Plate+PBC+ANN | **0,0128** | **1,93** | **10,4** | 9,40 / 0,36 | 16,63 / 10,73 | 0,4655 | 3,467 |
+
+Apport de l'ANN en robustesse (même gains nominaux, comme dans [2]) :
+
+| Indice | Sans ANN | Avec ANN | Amélioration |
+|---|---|---|---|
+| IAE vitesse | 0,0181 | 0,0128 | −29 % |
+| ISE V_dc | 2,59 | 1,93 | −25 % |
+| max abs(ΔV_dc) | 10,9 V | 10,4 V | −5 % |
 
 ### 6.2 Modèle commuté MLI (`main_mli.m`, f_MLI = 2160 Hz [1])
 | Commande | THD i_ga (régime établi) |
 |---|---|
 | PI | 2,29 % |
-| Plate+PBC+ANN | 2,29 % |
-
-Les deux sont sous la limite de 5 % (IEEE 519). [1] annonce < 2 %, mais son modèle inclut un transformateur
-35 kV/690 V et une ligne, dont les inductances filtrent davantage.
+| Plate+PBC+ANN | 2,30 % |
 
 ### 6.3 Lecture (à garder honnête dans l'article)
-* **Bus DC, face à un PI équitable (PI+FF)** :
-  * ISE V_dc : 2,3 contre 9,4 (÷ 4).
-  * Écart max pendant le creux : 11 V contre 18 V. En nominal : 0,15 V contre 2,5 V.
-  * Face au PI sans anticipation (120 V), la comparaison n'est pas équitable.
-* **Apport de l'ANN** :
-  * En nominal, il n'apporte rien : le modèle est exact.
-  * En robustesse (10 % d'erreur sur C_p), l'ANN 2 divise l'IAE de vitesse par 3,8 (0,0181 → 0,0048).
-    C'est la contribution principale de l'ANN.
-  * L'ANN 1 (gains) a un effet faible : il ne s'active que pendant les grands transitoires.
-* **Vitesse / MPPT** : l'IAE est 20 fois plus petit que le PI. Mais le C_p moyen est quasiment identique, et
-  l'énergie injectée est ≈ 0,5 % plus faible (le rotor stocke plus d'énergie cinétique). Il ne faut pas annoncer de
-  gain d'énergie.
-* **Courants** : avec désaccord paramétrique, la PBC (qui utilise les valeurs nominales) a des erreurs plus grandes
-  que le PI au démarrage et pendant le creux. Elles restent < 0,7 % du courant nominal.
-* **THD** : identique au PI (2,29 %).
+* **Bus DC, face à un PI équitable (PI+FF)** : ISE 1,9 contre 9,4 (÷ 5), écart max 10 V contre 18 V.
+* **ANN** :
+  * En nominal, il ne s'active pas : l'erreur reste dans la zone morte.
+  * En robustesse, il réduit l'erreur de vitesse de 29 % et l'ISE du bus DC de 25 %, sans retoucher les gains.
+  * L'erreur de courant e_s augmente légèrement (0,18 → 0,36 A, < 0,02 % du nominal), car l'ANN modifie T_e*.
+  * Γ ≥ 20 rend la boucle bus DC instable : la garantie est seulement UUB, à condition que les paramètres restent bornés.
+* **Vitesse / MPPT** : l'IAE est 7,6 fois plus petit que le PI. Mais le C_p moyen est quasiment identique et
+  l'énergie est ≈ 0,4 % plus faible. Il ne faut pas annoncer de gain d'énergie.
+* **THD** : identique au PI.
