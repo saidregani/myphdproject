@@ -77,12 +77,34 @@ La chaîne étudiée (figure~\ref{fig:schema}) comprend :
 % =====================================================================
 
 \subsection{Profil de vent}
-Le vent de test, inférieur au vent nominal, est composé d'échelons lissés et d'une turbulence :
+On utilise le même profil de vent turbulent que dans~\cite{regani} (équation (80)) :
 \begin{equation}
-  v(t) = 8 + 2\,s(t-1) + s(t-4) - 2\,s(t-7) + 0{,}15\sin(2\pi\,0{,}7\,t) + 0{,}08\sin(2\pi\,2{,}3\,t)
-  \quad [\si{m/s}],
+  v(t) = V_{mean} + \sum_{k=1}^{3} A_k \sin(2\pi f_k t) + v_{turb}(t),
+  \label{eq:vent}
 \end{equation}
-avec $s(\tau) = \tfrac12\bigl(1+\tanh(\tau/0{,}15)\bigr)$ (échelon lissé).
+où $V_{mean}=\SI{8}{m/s}$ est la vitesse moyenne, $A_k$ et $f_k$ l'amplitude et la fréquence de la
+$k$-ième composante harmonique, et $v_{turb}(t)$ une composante stochastique gaussienne lissée qui
+représente la turbulence. Les valeurs retenues (tableau~\ref{tab:vent}) reproduisent la figure~3
+de~\cite{regani} à \SI{0,02}{m/s} près : le vent part de \SI{8}{m/s}, atteint \SI{9}{m/s} vers
+$t=\SI{2}{s}$, redescend à \SI{8,6}{m/s} vers $t=\SI{4,2}{s}$, puis monte à \SI{10}{m/s} vers
+$t=\SI{7,7}{s}$.
+
+\begin{table}[h]
+\centering
+\caption{Paramètres du profil de vent (\ref{eq:vent}).}
+\label{tab:vent}
+\begin{tabular}{lccc}
+\toprule
+& $k=1$ & $k=2$ & $k=3$\\
+\midrule
+$A_k$ [\si{m/s}] & 1,5 & 0,2 & 0,3\\
+$f_k$ [\si{Hz}] & 0,03 & 0,16 & 0,17\\
+\midrule
+\multicolumn{4}{l}{$v_{turb}$ : bruit gaussien filtré (1\textsuperscript{er} ordre, $\tau=\SI{0,05}{s}$),
+écart type \SI{0,01}{m/s}}\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Turbine}
 La puissance captée par la turbine et le couple aérodynamique s'écrivent :
@@ -479,8 +501,8 @@ d'adaptation modéré.
         le modèle $C_p$ de la commande sous-estime $T_w$ de 10\,\% ;
         un creux de tension réseau de 20\,\% se produit entre \SI{8}{s} et \SI{8,2}{s}.
 \end{itemize}
-Modèle moyen, intégration RK4 au pas $T_s$, durée \SI{10}{s}. Les mêmes gains nominaux sont utilisés
-avec et sans ANN.
+Modèle moyen, intégration RK4 au pas $T_s$, durée \SI{10}{s}, vent (\ref{eq:vent}). Les mêmes gains
+nominaux sont utilisés avec et sans ANN.
 
 \subsection{Indices de performance}
 \begin{table}[h]
@@ -493,11 +515,11 @@ avec et sans ANN.
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Indice & sans ANN & avec ANN & sans ANN & avec ANN\\
 \midrule
-IAE vitesse $\int|\Omega-\Omega^*|\,dt$ [rad] & $<10^{-4}$ & $<10^{-4}$ & 0,0181 & \textbf{0,0128} ($-29\,\%$)\\
-ISE $\int(V_{dc}-V_{dc}^*)^2dt$ [V$^2$s] & 0,02 & 0,02 & 2,59 & \textbf{1,93} ($-25\,\%$)\\
-Écart max de $V_{dc}$ [V] & 0,15 & 0,15 & 10,9 & \textbf{10,4} ($-5\,\%$)\\
-$C_p$ moyen & 0,4654 & 0,4654 & 0,4656 & 0,4655\\
-Énergie injectée [kWh] & 3,485 & 3,485 & 3,469 & 3,467\\
+IAE vitesse $\int|\Omega-\Omega^*|\,dt$ [rad] & $<10^{-5}$ & $<10^{-5}$ & 0,0109 & \textbf{0,0067} ($-39\,\%$)\\
+ISE $\int(V_{dc}-V_{dc}^*)^2dt$ [V$^2$s] & 0,085 & 0,085 & 1,30 & \textbf{1,16} ($-11\,\%$)\\
+Écart max de $V_{dc}$ [V] & 0,36 & 0,36 & 10,44 & 10,42\\
+$C_p$ moyen & 0,4763 & 0,4763 & 0,4764 & 0,4763\\
+Énergie injectée [kWh] & 2,625 & 2,625 & 2,615 & 2,614\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -539,16 +561,18 @@ Avec le modèle commuté (\SI{2160}{Hz}), le THD du courant réseau en régime �
 \subsection{Analyse}
 \begin{itemize}
   \item \textbf{Cas nominal.} Les erreurs restent dans la zone morte : l'ANN n'apprend pas et les
-        deux commandes sont identiques. La tension du bus reste à $\pm\SI{0,15}{V}$ de
-        \SI{1200}{V}, grâce à l'anticipation de $P_{msc}$ dans la loi plate.
-  \item \textbf{Robustesse.} Avec les mêmes gains, l'ANN réduit l'erreur de vitesse de 29\,\% et
-        l'ISE de la tension du bus de 25\,\%. Pendant le creux de tension, l'écart maximal est
-        d'environ \SI{10}{V} (0,9\,\% de $V_{dc}^*$), avec un retour en moins de \SI{0,3}{s}.
+        deux commandes sont identiques. La tension du bus reste à $\pm\SI{0,4}{V}$ de
+        \SI{1200}{V}, grâce à l'anticipation de $P_{msc}$ dans la loi plate, et $C_p$ reste entre
+        0,47 et 0,48.
+  \item \textbf{Robustesse.} Avec les mêmes gains, l'ANN réduit l'erreur de vitesse de 39\,\% et
+        l'ISE de la tension du bus de 11\,\%. Pendant le creux de tension, l'écart maximal est
+        d'environ \SI{10}{V} (0,9\,\% de $V_{dc}^*$) avec ou sans ANN, avec un retour en moins de
+        \SI{0,3}{s}.
   \item \textbf{Interprétation de l'ANN} (figure~\ref{fig:ann}). Le modèle $C_p$ de la commande
-        sous-estime $T_w$ de 10\,\%. Sans connaître cette erreur, l'ANN produit un $\Delta T_e$ qui
-        suit l'écart réel $T_w-\hat T_w$ (environ 0,05 puis \SI{0,08}{MN.m} quand le vent augmente,
-        puis il diminue quand le vent baisse). L'action intégrale de la loi plate prend en charge
-        le reste de l'écart.
+        sous-estime $T_w$ de 10\,\%. Sans connaître cette erreur, l'ANN converge en moins d'une seconde
+        vers $\Delta T_e\approx\SI{0,065}{MN.m}$, soit la valeur moyenne de l'écart réel
+        $T_w-\hat T_w$ (entre 0,05 et \SI{0,077}{MN.m}). La partie lentement variable de l'écart est
+        prise en charge par l'action intégrale de la loi plate.
   \item \textbf{Énergie.} Le $C_p$ moyen et l'énergie injectée sont pratiquement identiques : le
         gain porte sur la précision du suivi et sur la qualité de la régulation, pas sur l'énergie
         produite.

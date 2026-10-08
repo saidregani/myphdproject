@@ -229,7 +229,7 @@ t = res.t;
 % ---- Figure 1 : vue d'ensemble de la chaîne ------------------------------
 figure('Name', 'Vue d''ensemble', 'Position', [60 60 1150 780]);
 subplot(3,2,1); plot(t, res.v); grid on;
-ylabel('v [m/s]'); title('Vitesse du vent');
+ylabel('v [m/s]'); title('Vitesse du vent (éq. (80) de [2])');
 subplot(3,2,2); plot(t, res.w, t, res.wr, '--'); grid on;
 ylabel('\Omega [rad/s]'); legend('\Omega', '\Omega^* (MPPT)', 'Location', 'best');
 title('Vitesse de rotation');
@@ -448,9 +448,27 @@ Cp = max(0.5176*(116/li - 0.4*beta - 5)*exp(-21/li) + 0.0068*lam, 0);
 end
 
 function v = profil_vent(t)
-%PROFIL_VENT  8 → 10 → 11 → 9 m/s (échelons lissés) + turbulence.
-s = @(t0) 0.5*(1 + tanh((t - t0)/0.15));
-v = 8 + 2*s(1) + 1*s(4) - 2*s(7) + 0.15*sin(2*pi*0.7*t) + 0.08*sin(2*pi*2.3*t);
+%PROFIL_VENT  Vent turbulent, même forme que l'équation (80) de [2] :
+%     v(t) = Vmoy + Σ_k A_k·sin(2π·f_k·t) + v_turb(t),   Vmoy = 8 m/s
+%  A_k et f_k sont identifiés sur la figure 3 de [2] (non donnés dans le texte) :
+%     A = [1,5 0,2 0,3] m/s,  f = [0,03 0,16 0,17] Hz   (écart à la courbe : 0,02 m/s)
+%  v_turb : bruit gaussien lissé (écart type 0,01 m/s, constante de temps 0,05 s),
+%  reproductible (générateur fixe, identique d'une exécution à l'autre).
+persistent vt dt
+if isempty(vt)
+  dt = 1e-3;  N = 20001;  tau = 0.05;  sig = 0.01;
+  graine = 12345;  u = zeros(N, 2);
+  for k = 1:2*N                                   % générateur de Park-Miller
+    graine = mod(16807*graine, 2147483647);  u(k) = graine/2147483647;
+  end
+  w = sqrt(-2*log(u(:,1))).*cos(2*pi*u(:,2));    % Box-Muller → loi normale
+  a = exp(-dt/tau);  vt = zeros(N, 1);
+  for k = 2:N, vt(k) = a*vt(k-1) + (1 - a)*w(k); end   % lissage (1er ordre)
+  vt = sig*vt/std(vt);
+end
+A = [1.5 0.2 0.3];  f = [0.03 0.16 0.17];
+s = mod(t, (numel(vt) - 1)*dt)/dt;  k = floor(s);  a = s - k;   % interpolation
+v = 8 + A*sin(2*pi*f'*t) + (1 - a)*vt(k + 1) + a*vt(k + 2);
 end
 
 function vg = tension_reseau(t, robuste, P)
