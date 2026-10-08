@@ -56,7 +56,19 @@ if isempty(k1) || k1 < nw, out.THD_ig = NaN; return; end
 ia  = out.iga(k1-nw+1:k1);
 Y   = abs(fft(ia))/nw*2;
 f0  = 11;                                    % 50 Hz bin (10 periods)
-out.THD_ig = sqrt(sum(Y([2:f0-1, f0+1:40*10+1]).^2))/Y(f0)*100;  % up to h40
+out.THD_ig = sqrt(sum(Y([2:f0-1, f0+1:40*10+1]).^2))/Y(f0)*100;  % all bins up to h40
+% IEEE 519-2022 indices: integer harmonics h = 2..50 (bin 10h+1), relative to
+% the fundamental (THD) and to the rated current (TDD); total distortion of
+% all bins up to 5 kHz (harmonics + interharmonics incl. switching sidebands)
+In  = P.Pn/(1.5*P.Vgm);                      % rated peak current
+hb  = 10*(2:50) + 1;
+out.I1   = Y(f0);  out.Ih = Y(hb);           % peak amplitudes, h = 2..50
+out.THD50 = sqrt(sum(out.Ih.^2))/Y(f0)*100;
+out.TDD50 = sqrt(sum(out.Ih.^2))/In*100;
+out.Ihmax_pct = max(out.Ih)/In*100;
+nb  = 5000/5 + 1;
+out.TDall = sqrt(sum(Y([2:f0-1, f0+1:nb]).^2))/Y(f0)*100;
+out.Y = Y(1:nb);
 end
 
 function d = duty(vdq, th, Vdc, a3)

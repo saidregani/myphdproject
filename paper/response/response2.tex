@@ -1,0 +1,94 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}\usepackage{mathptmx}
+\pdfminorversion=4
+\newcommand{\rev}[1]{\par\medskip\noindent\textbf{Reviewer:} \emph{#1}\par\smallskip\noindent\textbf{Response:} }
+\begin{document}
+\begin{center}
+{\Large\bfseries Response to the Reviewer (Second Round)}\\[4pt]
+Flatness and Passivity-Based Control with Adaptive Neural Compensation of a Direct-Drive PMSG Wind Energy Conversion System\\[2pt]
+S. Regani, M. Messadi, K. Kemih
+\end{center}
+
+We thank the reviewer for the positive assessment and the remaining remarks, which we address below.
+Equation and section numbers refer to the revised manuscript. The paper keeps its six-page length;
+to make room, the full state model (a restatement of (4) and (8)--(10)) was replaced by a sentence and
+some text was condensed, without removing any result.
+
+\rev{The applicability of the neural stability theorem to the normalized adaptive update laws should be clarified.}
+We agree that the theorem of [15] does not apply directly. Its proof uses a Lyapunov function with
+$\mathrm{tr}(\tilde W^T\Gamma^{-1}\tilde W)$ and a constant gain; with $\Gamma_n(t)=\Gamma/(1+\|\mathbf z_n\|^2)$
+its derivative contains an extra term in $\dot\Gamma_n$. We removed the citation of that theorem and
+replaced it by a new, self-contained \textbf{Proposition~3} with its proof (Section~V-C):
+\begin{itemize}
+\item[(i)] Because the learning signal is part of the network input, $\|\mathbf r\|\le\|\mathbf z_n\|$,
+so $\Gamma_n\|\mathbf r\|\le\Gamma/2$. With the $\sigma$-modification, this gives explicit bounds on
+$W_2,\mathbf b_2,W_1,\mathbf b_1$ for all $t$, whatever the tracking errors, e.g.
+$\|W_2(t)\|\le\max(\|W_2(0)\|,\sqrt{10}\,\Gamma/(2\sigma))$.
+\item[(ii)] The compensation is bounded by its output saturation, and it enters the outer error
+equations (25)--(26) linearly. Proposition~2 shows that the nominal error system is exponentially
+stable, so it is locally input-to-state stable. Hence the tracking error is uniformly ultimately bounded,
+with a bound proportional to $\sup(|\Delta T_e-\Delta|/J+|\Delta P_g+\dot y_2^*|)$.
+\end{itemize}
+The text states the limitation explicitly: the result guarantees boundedness for any $\Gamma>0$, but it
+does not prove that the network reduces the bound. That reduction is assessed numerically (Table~IV),
+and the oscillations observed for $\Gamma\ge20$ are consistent with bounds that grow with $\Gamma/\sigma$.
+As a consequence, the stability claims of the paper no longer depend on the unpublished reference [15].
+
+\rev{The approximation involving the derivative of the DC-link energy reference should be justified quantitatively.}
+Section~V-A now quantifies this approximation:
+\begin{itemize}
+\item The reference $y_2^*$ varies only through the filter energy, at most 300~J, compared with
+14.4~kJ in the capacitor.
+\item The neglected term $\dot y_2^*=\frac32L_f\mathbf i_g^{*T}\dot{\mathbf i}_g^*$ enters the error
+equation (26) as an input. The $L_1$ norm of the impulse response of $s/(s^2+k_{21}s+k_{22})$ is
+$2/(e\,\omega_v)=12.3$~ms, so $|e_y|\le12.3~\text{ms}\cdot\sup|\dot y_2^*|$.
+\item In the simulations, $|\dot y_2^*|\le2.7$~kW (0.14\,\% of $P_n$) outside the transients, i.e.
+$|e_y|<34$~J, or less than 1.4~V on $V_{dc}$. It reaches 29~kW at start-up and 52~kW during the grid dip.
+\item We also simulated the law \emph{with} $\dot y_2^*$ included. The ISE of $V_{dc}$ improves by 3\,\%,
+but the dip deviation increases from 3.6 to 5.3~V, because $\dot{\mathbf i}_g^*$ must be obtained by
+numerical differentiation. This justifies omitting the term.
+\end{itemize}
+Proposition~2 now lists $\dot y_2^*=0$ among its assumptions, and Proposition~3 includes $\dot y_2^*$ as an input.
+
+\rev{The scope of the differential flatness claim should be stated more precisely.}
+Section~V-A now states that flatness is used only for the two outer subsystems, with the currents
+treated as inputs:
+\begin{itemize}
+\item the shaft equation (4), with input $i_{sq}$ and flat output $\Omega$;
+\item the first-order energy balance of the DC link and filter, with input $P_g=\frac32v_{gd}i_{gd}$ and
+flat output $y_2$. The input is $P_g=P_{msc}-\frac32R_f\|\mathbf i_g\|^2-\dot y_2$, and $V_{dc}$ follows
+from $y_2$ and the measured currents.
+\end{itemize}
+In both cases $T_w$ (or its estimate), $P_{msc}$ and $i_{gq}$ are known exogenous signals. We state
+explicitly that no flatness property is claimed for the complete sixth-order model with the converter
+voltages as inputs. The coupling between the outer and inner loops is handled by Proposition~2.
+
+\rev{The bibliographic status of Reference [15] and the discussion of IEEE 519 compliance should be updated.}
+\emph{Reference [15]} is now cited as \emph{Mathematics}, under review, 2026. It will be replaced by
+the full citation if it is accepted before the camera-ready version. As explained above, the
+paper no longer relies on [15] for any stability result; it is cited only as the origin of the
+compensation structure and of the wind profile.
+
+\emph{IEEE 519.} In re-examining this point we found that the previous index was not the one defined
+by the standard. It summed every spectral bin up to 2~kHz and referred the result to the fundamental at
+partial load. Section~VI-D has been rewritten as follows:
+\begin{itemize}
+\item As in IEEE~519-2022, the harmonics $h=2,\dots,50$ are referred to the rated current $I_L$ (TDD).
+The TDD is 0.12, 0.07 and 0.13\,\% at 8, 9 and 10~m/s, and the largest individual harmonic is 0.11\,\%
+of $I_L$. Both are below the limits (5\,\% TDD; 0.3\,\% for $35\le h\le50$ in the strictest class).
+\item We also report what these indices do not cover. Since $f_{sw}/f_g=43.2$, the switching components
+are interharmonics, at $f_{sw}\pm2f_g$ and $f_{sw}\pm4f_g$ (about 2.2 and 1.6\,\% of $I_L$ each) and
+near $2f_{sw}$. In total they amount to about 4.6\,\% of $I_L$ up to 5~kHz, nearly independent of the load.
+\item With a grid-synchronized carrier, these components would be harmonics above the 0.3\,\% limit.
+The paper therefore states that an $LCL$ filter is required at this switching frequency, and lists it
+as future work.
+\item PI control gives the same switching components within 0.1\,\% of $I_L$: the ripple is set by the
+modulation and the filter, not by the control law.
+\end{itemize}
+
+\medskip
+We thank the reviewer again for the comments, which improved both the theoretical part and the
+validation of the paper.
+\end{document}

@@ -49,6 +49,9 @@ y2   = 0.5*P.C*m.Vdc^2 + 0.75*P.Lf*(ig'*ig);
 y2r  = 0.5*P.C*P.Vdc_ref^2 + 0.75*P.Lf*(S.ig_f'*S.ig_f);  % y2 at Vdc = Vdc*
 ey   = y2r - y2;
 nu2  = S.k21*ey + S.k22*S.zv;             % dy2*/dt ~ 0 (slow i_g*)
+if isfield(P, 'y2dot') && P.y2dot && isfield(S, 'dy2r')
+  nu2 = nu2 + S.dy2r;                     % optional: include dy2*/dt (previous sample)
+end
 Pgr  = Pmsc - 1.5*P.Rf*(ig'*ig) - nu2 + S.uAI(2);   % u = u_N + u_AI
 igd  = 2*Pgr/(3*m.vg(1));
 igdl = clamp(igd, -P.Imax_g, P.Imax_g);
@@ -58,6 +61,7 @@ if ~S.satv, S.zv = S.zv + Ts*ey; end
 %% Grid-side current loop - passivity-based (onduleur MLI + filtre L)
 igr  = [igdl; -2*P.Qref/(3*m.vg(1))];
 digr = (igr - S.ig_f)/S.tau_d;  S.ig_f = S.ig_f + Ts*digr;
+S.dy2r = 1.5*P.Lf*(S.ig_f'*digr);         % dy2*/dt (used only if P.y2dot = 1)
 eg  = ig - igr;
 vi  = P.Lf*digr + P.Rf*igr - P.wg*P.Lf*Jm*igr + m.vg ...
       - S.Rb0*eg - S.Kig*S.zg;
@@ -75,6 +79,6 @@ zn = [e; de.*S.tz];
 S.uAI = S.uAI.*[S.uT; S.uP];
 
 u = [vsl; vil];  S.u = u;
-lg = [wr, isr', igr', y2, Twh, NaN, NaN, S.uAI(1)/P.Tn, S.uAI(2)/P.Pn, ...
+lg = [wr, isr', igr', y2, Twh, S.dy2r, NaN, S.uAI(1)/P.Tn, S.uAI(2)/P.Pn, ...
       norm(S.nn.W2), double(norm(e(1:2)) > S.nn.delta)];
 end

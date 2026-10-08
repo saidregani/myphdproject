@@ -13,6 +13,7 @@ function P = pmsg_params()
 %J, B and Rf are not given there (own assumptions).
 
 %% Turbine (aerodynamics + drive train)
+P.y2dot  = 0;              % 1: include dy2*/dt in the DC-link flat law
 P.kTw    = 1;              % accuracy of the Cp model used by the controller
 P.rho    = 1.225;          % air density                    [kg/m^3]
 P.R      = 40;             % rotor radius                   [m]

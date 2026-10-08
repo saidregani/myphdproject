@@ -7,7 +7,11 @@ cfg = getenv('CFG');  if ~isempty(cfg), eval(cfg); end
 c = getenv('CTRL');  s = getenv('SCEN');  tag = getenv('TAG');
 if strcmp(getenv('MLI'), '1')
   o = simulate_mli(P, c, P.Tend);
-  printf('RES %s THD=%.3f\n', tag, o.THD_ig);
+  printf('RES %s THD40=%.3f THD50=%.3f TDD50=%.3f Ihmax=%.3f TDall=%.3f I1/In=%.3f\n', tag, ...
+         o.THD_ig, o.THD50, o.TDD50, o.Ihmax_pct, o.TDall, o.I1/(P.Pn/(1.5*P.Vgm)));
+  [~, ih] = sort(o.Ih, 'descend');  ih = ih(1:6);  Ih = o.Ih(:);
+  printf('TOP h=%d:%.3f%% ', [ih(:)' + 1; Ih(ih)'/(P.Pn/(1.5*P.Vgm))*100]);  printf('\n');
+  if strcmp(getenv('SAVE'), '1'), Ysp = o.Y; save('-ascii', [tag '_spec.txt'], 'Ysp'); end
   return
 end
 o = simulate(P, c, s);
@@ -21,6 +25,11 @@ printf(['RES %s IAEw=%.6g RMSw=%.4g maxw=%.4g RMSisq=%.4g RMSigd=%.4g ISEV=%.5g 
         sqrt(mean(ew.^2)), max(abs(ew)), sqrt(mean(eisq.^2)), sqrt(mean(eigd.^2)), ...
         sum(eV.^2)*dt, max(abs(eV(su))), dipmax, max(abs(eV(~su & ~dip))), mean(o.Cp), ...
         sum(o.Pgrid)*dt/3.6e6);
+if size(o.lg, 2) >= 8 && strcmp(getenv('Y2LOG'), '1')     % dy2*/dt of the flat DC law
+  d = o.lg(:,8);  nd = ~su & ~dip;
+  printf('Y2 %s max|dy2*| su=%.4g dip=%.4g rest=%.4g W, rms rest=%.4g W\n', tag, ...
+         max(abs(d(su))), max(abs(d(dip))), max(abs(d(nd))), sqrt(mean(d(nd).^2)));
+end
 if strcmp(getenv('SAVE'), '1')
   M = [t o.vw o.x o.lg(:,1:5) o.Cp o.Pgrid o.Qgrid];
   dlmwrite([tag '.csv'], M, 'precision', '%.8g');

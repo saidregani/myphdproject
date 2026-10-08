@@ -60,8 +60,8 @@ Wind energy is one of the main sources in the transition towards low-carbon elec
 generation~\cite{iea2024}; a record 117~GW of new wind capacity was installed worldwide in
 2023~\cite{gwec2024}. Direct-drive PMSG turbines remove the gearbox, which reduces maintenance and
 losses, and their full-scale back-to-back converter decouples the generator from the
-grid~\cite{polinder2013,wu2011}. This converter must extract the maximum power from the wind, regulate
-the DC-link voltage and inject a clean current into the grid.
+grid~\cite{polinder2013,wu2011}; it must extract the maximum power, regulate the DC-link voltage and
+inject a clean current.
 
 These tasks are usually performed by cascaded PI loops in rotating frames~\cite{chinchilla2006,yazdani2010}.
 The PMSG model is nonlinear and coupled, and its parameters vary with temperature and saturation.
@@ -84,17 +84,13 @@ resulting analysis:
 \item a DC-link flat output that includes the energy of the $L$ filter, so that the grid-side law
 contains the measured generator power as an exact feedforward and the DC-link error dynamics is linear;
 \item PBC laws for the currents of both converters and a cascade proof that the complete nominal
-interconnection (flat outer loops and PBC inner loops) is exponentially stable, which is the assumption
-required by the neural compensation of~\cite{regani2026};
+interconnection (flat outer loops and PBC inner loops) is exponentially stable;
 \item the transfer of this compensation, developed in~\cite{regani2026} for the rotor currents of a
-DFIG, to the two flat loops of a PMSG, with a learning signal taken along their control directions.
-The network structure and its update laws are those of~\cite{regani2026};
+DFIG, to the two flat loops of a PMSG, with a learning signal taken along their control directions
+and normalized update laws, for which a direct boundedness proof is given;
 \item an evaluation against PI vector control with and without power feedforward, over several wind
 realizations, initial conditions and adaptation settings, and with a switched converter model.
 \end{itemize}
-The model is given in Sections~II--III, the wind profile and the references in Section~IV, the control
-and its stability in Section~V, and the simulations in Section~VI.
-
 \section{Wind Turbine Modeling}
 The aerodynamic power captured by the turbine is~\cite{heier2014}
 \begin{equation}
@@ -162,20 +158,8 @@ $Q = -\frac{3}{2}v_{gd}i_{gq}$.
 \subsection{Complete Model}
 With the state $\bv{x}=[i_{sd}\;i_{sq}\;\Omega\;V_{dc}\;i_{gd}\;i_{gq}]^T$, the inputs
 $\bv{u}=[\bv{v}_s^T\;\bv{v}_i^T]^T$ and the disturbances $v$ and $\bv{v}_g$, (\ref{eq:shaft}),
-(\ref{eq:pmsg}), (\ref{eq:dc}) and (\ref{eq:filter}) form the sixth-order nonlinear model
-\begin{equation}
-\left\{
-\begin{aligned}
-\dot i_{sd} &= \tfrac{1}{L_s}\bigl(-R_s i_{sd} + p\Omega L_s i_{sq} - v_{sd}\bigr)\\
-\dot i_{sq} &= \tfrac{1}{L_s}\bigl(-R_s i_{sq} - p\Omega L_s i_{sd} + p\Omega\psi_f - v_{sq}\bigr)\\
-\dot \Omega &= \tfrac{1}{J}\bigl(T_w(\Omega,v) - \tfrac{3}{2}p\psi_f i_{sq} - B\Omega\bigr)\\
-\dot V_{dc} &= \tfrac{1}{CV_{dc}}\bigl(P_{msc} - P_{gsc}\bigr)\\
-\dot i_{gd} &= \tfrac{1}{L_f}\bigl(-R_f i_{gd} + \omega_g L_f i_{gq} + v_{id} - v_{gd}\bigr)\\
-\dot i_{gq} &= \tfrac{1}{L_f}\bigl(-R_f i_{gq} - \omega_g L_f i_{gd} + v_{iq} - v_{gq}\bigr)
-\end{aligned}
-\right.
-\label{eq:model}
-\end{equation}
+(\ref{eq:pmsg}), (\ref{eq:dc}) and (\ref{eq:filter}) form a sixth-order nonlinear model, denoted
+$\dot{\bv{x}}=f(\bv{x},\bv{u},v,\bv{v}_g)$ in the following.
 The parameters are listed in Table~\ref{tab:param}. The turbine data correspond to a standard 2~MW
 turbine; the generator, DC-link, filter and grid data are those of the non-salient PMSG
 of~\cite{hasan2021}. The magnet flux is consistent with the grid: at 9.75~Hz, the rated frequency
@@ -210,8 +194,7 @@ v(t) = V_{mean} + \sum_{k=1}^{3} A_k\sin(2\pi f_k t) + v_{turb}(t)
 \label{eq:wind}
 \end{equation}
 with $V_{mean}=8$~m/s, $A=[1.5,\,0.2,\,0.3]$~m/s, $f=[0.03,\,0.16,\,0.17]$~Hz, and $v_{turb}$ a smoothed
-Gaussian noise (standard deviation 0.01~m/s, time constant 0.05~s). The wind rises from 8~m/s to
-9~m/s at $t\approx2$~s, falls to 8.6~m/s at $t\approx4.2$~s and reaches 10~m/s at $t\approx7.7$~s.
+Gaussian noise (standard deviation 0.01~m/s, time constant 0.05~s).
 
 The maximum power is extracted at $\lambda=\lambda_{opt}$. The measured wind is filtered,
 $\tau_v\dot{\hat v}=v-\hat v$ with $\tau_v=0.3$~s, and the speed reference is obtained from the
@@ -237,7 +220,12 @@ The control structure is shown in Fig.~\ref{fig:structure}. It is sampled at $T_
 \subsection{Flatness-Based Outer Loops}
 A system is flat if its states and inputs can be written as functions of a flat output and of a finite
 number of its derivatives~\cite{fliess1995}. The control is then obtained by inverting the model with
-a desired dynamics imposed on the flat output.
+a desired dynamics imposed on the flat output. Flatness is used here only for the two outer
+subsystems, in which the currents are treated as inputs: the shaft equation (\ref{eq:shaft}) with input
+$i_{sq}$, and the power balance of the DC link and filter with input $i_{gd}$. In both, $T_w$ (or its
+estimate), $P_{msc}$ and $i_{gq}$ are known exogenous signals. No flatness property is claimed for the
+complete sixth-order model with the converter voltages as inputs; the coupling between the outer and
+inner loops is treated by Proposition~2.
 
 \emph{Speed loop.} From (\ref{eq:shaft}), $T_e = T_w - B\Omega - J\dot\Omega$, so $y_1=\Omega$ is a flat
 output. Replacing $\dot\Omega$ by
@@ -262,7 +250,10 @@ From (\ref{eq:dc}) and (\ref{eq:filter}), using $\bv{i}_g^T\bv{J}\bv{i}_g=0$,
 \begin{equation}
 \dot y_2 = P_{msc} - \frac{3}{2}v_{gd}i_{gd} - \frac{3}{2}R_f\|\bv{i}_g\|^2
 \end{equation}
-which is linear in the injected power, as in~\cite{thounthong2010}. With $e_y = y_2^* - y_2$ and
+which is linear in the injected power $P_g=\frac32v_{gd}i_{gd}$, as in~\cite{thounthong2010}. Taking
+$y_2$ as the state of this first-order energy balance with input $P_g$, the input is
+$P_g=P_{msc}-\frac32R_f\|\bv{i}_g\|^2-\dot y_2$ and $V_{dc}$ follows from $y_2$ and the measured currents,
+so $y_2$ is a flat output of the reduced subsystem. With $e_y = y_2^* - y_2$ and
 $\dot y_2^*\approx0$, imposing $\dot e_y = -\nu_2$, i.e.\ $\dot y_2 = \nu_2$, with
 $\nu_2 = k_{21}e_y + k_{22}\int e_y\,dt$, yields
 \begin{equation}
@@ -274,7 +265,14 @@ Inserting (\ref{eq:flat2}) into the expression of $\dot y_2$ with $i_{gd}=i_{gd}
 $\dot y_2 = \nu_2 - \Delta P_g$, hence $\dot e_y + k_{21}e_y + k_{22}\int e_y\,dt = \Delta P_g$.
 The term $P_{msc}$, known from the applied voltages and measured currents, anticipates the power
 coming from the generator. The reference $y_2^*=\frac12CV_{dc}^{*2}+\frac34L_f\|\bv{i}_g^*\|^2$ varies
-only through the small filter energy, whose derivative is neglected. The gains are $k_{11}=2\zeta_\Omega\omega_\Omega$, $k_{12}=\omega_\Omega^2$,
+only through the filter energy (at most 300~J, against 14.4~kJ in the capacitor), and
+$\dot y_2^*=\frac32L_f\bv{i}_g^{*T}\dot{\bv{i}}_g^*$ is neglected. It enters (\ref{eq:erry}) below as an
+input, and the impulse response of $s/(s^2+k_{21}s+k_{22})$ has an $L_1$ norm of
+$2/(e\,\omega_v)=12.3$~ms, so its effect is $|e_y|\le12.3\,\text{ms}\cdot\sup|\dot y_2^*|$. In simulation,
+$|\dot y_2^*|\le2.7$~kW (0.14\,\% of $P_n$) outside the transients, i.e. less than 34~J or 1.4~V on
+$V_{dc}$; it reaches 29~kW at start-up and 52~kW during the grid dip. Adding $\dot y_2^*$ to $\nu_2$
+reduces the ISE of $V_{dc}$ by 3\,\% but raises the dip deviation from 3.6 to 5.3~V (numerical
+differentiation of $\bv{i}_g^*$), so it is omitted. The gains are $k_{11}=2\zeta_\Omega\omega_\Omega$, $k_{12}=\omega_\Omega^2$,
 $k_{21}=2\zeta_v\omega_v$, $k_{22}=\omega_v^2$ (Table~\ref{tab:ctrl}).
 
 \subsection{Passivity-Based Current Loops}
@@ -345,8 +343,8 @@ $i_{gd}^*$ saturates, and $u_{AI}$ is applied at the next sample. $W_2$ and $\bv
 so the compensation is initially inactive.
 
 \begin{proposition}
-Consider (\ref{eq:model}) with (\ref{eq:flat1})--(\ref{eq:pbc2}), $\Delta T_e=\Delta P_g=0$, an exact
-model, no saturation, exact reference derivatives and $|\omega_e|\le\bar\omega$ on the operating region.
+Consider the model of Section~III-C with (\ref{eq:flat1})--(\ref{eq:pbc2}), $\Delta T_e=\Delta P_g=0$, an exact
+model, no saturation, exact reference derivatives, $\dot y_2^*=0$ and $|\omega_e|\le\bar\omega$ on the operating region.
 Then the origin of the error state
 $\boldsymbol{\xi}=(\bv{e}_s,\bv{z}_s,\bv{e}_g,\bv{z}_g,e_\Omega,\!\int\!e_\Omega,e_y,\!\int\!e_y)$ is exponentially stable.
 \end{proposition}
@@ -368,22 +366,50 @@ with bounded gains. The inner error dynamics do not depend on the outer states, 
 interconnection is a cascade of exponentially stable systems and is exponentially
 stable~\cite{khalil2002}.
 \end{proof}
-Proposition~2 provides the assumption of the following result locally, i.e., as long as the limits
-are not reached. A bounded model error $\Delta=T_w-\hat T_w$ adds the input $-\Delta/J$ to the speed
-error equation; by linearity the error then remains bounded, and the integral removes a constant
-$\Delta$.
+The boundedness proof of~\cite{regani2026} uses a Lyapunov function with
+$\mathrm{tr}(\tilde W^T\Gamma^{-1}\tilde W)$ and a \emph{constant} gain; with $\Gamma_n(t)$ an additional
+term in $\dot\Gamma_n$ appears, so it does not apply directly, but the normalization gives a direct
+bound. The model error $\Delta=T_w-\hat T_w$ and the compensation enter the outer error equations of
+Proposition~2 as additional inputs:
+\begin{align}
+\dot e_\Omega + k_{11}e_\Omega + k_{12}\!\int\! e_\Omega &= \tfrac{3p\psi_f}{2J}\,e_{sq}
++ \tfrac{1}{J}(\Delta T_e-\Delta),\label{eq:errw}\\
+\dot e_y + k_{21}e_y + k_{22}\!\int\! e_y &= \tfrac32 v_{gd}\,e_{gd} + \Delta P_g + \dot y_2^* .
+\label{eq:erry}
+\end{align}
 
-\begin{theorem}[\cite{regani2026}]
-Assume that the nominal control makes the tracking error exponentially stable, that the residual to
-be compensated is approximated by the network with a bounded error on the operating region, and that
-$\Gamma,\sigma>0$. Then, under the above laws with the dead zone, the tracking error is uniformly
-ultimately bounded.
-\end{theorem}
+\begin{proposition}
+Let $\Gamma,\sigma>0$. (i) Whatever the tracking errors, the parameters of the network remain bounded:
+with Frobenius norms,
+$\|W_2(t)\|\le\bar W_2:=\max\bigl(\|W_2(0)\|,\sqrt{10}\,\Gamma/(2\sigma)\bigr)$,
+$\|\bv{b}_2(t)\|\le\max\bigl(\|\bv{b}_2(0)\|,\Gamma/(2\sigma)\bigr)$,
+$\|W_1(t)\|\le\max\bigl(\|W_1(0)\|,\Gamma\bar W_2/\sigma\bigr)$ and
+$\|\bv{b}_1(t)\|\le\max\bigl(\|\bv{b}_1(0)\|,\Gamma\bar W_2/(2\sigma)\bigr)$.
+(ii) Under the assumptions of Proposition~2, except $\Delta T_e=\Delta P_g=0$, and for bounded $\Delta$
+and $\dot y_2^*$, the error state $\boldsymbol\xi$ is uniformly ultimately bounded, with an ultimate
+bound proportional to $\sup_t\bigl(|\Delta T_e-\Delta|/J+|\Delta P_g+\dot y_2^*|\bigr)$, as long as the
+trajectory remains in the operating region of Proposition~2.
+\end{proposition}
+\begin{proof}
+(i) The learning signal $\bv{r}$ is zero or equal to the first two entries of $\bv{z}_n$, so
+$\|\bv{r}\|\le\|\bv{z}_n\|$, and $\|\bv{h}\|\le\sqrt{10}$. Hence
+$\Gamma_n\|\bv{r}\|\|\bv{h}\|\le\sqrt{10}\,\Gamma\|\bv{z}_n\|/(1+\|\bv{z}_n\|^2)\le\sqrt{10}\,\Gamma/2$,
+and $\frac{d}{dt}\frac12\|W_2\|^2\le-\sigma\|W_2\|^2+\frac{\sqrt{10}}{2}\Gamma\|W_2\|$, which gives the bound
+on $W_2$; that on $\bv{b}_2$ follows in the same way. Then
+$\|\boldsymbol\delta_h\|\le\bar W_2\|\bv{r}\|$ and
+$\Gamma_n\|\boldsymbol\delta_h\|\|\bv{z}_n\|\le\Gamma\bar W_2\|\bv{z}_n\|^2/(1+\|\bv{z}_n\|^2)\le\Gamma\bar W_2$,
+which bounds $W_1$ and $\bv{b}_1$. Freezing the adaptation keeps the parameters constant.
+(ii) $u_{AI}$ is bounded by its saturation ($\pm0.3T_n$, $\pm0.3P_n$). The error system of
+Proposition~2 is exponentially stable and the inputs of (\ref{eq:errw})--(\ref{eq:erry}) enter it
+linearly, so it is locally input-to-state stable~\cite{khalil2002}, which gives the bound.
+\end{proof}
 
-\begin{remark}
-In simulation, $\Gamma\ge20$ destabilizes the DC-link loop; the bound of the theorem requires bounded
-network parameters, which a moderate adaptation gain ensures. $\Gamma=5$ is used.
-\end{remark}
+Proposition~3 holds for any $\Gamma>0$, independently of the approximation capability of the
+network, and does not rely on~\cite{regani2026}. It does not prove that $\Delta T_e$ approaches
+$\Delta$, i.e., that the network reduces the bound; this is assessed in Section~VI.
+
+The bounds grow with $\Gamma/\sigma$: in simulation, $\Gamma\ge20$ saturates the network output and the
+DC-link loop oscillates with a bounded amplitude; $\Gamma=5$ is used.
 
 \begin{table}[t]
 \caption{Controller and Adaptive ANN Parameters}
@@ -407,7 +433,7 @@ Output saturation & $\pm3$ ($\pm0.3T_n$, $\pm0.3P_n$)\\
 
 \section{Numerical Simulations}
 \subsection{Setup}
-The model (\ref{eq:model}) is integrated with a fourth-order Runge--Kutta scheme at step $T_s$ over
+The model of Section~III-C is integrated with a fourth-order Runge--Kutta scheme at step $T_s$ over
 10~s, starting from the MPPT operating point at $v=8$~m/s. Two cases are considered:
 \begin{itemize}
 \item \emph{nominal}: the controller uses the true parameters;
@@ -415,11 +441,10 @@ The model (\ref{eq:model}) is integrated with a fourth-order Runge--Kutta scheme
 $R_s\times1.5$, $L_s\times1.2$, $\psi_f\times0.92$, $R_f\times1.5$, $L_f\times1.25$; $\hat T_w$ is
 10\,\% lower than $T_w$; and the grid voltage drops by 20\,\% between 8 and 8.2~s.
 \end{itemize}
-The proposed control is compared with PI vector control (PI speed loop, PI DC-voltage loop and PI
-current loops with $dq$ decoupling~\cite{chinchilla2006,yazdani2010}), tuned on the same poles as the
-proposed loops, with and without the feedforward $P_{msc}/(\frac32v_{gd})$ in the DC-voltage loop
-(PI+FF). All controllers use the same MPPT reference (\ref{eq:ref}) and the same limits. The proposed
-control is evaluated without and with the neural compensation, with the same nominal gains.
+The proposed control, without and with the network, is compared with PI vector control (speed,
+DC-voltage and $dq$-decoupled current loops~\cite{chinchilla2006,yazdani2010}) tuned on the same poles,
+with and without the feedforward $P_{msc}/(\frac32v_{gd})$ (PI+FF), using the same reference
+(\ref{eq:ref}) and limits.
 
 \begin{table}[t]
 \caption{Comparison of the Controllers (10 s)}
@@ -451,7 +476,7 @@ Energy (kWh) & 2.599 & 2.599 & 2.615 & 2.614\\
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{tracking.pdf}
+\includegraphics[width=0.9\columnwidth]{tracking.pdf}
 \caption{Robustness case with the proposed control: rotor speed, $q$-axis generator current and
 DC-link voltage.}
 \label{fig:tracking}
@@ -459,7 +484,7 @@ DC-link voltage.}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{comparison.pdf}
+\includegraphics[width=0.9\columnwidth]{comparison.pdf}
 \caption{Robustness case: speed error of the PI controllers and of the proposed control (top), and
 DC-link voltage during the 20\,\% grid voltage dip (bottom).}
 \label{fig:cmp}
@@ -467,21 +492,13 @@ DC-link voltage during the 20\,\% grid voltage dip (bottom).}
 
 \subsection{Comparison with PI Vector Control}
 Table~\ref{tab:res} and Figs.~\ref{fig:tracking}--\ref{fig:cmp} summarize the results.
-\begin{itemize}
-\item \emph{Speed (MPPT).} The flat law contains $J\dot\Omega^*$ and $\hat T_w$, so the speed follows
-its reference with an IAE 3.8 times (robustness) to $10^4$ times (nominal) smaller than with PI, whose
-speed loop reacts only to the error. The extracted energy is 0.5--0.6\,\% higher.
-\item \emph{DC link.} The feedforward of $P_{msc}$ is decisive: PI without it gives an ISE 200 to 300
-times larger. During the grid dip, the deviation is 3.6~V with the proposed control, 11.6~V with PI+FF
-and 62~V with PI. In steady state, PI+FF keeps a smaller residual ripple (0.03~V against 0.36~V,
-both below 0.03\,\% of $V_{dc}^*$).
-\item \emph{Currents.} The PI loops track the currents more accurately (RMS errors of 0.84~A against
-3.07~A for $i_{sq}$ in the robustness case), because the PBC feedforward terms use the nominal
-parameters while the PI decoupling uses the measured currents. All these errors stay below 0.3\,\% of
-the rated current.
-\item \emph{Start-up.} With mismatched parameters, the largest DC-link deviation of the proposed control
-(10.4~V) occurs during the first instants, against 3.9~V with PI+FF.
-\end{itemize}
+\emph{Speed:} since the flat law contains $J\dot\Omega^*$ and $\hat T_w$, the IAE is 3.8 times
+(robustness) to $10^4$ times (nominal) smaller than with PI, and the energy is 0.5--0.6\,\% higher.
+\emph{DC link:} the feedforward of $P_{msc}$ is decisive (PI without it gives a 200--300 times larger
+ISE); during the dip, the deviation is 3.6~V, against 11.6~V with PI+FF and 62~V with PI. PI+FF keeps
+a smaller steady ripple (0.03 vs 0.36~V) and start-up deviation (3.9 vs 10.4~V).
+\emph{Currents:} PI tracks them better (RMS error of $i_{sq}$ 0.84 vs 3.07~A under mismatch), because
+the PBC feedforward uses nominal parameters; all errors remain below 0.3\,\% of the rated current.
 
 \subsection{Effect of the Neural Compensation}
 Fig.~\ref{fig:ann} shows that, without knowing the 10\,\% model error, the network converges in less
@@ -492,7 +509,7 @@ where the peak speed error drops from 6.6 to 5.2~mrad/s. Table~\ref{tab:ann} rep
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{ann.pdf}
+\includegraphics[width=0.9\columnwidth]{ann.pdf}
 \caption{Robustness case: neural compensation $\Delta T_e$ compared with the aerodynamic model error,
 and speed error with and without the network.}
 \label{fig:ann}
@@ -525,39 +542,41 @@ $\Omega_0{=}0.9\Omega^*$: PI+FF & 0.1142 & 23.8 & 14.2\\
 \end{tabular}
 \end{table}
 
-Over five turbulence realizations, the reduction of the IAE is $38\pm0.1$\,\% and that of the ISE of
-$V_{dc}$ is 4\,\%. The network acts mainly on the speed loop; it slightly increases the current errors
-and the dip deviation (Table~\ref{tab:res}), because $\Delta T_e$ and $\Delta P_g$ modify the current
-references. A larger $\Gamma$ improves the speed tracking but increases the current and DC-link errors,
-and $\Gamma=20$ leads to oscillations: $\Gamma=5$ is a compromise. A larger dead zone or a larger
-$\sigma$ reduces the compensation. With an initial speed 10\,\% below the MPPT value, the network
-reduces the IAE by 10\,\% and the response remains well damped thanks to the normalized gain. With an
-initial speed 10\,\% above, all controllers saturate the grid-side current at start-up and the DC link
-rises by more than 120~V, which would require a braking chopper or pitch control.
+Over five turbulence realizations, the IAE is reduced by $38\pm0.1$\,\% and the ISE of $V_{dc}$ by
+4\,\%; the current errors and the dip deviation increase slightly (Table~\ref{tab:res}). A larger
+$\Gamma$ improves the speed tracking at the expense of the current and DC-link errors; a larger dead
+zone or $\sigma$ reduces the compensation. Starting 10\,\% below the MPPT speed, the network reduces the IAE by
+10\,\% with a well-damped response; starting 10\,\% above, all controllers saturate the grid current
+and the DC link rises by over 120~V, which requires a braking chopper or pitch control.
 
 \subsection{Switched Model and Computational Cost}
-A switched model of the two-level converters was simulated with space-vector modulation, a 2160~Hz
-carrier, regular sampling with double update and an integration step of about 1~$\mu$s, at constant
-wind speeds of 8, 9 and 10~m/s with the nominal parameters. The THD of the grid current, computed by
-FFT on phase $a$ over ten grid periods in steady state up to the 40th harmonic, is 4.4\,\%, 3.1\,\%
-and 2.3\,\%, respectively, below the 5\,\% limit of IEEE~519~\cite{ieee519}; PI control gives the same
-values within 0.04\,\%, since the ripple is set by the switching frequency and the $L$ filter.
-Per sample, the network requires about 200 multiply--accumulate operations and ten $\tanh$
-evaluations, and the flat and PBC laws fewer than 100 operations: at 10~kHz, the whole controller
-needs a few MFLOP/s, within the capability of current digital signal processors.
+A switched model of the two-level converters (space-vector modulation, 2160~Hz carrier, double update,
+1~$\mu$s step) was simulated at 8, 9 and 10~m/s with nominal parameters. The phase-$a$ grid current is
+analyzed by FFT over ten periods in steady state; as in IEEE~519~\cite{ieee519}, the harmonics
+$h=2,\dots,50$ are referred to the rated current $I_L$ at the converter terminals. The total demand
+distortion (TDD) is 0.12, 0.07 and 0.13\,\%, and the largest harmonic 0.11\,\% of $I_L$, below the
+limits (5\,\% TDD, 0.3\,\% for $35\le h\le50$ in the strictest class). The switching components are
+not covered by these indices: since $f_{sw}/f_g=43.2$, they are interharmonics, mainly at
+$f_{sw}\pm2f_g$ and $f_{sw}\pm4f_g$ (2.2 and 1.6\,\% of $I_L$ each) and near $2f_{sw}$, about 4.6\,\% of
+$I_L$ in total up to 5~kHz, nearly independent of the load. With a grid-synchronized carrier they would
+exceed the 0.3\,\% limit, so an $LCL$ filter is required at this switching frequency. PI control gives a
+TDD of 0.09--0.11\,\% and the same switching components within 0.1\,\% of $I_L$: this ripple is set by
+the modulation and the filter, not by the control.
+
+Per sample, the network needs about 200 multiply--accumulate operations and ten $\tanh$ evaluations,
+and the flat and PBC laws fewer than 100 operations, i.e., a few MFLOP/s at 10~kHz, within the
+capability of current digital signal processors.
 
 \section{Conclusion}
-A complete model of a 2~MW direct-drive PMSG wind energy conversion system, from the turbine to the
-grid, was developed with machine data from the literature. Its control combines flatness for the speed
-and DC-link energy loops, passivity-based control for the current loops of both converters, whose
-stability is proven with a storage function, and an adaptive neural compensation that does not change
-the nominal gains. Compared with PI vector control tuned on the same poles, the proposed control tracks the MPPT
-speed 3.8 times more accurately under model errors and limits the DC-link deviation during a 20\,\%
-grid dip to 3.6~V (11.6~V with PI and feedforward), at the price of larger current tracking errors.
-The network learns the aerodynamic torque error online and reduces the speed tracking error by
-38\,\% over several wind realizations, with a normalized gain that keeps the adaptation well damped.
-Future work will address a braking chopper and pitch control, non-ideal synchronization, a stability
-analysis including saturations, and experimental validation.
+A complete model of a 2~MW direct-drive PMSG wind energy conversion system was developed with machine
+data from the literature. Its control combines flatness for the speed and DC-link energy loops,
+passivity-based current control for both converters, with a cascade stability proof, and a normalized
+adaptive neural compensation with guaranteed bounded parameters. Compared with PI vector control tuned
+on the same poles, it tracks the MPPT speed 3.8 times more accurately under model errors and limits the
+DC-link deviation during a 20\,\% grid dip to 3.6~V (11.6~V with PI and feedforward), at the price of
+larger current errors. The network reduces the speed error by 38\,\%. Future work will address a
+braking chopper and pitch control, an $LCL$ filter, saturations in the stability analysis, and
+experimental validation.
 
 \section*{Conflict of Interest}
 The authors declare there are no conflicts of interest.
@@ -597,7 +616,7 @@ vol.~38, no.~4, pp.~585--596, 2002.
 \bibitem{lewis1999} F. L. Lewis, S. Jagannathan, and A. Ye\c{s}ildirek, \emph{Neural Network Control of
 Robot Manipulators and Nonlinear Systems}. London, UK: Taylor \& Francis, 1999.
 \bibitem{regani2026} S. Regani, M. Messadi, and K. Kemih, ``A novel chaos control approach with
-adaptive ANN compensation for a DFIG-based wind turbine,'' submitted to \emph{Mathematics}.
+adaptive ANN compensation for a DFIG-based wind turbine,'' \emph{Mathematics}, under review, 2026.
 \bibitem{hasan2021} S. M. M. Hasan and A. H. M. Shatil, ``Design and comparison of grid connected
 permanent magnet synchronous generator non-salient pole and salient pole rotor wind turbine,''
 \emph{AIUB J. Sci. Eng.}, vol.~20, no.~2, pp.~40--46, 2021.
