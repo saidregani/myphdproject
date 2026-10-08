@@ -565,9 +565,10 @@ Avec le modèle commuté (\SI{2160}{Hz}), le THD du courant réseau en régime �
         \SI{1200}{V}, grâce à l'anticipation de $P_{msc}$ dans la loi plate, et $C_p$ reste entre
         0,47 et 0,48.
   \item \textbf{Robustesse.} Avec les mêmes gains, l'ANN réduit l'erreur de vitesse de 39\,\% et
-        l'ISE de la tension du bus de 11\,\%. Pendant le creux de tension, l'écart maximal est
-        d'environ \SI{10}{V} (0,9\,\% de $V_{dc}^*$) avec ou sans ANN, avec un retour en moins de
-        \SI{0,3}{s}.
+        l'ISE de la tension du bus de 11\,\%. L'écart maximal de la tension du bus (\SI{10,4}{V})
+        apparaît au démarrage ($t<\SI{1}{s}$), quand la commande démarre avec des paramètres faux.
+        Pendant le creux de tension, l'écart est d'environ \SI{3,5}{V} et la tension revient à
+        \SI{1}{V} de sa référence en moins de \SI{40}{ms}.
   \item \textbf{Interprétation de l'ANN} (figure~\ref{fig:ann}). Le modèle $C_p$ de la commande
         sous-estime $T_w$ de 10\,\%. Sans connaître cette erreur, l'ANN converge en moins d'une seconde
         vers $\Delta T_e\approx\SI{0,065}{MN.m}$, soit la valeur moyenne de l'écart réel

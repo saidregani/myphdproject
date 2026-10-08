@@ -1,118 +1,504 @@
-% Draft for the conference paper (full paper deadline: 10 October).
-% Fill in authors/affiliations, check the conference template, then paste
-% the figures from ../results.
 \documentclass[conference]{IEEEtran}
-\usepackage{amsmath,amssymb,graphicx,booktabs}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figures/}}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\newcommand{\bv}[1]{\mathbf{#1}}
+
 \begin{document}
 
-\title{Combined Flatness-Based and Passivity-Based Control with Adaptive ANN
-Compensation of a 2~MW Direct-Drive PMSG Wind Energy Conversion System}
+\title{Flatness-Based and Passivity-Based Control with Adaptive Neural Compensation of a Direct-Drive PMSG Wind Energy Conversion System}
 
-\author{\IEEEauthorblockN{Said Regani, [Supervisor]}
-\IEEEauthorblockA{[Laboratory], [University], Algeria}}
+\author{
+\IEEEauthorblockN{Said Regani}
+\IEEEauthorblockA{\textit{L2EI Laboratory}\\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Manal Messadi}
+\IEEEauthorblockA{\textit{L2EI Laboratory}\\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Kemih Karim}
+\IEEEauthorblockA{\textit{L2EI Laboratory}\\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+}
 
 \maketitle
 
 \begin{abstract}
-This paper proposes a hybrid control strategy for a grid-connected 2~MW
-direct-drive permanent-magnet synchronous generator (PMSG) wind turbine with a
-back-to-back PWM rectifier/PWM inverter and an L filter. The outer loops
-(rotor speed for MPPT and DC-link energy) are designed by differential
-flatness, using the rotor speed and the total energy stored in the DC link and
-the filter as flat outputs. The inner current loops of both converters use
-passivity-based control (PBC), which preserves the workless (skew-symmetric)
-coupling of the machine and filter models and injects damping. An adaptive
-6-10-2 artificial neural network, updated online by a Lyapunov-based law with
-dead-zone and sigma-modification, adds a compensation signal to the flatness
-inputs without modifying the nominal gains, so as to reject the residual
-errors caused by model uncertainties; the tracking error is shown to be
-uniformly ultimately bounded. Average and switched (2.16~kHz SVPWM)
-simulations under wind variations, parameter mismatch and a 20\% grid voltage
-dip are compared with PI vector control with and without power feed-forward,
-and with the proposed scheme without neural networks.
+This paper proposes a control strategy for a grid-connected 2~MW direct-drive permanent magnet
+synchronous generator (PMSG) wind turbine with a back-to-back converter and an $L$ filter. The outer
+loops are designed by differential flatness: the rotor speed is the flat output of the maximum power
+point tracking (MPPT) loop, and the energy stored in the DC link and in the filter is the flat output of
+the DC-link loop. The inner current loops of both converters use passivity-based control (PBC), which
+keeps the workless coupling of the machine and filter models and injects damping; a storage function
+proves their stability. An adaptive 6-10-2 neural network, updated online with dead-zone,
+$\sigma$-modification and back-propagation, adds a compensation signal to the flat loops without
+changing the nominal gains. Simulations under turbulent wind, parameter mismatch, a 10\,\% error on
+the aerodynamic model and a 20\,\% grid voltage dip show accurate MPPT, a DC-link voltage held within
+$\pm 0.4$~V in nominal conditions, and a 39\,\% reduction of the integral absolute speed error with
+the neural compensation.
 \end{abstract}
 
 \begin{IEEEkeywords}
-PMSG, wind energy, back-to-back converter, flatness-based control,
-passivity-based control, neural network, MPPT, DC-link voltage.
+PMSG, Wind Energy Conversion Systems, Back-to-Back Converter, Flatness-Based Control, Passivity-Based
+Control, Adaptive Neural Network, Maximum Power Point Tracking (MPPT).
 \end{IEEEkeywords}
 
 \section{Introduction}
-% - PMSG direct drive, back-to-back converter: context, advantages.
-% - PI vector control: sensitive to parameter variations, tuning.
-% - Flatness-based control (Fliess et al.; Thounthong et al. for DC-bus energy)
-%   and PBC (Ortega et al.) are each used for converters / PMSG, but their
-%   association with online ANN parameter tuning has not been reported.
-% - Contributions: (i) flatness outer loops (speed, DC energy) + PBC inner
-%   current loops for the complete back-to-back chain; (ii) stability argument
-%   (UUB with the ANN); (iii) adaptive ANN compensation as in [Regani2026]; (iv) comparison with
-%   PI on a 2 MW system, average and switched models.
+Wind energy is one of the main sources in the transition towards low-carbon electricity
+generation~\cite{iea2024}; a record 117~GW of new wind capacity was installed worldwide in
+2023~\cite{gwec2024}. Direct-drive PMSG turbines remove the gearbox, which reduces maintenance and
+losses, and their full-scale back-to-back converter decouples the generator from the
+grid~\cite{polinder2013,wu2011}. This converter must extract the maximum power from the wind, regulate
+the DC-link voltage and inject a clean current into the grid.
 
-\section{Modelling of the Wind Energy Conversion System}
-\subsection{Turbine}
+These tasks are usually performed by cascaded PI loops in rotating frames~\cite{chinchilla2006,yazdani2010}.
+The PMSG model is nonlinear and coupled, and its parameters vary with temperature and saturation.
+Nonlinear controllers have therefore been studied for wind turbines and PMSGs, such as
+backstepping~\cite{mechter2016}, predictive control~\cite{messadi2015} and passivity-based
+control~\cite{takhi2020}.
+
+Differential flatness~\cite{fliess1995} computes the control input directly from a desired trajectory
+of a flat output; using the stored energy as the flat output gives a simple linear power balance for DC
+buses~\cite{thounthong2010}. Passivity-based control~\cite{ortega1998,ortega2002} shapes the energy of
+the closed loop and keeps the physical structure of the system. Both methods rely on a model, so model
+errors leave residual tracking errors. Adaptive neural networks can learn such residual terms
+online~\cite{lewis1999}; in~\cite{regani2026}, an adaptive neural compensation was added to a nominal
+controller of a DFIG without changing its gains.
+
+This paper combines these three tools for the complete chain of a 2~MW direct-drive PMSG turbine:
+flatness for the speed (MPPT) and DC-link loops, PBC for the current loops of both converters, and the
+adaptive neural compensation of~\cite{regani2026}. The full nonlinear model, with machine data
+from~\cite{hasan2021}, is given in Sections~II--III; the wind profile and the references in
+Section~IV; the control and its stability in Section~V; and the simulations in Section~VI.
+
+\section{Wind Turbine Modeling}
+The aerodynamic power captured by the turbine is~\cite{heier2014}
 \begin{equation}
-P_w=\tfrac12\rho\pi R^2 C_p(\lambda,\beta)v^3,\quad \lambda=\frac{\Omega R}{v},\quad
-J\dot\Omega=T_w-T_e-B\Omega
+P_w = \frac{1}{2}\rho\pi R^2 C_p(\lambda,\beta)\,v^3
 \end{equation}
+where $\rho$ is the air density, $R$ the rotor radius, $v$ the wind speed, $\beta$ the pitch angle and
+$C_p$ the power coefficient, which depends on the tip-speed ratio
+\begin{equation}
+\lambda = \frac{\Omega R}{v}
+\end{equation}
+with $\Omega$ the rotor speed. The power coefficient is modeled by
+\begin{equation}
+C_p = 0.5176\Bigl(\frac{116}{\lambda_i} - 0.4\beta - 5\Bigr)e^{-21/\lambda_i} + 0.0068\lambda
+\end{equation}
+with $1/\lambda_i = 1/(\lambda+0.08\beta) - 0.035/(\beta^3+1)$. For $\beta=0$, its maximum
+$C_{p,\max}=0.48$ is reached at $\lambda_{opt}=8.1$. The aerodynamic torque is $T_w = P_w/\Omega$, and
+the direct-drive shaft is described by the one-mass model
+\begin{equation}
+J\frac{d\Omega}{dt} = T_w - T_e - B\,\Omega
+\label{eq:shaft}
+\end{equation}
+where $J$ is the total inertia, $T_e$ the electromagnetic torque and $B$ the viscous friction
+coefficient. With $R=40$~m and $\Omega_n=2.23$~rad/s, the rated wind speed is
+$v_n=\Omega_nR/\lambda_{opt}\approx11$~m/s and the captured power at $v_n$ is about 2~MW.
+
+\section{PMSG and Back-to-Back Converter Model}
 \subsection{PMSG}
-With $\mathbf{J}=\left[\begin{smallmatrix}0&1\\-1&0\end{smallmatrix}\right]$ and
-$\mathbf e_q=[0\;1]^T$:
-\begin{equation}
-L_s\dot{\mathbf i}_s=-R_s\mathbf i_s+\omega_eL_s\mathbf J\mathbf i_s+\omega_e\psi_f\mathbf e_q-\mathbf v_s,\quad
-T_e=\tfrac32 p\psi_f i_{sq}
-\end{equation}
-\subsection{DC link and grid filter}
-\begin{equation}
-\dot W=P_{msc}-P_{gsc},\; W=\tfrac12CV_{dc}^2;\quad
-L_f\dot{\mathbf i}_g=-R_f\mathbf i_g+\omega_gL_f\mathbf J\mathbf i_g+\mathbf v_i-\mathbf v_g
-\end{equation}
-
-\section{Proposed Flatness + Passivity-Based Control with ANN Tuning}
-\subsection{Speed loop: flatness-based MPPT}
-Flat output $y_1=\Omega$; $T_e=T_w-B\Omega-J\dot\Omega$, hence
-\begin{equation}
-T_e^*=\hat T_w-B\Omega-J\big(\dot\Omega^*+k_{11}(t)e_\Omega+k_{12}\!\textstyle\int e_\Omega\big),\quad
-e_\Omega=\Omega^*-\Omega
-\end{equation}
-with $\Omega^*=\lambda_{opt}v/R$, $i_{sq}^*=T_e^*/(1.5p\psi_f)$, $i_{sd}^*=0$.
-\subsection{DC-link loop: flatness-based energy control}
-Flat output $y_2=\tfrac12CV_{dc}^2+\tfrac34L_f\|\mathbf i_g\|^2$,
-$\dot y_2=P_{msc}-\tfrac32v_{gd}i_{gd}-\tfrac32R_f\|\mathbf i_g\|^2$, hence
-\begin{equation}
-i_{gd}^*=\frac{2}{3v_{gd}}\Big(P_{msc}-\tfrac32R_f\|\mathbf i_g\|^2-k_{21}(t)e_y-k_{22}\!\textstyle\int e_y\Big),
-\end{equation}
-$e_y=y_2^*-y_2$, $i_{gq}^*=-2Q^*/(3v_{gd})$.
-\subsection{Current loops: passivity-based control}
+In the rotor $dq$ frame, with the $d$ axis aligned with the magnet flux, generator convention and
+$L_d=L_q=L_s$, the PMSG is described by~\cite{wu2011}
 \begin{align}
-\mathbf v_s^*&=-L_s\dot{\mathbf i}_s^*-R_s\mathbf i_s^*+\omega_eL_s\mathbf J\mathbf i_s^*+\omega_e\psi_f\mathbf e_q+R_a(t)\mathbf e_s+K_i\mathbf z_s\\
-\mathbf v_i^*&=L_f\dot{\mathbf i}_g^*+R_f\mathbf i_g^*-\omega_gL_f\mathbf J\mathbf i_g^*+\mathbf v_g-R_b(t)\mathbf e_g-K_{ig}\mathbf z_g
+L_s\frac{di_{sd}}{dt} &= -R_s i_{sd} + \omega_e L_s i_{sq} - v_{sd}\\
+L_s\frac{di_{sq}}{dt} &= -R_s i_{sq} - \omega_e L_s i_{sd} + \omega_e\psi_f - v_{sq}
 \end{align}
-\textbf{Proposition.} With $H=\tfrac12\mathbf e_s^TL_s\mathbf e_s+\tfrac12K_i\mathbf z_s^T\mathbf z_s$,
-$\dot{\mathbf z}_s=\mathbf e_s$: $\dot H=-(R_s+R_a(t))\|\mathbf e_s\|^2\le0$ for any $R_a(t)>0$
-(since $\mathbf e^T\mathbf J\mathbf e=0$); same for the GSC.
-\subsection{Adaptive ANN compensation}
-As in \cite{Regani2026}, the control is $u=u_N+u_{AI}$ with $u_{AI}=[\Delta T_e\;\Delta P_g]^T$ added to $T_e^*$ and $P_g^*$:
-\begin{align}
-\mathbf h&=\tanh(W_1\mathbf z_n+\mathbf b_1),\quad \mathbf y=W_2\mathbf h+\mathbf b_2,\quad u_{AI}=K_{AI}\,\mathrm{sat}(\mathbf y)\\
-\dot W_2&=-\Gamma\mathbf r_a\mathbf h^T-\sigma W_2,\quad \dot{\mathbf b}_2=-\Gamma\mathbf r_a-\sigma\mathbf b_2\\
-\dot W_1&=-\Gamma\boldsymbol\delta_h\mathbf z_n^T-\sigma W_1,\quad \boldsymbol\delta_h=(1-\mathbf h^2)\odot(W_2^T\mathbf r_a)
-\end{align}
-with $\mathbf z_n=S_{in}^{-1}[e_\Omega,e_y,e_{isq},\dot e_\Omega,\dot e_y,\dot e_{isq}]^T$ and the dead-zone learning signal
-$\mathbf r_a=B^T\mathbf e=[e_\Omega,e_y]^T$ if $\|\mathbf e\|>\delta$, $0$ otherwise. The tracking error is uniformly
-ultimately bounded (same argument as \cite{Regani2026}, Theorem~2).
+where $\omega_e = p\,\Omega$, $p$ is the number of pole pairs and $\psi_f$ the magnet flux. The
+electromagnetic torque is
+\begin{equation}
+T_e = \frac{3}{2}\,p\,\psi_f\, i_{sq}.
+\end{equation}
+With $\bv{i}_s=[i_{sd}\;i_{sq}]^T$, $\bv{v}_s=[v_{sd}\;v_{sq}]^T$, $\bv{e}_q=[0\;1]^T$ and the
+skew-symmetric matrix $\bv{J}=\left[\begin{smallmatrix}0&1\\-1&0\end{smallmatrix}\right]$, the model reads
+\begin{equation}
+L_s\dot{\bv{i}}_s = -R_s\bv{i}_s + \omega_e L_s\bv{J}\,\bv{i}_s + \omega_e\psi_f\bv{e}_q - \bv{v}_s.
+\label{eq:pmsg}
+\end{equation}
+Since $\bv{i}_s^T\bv{J}\,\bv{i}_s=0$, the coupling term $\omega_e L_s\bv{J}\bv{i}_s$ is workless: it
+exchanges energy between the two axes without producing or dissipating it.
 
-\section{Simulation Results}
-% Table I: system parameters (docs/modelisation_commande.md, Sec. 1); PMSG data from [Hasan2021]
-% Fig. 1: system + control block diagram
-% Fig. 2: results/fig_nominal.png ; Fig. 3: results/fig_robust.png
-% Fig. 4: results/fig_robust_details.png ; Fig. 5: results/fig_mli.png (PWM, THD)
-% Table II: indices printed by matlab/main.m
+\subsection{Back-to-Back Converter, DC Link and Grid}
+The two-level converters are represented by their average model. The voltages they synthesize are
+limited by the space-vector modulation range, $\|\bv{v}_s\|,\|\bv{v}_i\|\le V_{dc}/\sqrt{3}$, and,
+neglecting losses, the DC-link capacitor obeys
+\begin{equation}
+C V_{dc}\frac{dV_{dc}}{dt} = P_{msc} - P_{gsc}
+\label{eq:dc}
+\end{equation}
+with $P_{msc} = \frac{3}{2}\bv{v}_s^T\bv{i}_s$ and $P_{gsc} = \frac{3}{2}\bv{v}_i^T\bv{i}_g$. In the
+grid-voltage-oriented frame ($v_{gd}=V_m$, $v_{gq}=0$), the $L$ filter gives
+\begin{equation}
+L_f\dot{\bv{i}}_g = -R_f\bv{i}_g + \omega_g L_f\bv{J}\,\bv{i}_g + \bv{v}_i - \bv{v}_g
+\label{eq:filter}
+\end{equation}
+and the powers injected into the grid are $P = \frac{3}{2}v_{gd}i_{gd}$ and
+$Q = -\frac{3}{2}v_{gd}i_{gq}$.
+
+\subsection{Complete Model}
+With the state $\bv{x}=[i_{sd}\;i_{sq}\;\Omega\;V_{dc}\;i_{gd}\;i_{gq}]^T$, the inputs
+$\bv{u}=[\bv{v}_s^T\;\bv{v}_i^T]^T$ and the disturbances $v$ and $\bv{v}_g$, (\ref{eq:shaft}),
+(\ref{eq:pmsg}), (\ref{eq:dc}) and (\ref{eq:filter}) form the sixth-order nonlinear model
+\begin{equation}
+\left\{
+\begin{aligned}
+\dot i_{sd} &= \tfrac{1}{L_s}\bigl(-R_s i_{sd} + p\Omega L_s i_{sq} - v_{sd}\bigr)\\
+\dot i_{sq} &= \tfrac{1}{L_s}\bigl(-R_s i_{sq} - p\Omega L_s i_{sd} + p\Omega\psi_f - v_{sq}\bigr)\\
+\dot \Omega &= \tfrac{1}{J}\bigl(T_w(\Omega,v) - \tfrac{3}{2}p\psi_f i_{sq} - B\Omega\bigr)\\
+\dot V_{dc} &= \tfrac{1}{CV_{dc}}\bigl(P_{msc} - P_{gsc}\bigr)\\
+\dot i_{gd} &= \tfrac{1}{L_f}\bigl(-R_f i_{gd} + \omega_g L_f i_{gq} + v_{id} - v_{gd}\bigr)\\
+\dot i_{gq} &= \tfrac{1}{L_f}\bigl(-R_f i_{gq} - \omega_g L_f i_{gd} + v_{iq} - v_{gq}\bigr)
+\end{aligned}
+\right.
+\label{eq:model}
+\end{equation}
+The parameters are listed in Table~\ref{tab:param}. The turbine data correspond to a standard 2~MW
+turbine; the generator, DC-link, filter and grid data are those of the non-salient PMSG
+of~\cite{hasan2021}. The magnet flux is consistent with the grid: at 9.75~Hz, the rated frequency
+of~\cite{hasan2021}, the back-EMF $\psi_f\omega_e = 562$~V equals the peak phase voltage of the
+690~V grid.
+
+\begin{table}[t]
+\caption{Parameters of the Studied System}
+\label{tab:param}
+\centering
+\begin{tabular}{llll}
+\toprule
+Parameter & Value & Parameter & Value\\
+\midrule
+$P_n$ & 2 MW & $p$ & 26\\
+$R$ & 40 m & $R_s$ & 0.78 m$\Omega$\\
+$\Omega_n$ & 2.23 rad/s & $L_s$ & 1.57 mH\\
+$T_n$ & 0.897 MN$\cdot$m & $\psi_f$ & 9.18 Wb\\
+$\lambda_{opt}$, $C_{p,\max}$ & 8.1, 0.48 & $C$ & 20 mF\\
+$\rho$ & 1.225 kg/m$^3$ & $V_{dc}^*$ & 1200 V\\
+$J$ & $2.8\times10^6$ kg$\cdot$m$^2$ & $L_f$, $R_f$ & 0.15 mH, 2 m$\Omega$\\
+$B$ & $10^3$ N$\cdot$m$\cdot$s/rad & Grid & 690 V, 50 Hz\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Wind Profile and Reference Generation}
+The wind speed combines a mean value, low-frequency harmonics and a turbulence
+term~\cite{regani2026}:
+\begin{equation}
+v(t) = V_{mean} + \sum_{k=1}^{3} A_k\sin(2\pi f_k t) + v_{turb}(t)
+\label{eq:wind}
+\end{equation}
+with $V_{mean}=8$~m/s, $A=[1.5,\,0.2,\,0.3]$~m/s, $f=[0.03,\,0.16,\,0.17]$~Hz, and $v_{turb}$ a smoothed
+Gaussian noise (standard deviation 0.01~m/s, time constant 0.05~s). The profile is shown in
+Fig.~\ref{fig:wind}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{wind.pdf}
+\caption{Wind-speed profile (\ref{eq:wind}).}
+\label{fig:wind}
+\end{figure}
+
+The maximum power is extracted at $\lambda=\lambda_{opt}$. The measured wind is filtered,
+$\tau_v\dot{\hat v}=v-\hat v$ with $\tau_v=0.3$~s, and the speed reference is obtained from the
+critically damped filter
+\begin{equation}
+\ddot\Omega^* + 2\omega_r\dot\Omega^* + \omega_r^2\Omega^* = \omega_r^2\,\frac{\lambda_{opt}\hat v}{R}
+\label{eq:ref}
+\end{equation}
+with $\omega_r=1.5$~rad/s, which provides $\Omega^*$ and $\dot\Omega^*$ without numerical
+differentiation. Since $T_e$ only depends on $i_{sq}$, $i_{sd}^*=0$; unity power factor gives
+$i_{gq}^*=0$; the DC-link reference is $V_{dc}^*=1200$~V.
+
+\section{Proposed Control}
+The control structure is shown in Fig.~\ref{fig:structure}. It is sampled at $T_s=100~\mu$s.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{structure.pdf}
+\caption{Proposed control: flat outer loops, PBC current loops and adaptive neural compensation.}
+\label{fig:structure}
+\end{figure}
+
+\subsection{Flatness-Based Outer Loops}
+A system is flat if its states and inputs can be written as functions of a flat output and of a finite
+number of its derivatives~\cite{fliess1995}. The control is then obtained by inverting the model with
+a desired dynamics imposed on the flat output.
+
+\emph{Speed loop.} From (\ref{eq:shaft}), $T_e = T_w - B\Omega - J\dot\Omega$, so $y_1=\Omega$ is a flat
+output. Replacing $\dot\Omega$ by
+\begin{equation}
+\nu_1 = \dot\Omega^* + k_{11}e_\Omega + k_{12}\int e_\Omega\,dt,\qquad e_\Omega = \Omega^*-\Omega
+\end{equation}
+gives
+\begin{equation}
+T_e^* = \hat T_w - B\Omega - J\nu_1 + \Delta T_e,\qquad i_{sq}^* = \frac{T_e^*}{\frac{3}{2}p\psi_f}
+\label{eq:flat1}
+\end{equation}
+where $\hat T_w$ is computed from (1)--(3) with the measured wind and $\Delta T_e$ is the neural
+compensation. $T_e^*$ is limited to $[0,\,1.2T_n]$ and the integral is frozen during saturation. If
+$\hat T_w=T_w$ and $\Delta T_e=0$, the error obeys
+$\dot e_\Omega + k_{11}e_\Omega + k_{12}\int e_\Omega\,dt = 0$.
+
+\emph{DC-link loop.} The flat output is the energy stored in the DC link and in the filter,
+\begin{equation}
+y_2 = \frac{1}{2}CV_{dc}^2 + \frac{3}{4}L_f\|\bv{i}_g\|^2 .
+\end{equation}
+From (\ref{eq:dc}) and (\ref{eq:filter}), using $\bv{i}_g^T\bv{J}\bv{i}_g=0$,
+\begin{equation}
+\dot y_2 = P_{msc} - \frac{3}{2}v_{gd}i_{gd} - \frac{3}{2}R_f\|\bv{i}_g\|^2
+\end{equation}
+which is linear in the injected power, as in~\cite{thounthong2010}. Imposing $\dot y_2=-\nu_2$ with
+$\nu_2 = k_{21}e_y + k_{22}\int e_y\,dt$, $e_y = y_2^* - y_2$, yields
+\begin{equation}
+P_g^* = P_{msc} - \frac{3}{2}R_f\|\bv{i}_g\|^2 - \nu_2 + \Delta P_g,\qquad
+i_{gd}^* = \frac{2P_g^*}{3v_{gd}}.
+\label{eq:flat2}
+\end{equation}
+The term $P_{msc}$, known from the applied voltages and measured currents, anticipates the power
+coming from the generator. The gains are $k_{11}=2\zeta_\Omega\omega_\Omega$, $k_{12}=\omega_\Omega^2$,
+$k_{21}=2\zeta_v\omega_v$, $k_{22}=\omega_v^2$ (Table~\ref{tab:ctrl}).
+
+\subsection{Passivity-Based Current Loops}
+For the machine-side converter, the error $\bv{e}_s=\bv{i}_s-\bv{i}_s^*$ and its integral
+$\bv{z}_s$ ($\dot{\bv{z}}_s=\bv{e}_s$) are used in
+\begin{equation}
+\bv{v}_s^* = -L_s\dot{\bv{i}}_s^* - R_s\bv{i}_s^* + \omega_e L_s\bv{J}\bv{i}_s^* + \omega_e\psi_f\bv{e}_q
++ R_a\bv{e}_s + K_i\bv{z}_s
+\label{eq:pbc1}
+\end{equation}
+where $R_a$ is the injected damping. For the grid-side converter, with $\bv{e}_g=\bv{i}_g-\bv{i}_g^*$
+and $\dot{\bv{z}}_g=\bv{e}_g$,
+\begin{equation}
+\bv{v}_i^* = L_f\dot{\bv{i}}_g^* + R_f\bv{i}_g^* - \omega_g L_f\bv{J}\bv{i}_g^* + \bv{v}_g
+- R_b\bv{e}_g - K_{ig}\bv{z}_g .
+\label{eq:pbc2}
+\end{equation}
+The reference derivatives are obtained by a first-order filter ($\tau_d=2$~ms) and the voltages are
+limited to $V_{dc}/\sqrt{3}$, with the integrals frozen at the limit.
+
+\begin{proposition}
+With (\ref{eq:pbc1}) applied to (\ref{eq:pmsg}) and $R_a, K_i>0$, the storage function
+$H=\frac{1}{2}L_s\|\bv{e}_s\|^2+\frac{1}{2}K_i\|\bv{z}_s\|^2$ satisfies
+$\dot H = -(R_s+R_a)\|\bv{e}_s\|^2\le0$, and $\bv{e}_s\to0$. The same holds for (\ref{eq:pbc2})
+applied to (\ref{eq:filter}).
+\end{proposition}
+\begin{proof}
+Subtracting $L_s\dot{\bv{i}}_s^*$ from (\ref{eq:pmsg}) and inserting (\ref{eq:pbc1}) gives
+$L_s\dot{\bv{e}}_s = -(R_s+R_a)\bv{e}_s + \omega_e L_s\bv{J}\bv{e}_s - K_i\bv{z}_s$. Hence
+$\dot H = \bv{e}_s^TL_s\dot{\bv{e}}_s + K_i\bv{z}_s^T\bv{e}_s = -(R_s+R_a)\|\bv{e}_s\|^2
++ \omega_eL_s\bv{e}_s^T\bv{J}\bv{e}_s$, and the last term vanishes because $\bv{J}$ is
+skew-symmetric. $H$ is bounded and $\dot H$ is uniformly continuous, so Barbalat's
+lemma~\cite{khalil2002} gives $\bv{e}_s\to0$.
+\end{proof}
+
+\subsection{Adaptive Neural Compensation}
+As in~\cite{regani2026}, the network does not replace the nominal control $u_N$ given by
+(\ref{eq:flat1})--(\ref{eq:flat2}) and does not modify its gains; it adds
+\begin{equation}
+u = u_N + u_{AI},\qquad u_{AI} = [\Delta T_e\;\;\Delta P_g]^T .
+\end{equation}
+Its six inputs are the normalized errors and their filtered derivatives,
+$\bv{z}_n = S_{in}^{-1}[e_\Omega,\,e_y,\,e_{isq},\,\dot e_\Omega,\,\dot e_y,\,\dot e_{isq}]^T$.
+With one hidden layer of ten neurons,
+\begin{equation}
+\bv{h} = \tanh(W_1\bv{z}_n+\bv{b}_1),; \bv{y}=W_2\bv{h}+\bv{b}_2,;
+u_{AI} = K_{AI}\,\mathrm{sat}(\bv{y})
+\end{equation}
+with $W_1\in\mathbb{R}^{10\times6}$, $W_2\in\mathbb{R}^{2\times10}$, scaled by $0.1T_n$ and $0.1P_n$.
+$T_e$ and $P_g$ enter $\dot e_\Omega$ and $\dot e_y$ with a positive sign, so the learning signal in
+the control direction is $\bv{r}=B^T\bv{e}=[e_\Omega\;\,e_y]^T$ (normalized), set to zero inside a dead
+zone $\|\bv{r}\|\le\delta$. The parameters are updated online by
+\begin{align}
+\dot W_2 &= -\Gamma\bv{r}\bv{h}^T - \sigma W_2, & \dot{\bv{b}}_2 &= -\Gamma\bv{r} - \sigma\bv{b}_2,\\
+\dot W_1 &= -\Gamma\boldsymbol{\delta}_h\bv{z}_n^T - \sigma W_1, & \dot{\bv{b}}_1 &= -\Gamma\boldsymbol{\delta}_h - \sigma\bv{b}_1,
+\end{align}
+with $\boldsymbol{\delta}_h = (1-\bv{h}^2)\odot(W_2^T\bv{r})$. The $\sigma$-modification
+terms~\cite{ioannou1996,lewis1999} prevent parameter drift. The adaptation is frozen when $T_e^*$ or
+$i_{gd}^*$ saturates, and $u_{AI}$ is applied at the next sample. $W_2$ and $\bv{b}_2$ start at zero,
+so the compensation is initially inactive.
+
+\begin{theorem}[\cite{regani2026}]
+Assume that the nominal control makes the tracking error exponentially stable, that the residual to
+be compensated is approximated by the network with a bounded error on the operating region, and that
+$\Gamma,\sigma>0$. Then, under the above laws with the dead zone, the tracking error is uniformly
+ultimately bounded.
+\end{theorem}
+
+\begin{remark}
+In simulation, $\Gamma\ge20$ destabilizes the DC-link loop; the bound of the theorem requires bounded
+network parameters, which a moderate adaptation gain ensures. $\Gamma=5$ is used.
+\end{remark}
+
+\begin{table}[t]
+\caption{Controller and Adaptive ANN Parameters}
+\label{tab:ctrl}
+\centering
+\footnotesize
+\begin{tabular}{ll}
+\toprule
+Parameter & Value\\
+\midrule
+Speed loop & $\omega_\Omega=2$ rad/s, $\zeta_\Omega=0.9$ ($k_{11}=3.6$, $k_{12}=4$)\\
+DC-link loop & $\omega_v=60$ rad/s, $\zeta_v=1$ ($k_{21}=120$, $k_{22}=3600$)\\
+PBC (MSC) & $R_a=0.785~\Omega$, $K_i=98.1~\Omega$/s\\
+PBC (GSC) & $R_b=0.075~\Omega$, $K_{ig}=9.38~\Omega$/s\\
+ANN architecture & 6--10--2\\
+$\Gamma$, $\sigma$, $\delta$, $K_{AI}$ & 5, 0.01, 0.1, 1\\
+Output saturation & $\pm3$ ($\pm0.3T_n$, $\pm0.3P_n$)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Numerical Simulations}
+The model (\ref{eq:model}) is integrated with a fourth-order Runge--Kutta scheme at step $T_s$ over
+10~s, starting from the MPPT operating point at $v=8$~m/s. Two cases are considered:
+\begin{itemize}
+\item \emph{nominal}: the controller uses the true parameters;
+\item \emph{robustness}: the controller keeps the nominal values while the plant has
+$R_s\times1.5$, $L_s\times1.2$, $\psi_f\times0.92$, $R_f\times1.5$, $L_f\times1.25$; $\hat T_w$ is
+10\,\% lower than $T_w$; and the grid voltage drops by 20\,\% between 8 and 8.2~s.
+\end{itemize}
+The robustness case is run with and without the neural compensation, with the same nominal gains, so
+that the difference is due to the network only. The results are summarized in Table~\ref{tab:res}.
+
+\begin{table}[t]
+\caption{Tracking Performance (10 s)}
+\label{tab:res}
+\centering
+\setlength{\tabcolsep}{3.5pt}\footnotesize
+\begin{tabular}{lccc}
+\toprule
+& Nominal & \multicolumn{2}{c}{Robustness}\\
+\cmidrule(lr){3-4}
+Metric & & without ANN & with ANN\\
+\midrule
+IAE of $\Omega$ (rad) & $2.7\times10^{-6}$ & 0.0109 & 0.0067\\
+RMS error of $\Omega$ (rad/s) & $3.3\times10^{-7}$ & $2.1\times10^{-3}$ & $1.2\times10^{-3}$\\
+RMS error of $i_{sq}$ (A) & 0.80 & 3.05 & 3.08\\
+RMS error of $i_{gd}$ (A) & 2.75 & 6.88 & 7.61\\
+ISE of $V_{dc}$ (V$^2$s) & 0.085 & 1.30 & 1.16\\
+Max $|V_{dc}-V_{dc}^*|$, $t<1$ s (V) & 0.31 & 10.44 & 10.42\\
+Max $|V_{dc}-V_{dc}^*|$, dip (V) & -- & 3.35 & 3.60\\
+Mean $C_p$ & 0.4763 & 0.4764 & 0.4763\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{tracking.pdf}
+\caption{Robustness case with the proposed control: rotor speed, $q$-axis generator current and
+DC-link voltage.}
+\label{fig:tracking}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{grid.pdf}
+\caption{Robustness case: powers injected into the grid, $d$-axis grid current and power coefficient.}
+\label{fig:grid}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{ann.pdf}
+\caption{Robustness case: neural compensation $\Delta T_e$ compared with the aerodynamic model error,
+and speed error with and without the network.}
+\label{fig:ann}
+\end{figure}
+
+\emph{Nominal case.} The speed follows the MPPT reference with an RMS error of
+$3.3\times10^{-7}$~rad/s, $C_p$ stays between 0.47 and 0.48, and the DC-link voltage remains within
+$\pm0.36$~V of 1200~V, owing to the anticipation of $P_{msc}$ in (\ref{eq:flat2}). The errors remain
+inside the dead zone, so the network does not adapt and both versions give the same results.
+
+\emph{Robustness case.} Figs.~\ref{fig:tracking} and~\ref{fig:grid} show that the speed and the
+currents follow their references, that $Q$ stays near zero and that $C_p$ remains between 0.47 and
+0.48 (mean 0.476). The largest DC-link deviation, 10.4~V, occurs during the first instants, when the
+controller starts with mismatched parameters. During the 20\,\% grid voltage dip, the deviation is
+3.6~V and the voltage returns within 1~V of its reference less than 40~ms after each voltage step.
+
+Fig.~\ref{fig:ann} shows that, without knowing the 10\,\% model error, the network converges in less
+than one second to $\Delta T_e\approx0.065$~MN$\cdot$m, close to the mean of the actual error
+$T_w-\hat T_w$ (between 0.047 and 0.077~MN$\cdot$m); the slowly varying part is handled by the integral
+action of (\ref{eq:flat1}). With the same nominal gains, the network reduces the IAE of the speed by
+39\,\% and the ISE of the DC-link voltage by 11\,\%, mainly during the start-up transient, where the peak
+speed error drops from 6.6 to 5.1~mrad/s. The current errors and the dip deviation are slightly larger
+with the network (Table~\ref{tab:res}), and the mean $C_p$ is unchanged: the benefit is in tracking
+accuracy, not in extracted energy.
+
+A switched model of the two-level converters (2160~Hz carrier) was also simulated at 10~m/s: the THD
+of the grid current is 2.3\,\%, below the 5\,\% limit of IEEE~519~\cite{ieee519}.
 
 \section{Conclusion}
+A complete model of a 2~MW direct-drive PMSG wind energy conversion system, from the turbine to the
+grid, was developed with machine data from the literature. Its control combines flatness for the speed
+and DC-link energy loops, passivity-based control for the current loops of both converters, whose
+stability is proven with a storage function, and an adaptive neural compensation that does not change
+the nominal gains. Simulations show accurate MPPT under turbulent wind and a tightly regulated DC
+link; under parameter and aerodynamic model errors, the network learns the torque error online and
+reduces the speed tracking error by 39\,\%. Future work will address pitch control above rated wind,
+non-ideal synchronization and experimental validation.
 
-\bibliographystyle{IEEEtran}
-\begin{thebibliography}{1}
-\bibitem{Regani2026} S. Regani, M. Messadi, and K. Kemih, ``A novel chaos control approach with adaptive ANN compensation for a DFIG-based wind turbine,'' \emph{Mathematics}, submitted.
-\bibitem{Hasan2021} S. M. M. Hasan and A. H. M. Shatil, ``Design and comparison of grid connected permanent magnet synchronous generator non-salient pole and salient pole rotor wind turbine,'' \emph{AIUB J. Sci. Eng.}, vol. 20, no. 2, pp. 40--46, 2021.
+\section*{Conflict of Interest}
+The authors declare there are no conflicts of interest.
+
+\begin{thebibliography}{99}
+\bibitem{iea2024} International Energy Agency (IEA), \emph{World Energy Outlook 2024}, Paris, France, 2024.
+\bibitem{gwec2024} Global Wind Energy Council (GWEC), \emph{Global Wind Report 2024}, Brussels, Belgium, 2024.
+\bibitem{polinder2013} H. Polinder, J. A. Ferreira, B. B. Jensen, A. B. Abrahamsen, K. Atallah, and
+R. A. McMahon, ``Trends in wind turbine generator systems,'' \emph{IEEE J. Emerg. Sel. Topics Power
+Electron.}, vol.~1, no.~3, pp.~174--185, Sep. 2013.
+\bibitem{wu2011} B. Wu, Y. Lang, N. Zargari, and S. Kouro, \emph{Power Conversion and Control of Wind
+Energy Systems}. Hoboken, NJ, USA: Wiley-IEEE Press, 2011.
+\bibitem{chinchilla2006} M. Chinchilla, S. Arnaltes, and J. C. Burgos, ``Control of permanent-magnet
+generators applied to variable-speed wind-energy systems connected to the grid,'' \emph{IEEE Trans.
+Energy Convers.}, vol.~21, no.~1, pp.~130--135, Mar. 2006.
+\bibitem{yazdani2010} A. Yazdani and R. Iravani, \emph{Voltage-Sourced Converters in Power Systems:
+Modeling, Control, and Applications}. Hoboken, NJ, USA: Wiley-IEEE Press, 2010.
+\bibitem{mechter2016} A. Mechter, K. Kemih, and M. Ghanes, ``Backstepping control of a wind turbine for
+low wind speeds,'' \emph{Nonlinear Dynamics}, vol.~84, no.~4, pp.~2435--2445, 2016.
+\bibitem{messadi2015} M. Messadi, A. Mellit, K. Kemih, \emph{et al.}, ``Predictive control of a chaotic
+permanent magnet synchronous generator in a wind turbine system,'' \emph{Chinese Physics B}, vol.~24,
+no.~1, p.~010502, 2015.
+\bibitem{takhi2020} H. Takhi, K. Kemih, L. Moysis, \emph{et al.}, ``Passivity based control and
+synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,''
+\emph{Int. J. Dyn. Control}, vol.~8, no.~3, pp.~973--990, 2020.
+\bibitem{fliess1995} M. Fliess, J. L\'evine, P. Martin, and P. Rouchon, ``Flatness and defect of
+non-linear systems: Introductory theory and examples,'' \emph{Int. J. Control}, vol.~61, no.~6,
+pp.~1327--1361, 1995.
+\bibitem{thounthong2010} P. Thounthong, S. Pierfederici, and B. Davat, ``Analysis of differential
+flatness-based control for a fuel cell hybrid power source,'' \emph{IEEE Trans. Energy Convers.},
+vol.~25, no.~3, pp.~909--920, Sep. 2010.
+\bibitem{ortega1998} R. Ortega, A. Lor\'ia, P. J. Nicklasson, and H. Sira-Ram\'irez,
+\emph{Passivity-Based Control of Euler-Lagrange Systems}. London, UK: Springer, 1998.
+\bibitem{ortega2002} R. Ortega, A. van der Schaft, B. Maschke, and G. Escobar, ``Interconnection and
+damping assignment passivity-based control of port-controlled Hamiltonian systems,'' \emph{Automatica},
+vol.~38, no.~4, pp.~585--596, 2002.
+\bibitem{lewis1999} F. L. Lewis, S. Jagannathan, and A. Ye\c{s}ildirek, \emph{Neural Network Control of
+Robot Manipulators and Nonlinear Systems}. London, UK: Taylor \& Francis, 1999.
+\bibitem{regani2026} S. Regani, M. Messadi, and K. Kemih, ``A novel chaos control approach with
+adaptive ANN compensation for a DFIG-based wind turbine,'' submitted to \emph{Mathematics}.
+\bibitem{hasan2021} S. M. M. Hasan and A. H. M. Shatil, ``Design and comparison of grid connected
+permanent magnet synchronous generator non-salient pole and salient pole rotor wind turbine,''
+\emph{AIUB J. Sci. Eng.}, vol.~20, no.~2, pp.~40--46, 2021.
+\bibitem{heier2014} S. Heier, \emph{Grid Integration of Wind Energy: Onshore and Offshore Conversion
+Systems}, 3rd ed. Chichester, UK: Wiley, 2014.
+\bibitem{khalil2002} H. K. Khalil, \emph{Nonlinear Systems}, 3rd ed. Upper Saddle River, NJ, USA:
+Prentice Hall, 2002.
+\bibitem{ioannou1996} P. A. Ioannou and J. Sun, \emph{Robust Adaptive Control}. Upper Saddle River, NJ,
+USA: Prentice Hall, 1996.
+\bibitem{ieee519} \emph{IEEE Standard for Harmonic Control in Electric Power Systems}, IEEE Std
+519-2022, 2022.
 \end{thebibliography}
+
 \end{document}

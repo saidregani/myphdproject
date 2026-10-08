@@ -731,7 +731,8 @@ On répète cela 100\,000 fois pour simuler 10 secondes.
 \item \textbf{La vitesse} : $\Omega$ est exactement sur $\Omega^*$, la MPPT fonctionne.
 \item \textbf{$C_p$} : entre 0,47 et 0,48, très proche du maximum.
 \item \textbf{$V_{dc}$} : constant à 1200~V. À $t=8$~s, la tension du réseau baisse de 20\,\% (\textbf{creux de
-tension}) : $V_{dc}$ bouge d'environ $\pm10$~V et revient en moins de 0,3~s.
+tension}) : $V_{dc}$ bouge d'environ $\pm3{,}5$~V et revient en moins de 40~ms. Le plus grand écart
+($10{,}4$~V) a lieu au démarrage, quand la commande part avec des paramètres faux.
 \item \textbf{La puissance} : $P$ suit le vent et $Q = 0$.
 \item \textbf{Les couples} : $T_e$ suit $T_w$ avec un retard, ce qui est normal à cause de l'inertie de la turbine.
 \end{itemize}
@@ -743,7 +744,8 @@ Indicateur (test de robustesse) & sans ANN & avec ANN & amélioration\\
 \midrule
 Erreur de vitesse IAE & 0,0109 & 0,0067 & $-39\,\%$\\
 Erreur du bus ISE & 1,30 & 1,16 & $-11\,\%$\\
-Écart max de $V_{dc}$ & 10,4~V & 10,4~V & identique\\
+Écart max de $V_{dc}$ (démarrage) & 10,4~V & 10,4~V & identique\\
+Écart max de $V_{dc}$ (creux) & 3,35~V & 3,60~V & un peu plus grand\\
 $C_p$ moyen & 0,476 & 0,476 & identique\\
 \bottomrule
 \end{tabular}
