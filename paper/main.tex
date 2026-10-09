@@ -1,0 +1,417 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{url}
+
+\newtheorem{theorem}{Theorem}
+
+% IEEE copyright notice
+\IEEEoverridecommandlockouts
+\IEEEpubid{\makebox[\columnwidth]{979-8-3195-3759-1/26/\$31.00~\copyright{}2026 IEEE \hfill} \hspace{\columnsep} \makebox[\columnwidth]{}}
+
+\begin{document}
+
+\title{Hybrid Model Predictive and Nonlinear Feedback Control for Chaos Suppression and MPPT Enhancement in DFIG-Based Wind Energy Systems}
+
+\author{
+\IEEEauthorblockN{Said Regani}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Manal Messadi}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+\and
+\IEEEauthorblockN{Kemih Karim}
+\IEEEauthorblockA{\textit{L2EI Laboratory} \\
+\textit{Jijel University}\\
+BP 98 Ouled Aissa, Jijel 18000, Algeria}
+}
+
+\maketitle
+
+% Required so that \IEEEpubid is placed correctly
+\IEEEpubidadjcol
+
+\begin{abstract}
+Doubly fed induction generator (DFIG)-based wind turbines are strongly nonlinear electromechanical systems that can exhibit chaotic dynamics under perturbed parameters and adverse operating conditions, leading to degraded power quality and compromised stability. This paper analyses a third-order rotor-current/speed model of the DFIG with a physically consistent parameter set, characterizes its equilibria, dissipativity and Lyapunov exponents, and proposes a hybrid controller acting only on the two rotor voltages. An outer speed loop generates the torque-current reference, nonlinear feedback compensation cancels the coupled current dynamics, and a constrained receding-horizon Model Predictive Control (MPC) with integral action, whose terminal weight and gain are obtained from a linear matrix inequality, handles the converter voltage limits. Simulations show that the controller suppresses the chaotic oscillations within 0.13\,s without steady-state error, and tracks Maximum Power Point Tracking (MPPT) references under turbulent wind with a speed RMS error of 0.008\,rad/s and a stator-power RMS error below 1\,\% of the mean power.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Doubly-Fed Induction Generator (DFIG), Wind Energy Systems, Chaotic Dynamics, Nonlinear Dynamics, Maximum Power Point Tracking (MPPT), Hybrid Control, Model Predictive Control (MPC), Nonlinear Feedback Control.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Wind energy has become an important part of the transition toward lower-carbon electricity generation \cite{IEA2024}--\cite{UNEP2024}. In 2024, global wind capacity increased by about 117\,GW, bringing the installed capacity to roughly 1136\,GW \cite{GWEC2024}--\cite{Heier2020}.
+
+The doubly fed induction generator (DFIG) is widely used in large onshore wind turbines. Since the rotor is connected through a partial-scale back-to-back converter, typically rated at about 25--30\,\% of the machine power, torque and active/reactive power can be controlled over a relatively wide speed range \cite{Pena1996}--\cite{Chhipa2022}. Nevertheless, the nonlinear machine equations and the coupling between electrical and mechanical variables may produce pronounced transients. Under sufficiently severe operating conditions, bifurcations and chaotic responses may also appear \cite{Xu2007}--\cite{Qiao2009}. Grid disturbances, turbulent wind, machine detuning and converter saturation amplify these phenomena, which cause power oscillations and torque ripple and conflict with grid-code requirements such as low-voltage ride-through \cite{Nian2011}--\cite{Tsili2009}.
+
+The considered variable-speed DFIG wind turbine is described by a nonlinear model involving the two rotor-current components and the rotor speed. The model is first examined for the parameter set used in the simulations, including its equilibrium points and chaotic response. A hybrid controller based on Model Predictive Control (MPC) and nonlinear feedback compensation is subsequently used for both chaos suppression and MPPT reference tracking.
+
+\section{Wind Turbine Modeling}
+The aerodynamic power captured by a horizontal-axis wind turbine can be written as \cite{Mechter2016}--\cite{Bouguettah2024}
+\begin{equation}
+P_a = \frac{1}{2}\pi\rho R^2 C_p(\lambda)\, v^3
+\end{equation}
+where $\rho$ is the air density, $R$ is the rotor radius, $v$ is the wind speed, and $C_p(\lambda)$ is the power coefficient, which depends on the tip-speed ratio $\lambda$.
+
+The tip-speed ratio is defined by
+\begin{equation}
+\lambda = \frac{R\omega_r}{v}
+\end{equation}
+with $\omega_r$ the rotor (mechanical) angular speed.
+
+The corresponding aerodynamic torque applied to the shaft is obtained from
+\begin{equation}
+T_a = \frac{P_a}{\omega_r} = \frac{1}{2}\pi\rho R^2 C_p(\lambda)\,\frac{v^3}{\omega_r}
+\label{eq:Ta}
+\end{equation}
+
+The rotational dynamics of the wind turbine--generator set are described by
+\begin{equation}
+J\frac{d\Omega_m}{dt} = T_a - T_e - D\Omega_m
+\label{eq:mech}
+\end{equation}
+where $J$ is the total inertia, $\Omega_m$ is the mechanical rotor speed, $T_e$ is the electromagnetic torque produced by the generator, and $D$ denotes the viscous friction coefficient.
+
+Relating mechanical and electrical rotor speeds by
+\begin{equation}
+\omega_r = n_p\Omega_m
+\end{equation}
+with $n_p$ the number of pole pairs, and using $\frac{d\Omega_m}{dt} = \frac{1}{n_p}\frac{d\omega_r}{dt}$, \eqref{eq:mech} can be rewritten in electrical speed form as
+\begin{equation}
+\frac{J}{n_p}\frac{d\omega_r}{dt} = T_a - T_e - \frac{D}{n_p}\omega_r
+\label{eq:mech_el}
+\end{equation}
+
+For a DFIG expressed in the stator $dq$ reference frame, the electromagnetic torque is given by
+\begin{equation}
+T_e = \frac{3}{2}n_p\left(\psi_{ds}i_{qs} - \psi_{qs}i_{ds}\right)
+\label{eq:Te}
+\end{equation}
+where $\psi_{ds},\psi_{qs}$ are the stator flux components and $i_{ds},i_{qs}$ are the corresponding stator current components.
+
+Substituting \eqref{eq:Te} into \eqref{eq:mech_el} yields the final electromechanical dynamic equation of the rotor:
+\begin{equation}
+\frac{J}{n_p}\frac{d\omega_r}{dt} = T_a - \frac{3}{2}n_p\left(\psi_{ds}i_{qs} - \psi_{qs}i_{ds}\right) - \frac{D}{n_p}\omega_r
+\label{eq:rotor}
+\end{equation}
+
+\section{Chaotic Doubly-Fed Induction Generator}
+According to \eqref{eq:rotor} and the stator-flux/rotor-current coupling of the DFIG, a third-order state equation with $i_{dr}$, $i_{qr}$, and $\omega_r$ as state variables can be obtained:
+\begin{equation}
+\begin{aligned}
+\dot{i}_{dr} &= \left(-\frac{R_sL_m^2}{\sigma L_s^2L_r} - \frac{R_r}{\sigma L_r}\right)i_{dr} + \left(\omega_s-\omega_r\right)i_{qr}\\
+&\quad - \frac{\omega_rL_m\psi_s}{\sigma L_rL_s} + \left(-\frac{L_m}{\sigma L_sL_r}\right)u_{ds} + \frac{1}{\sigma L_r}u_{dr}\\
+\dot{i}_{qr} &= -\left(\omega_s-\omega_r\right)i_{dr} + \left(-\frac{R_sL_m^2}{\sigma L_s^2L_r} - \frac{R_r}{\sigma L_r}\right)i_{qr}\\
+&\quad + \frac{R_sL_m\psi_s}{\sigma L_s^2L_r} + \left(-\frac{L_m}{\sigma L_sL_r}\right)u_{qs} + \frac{1}{\sigma L_r}u_{qr}\\
+\dot{\omega}_r &= \left(\frac{n_p}{J}\right)\left(\frac{3n_pL_m\psi_s}{2L_s}i_{dr} - \frac{D}{n_p}\omega_r - T_L\right)
+\end{aligned}
+\label{eq:dfig}
+\end{equation}
+
+We now rewrite \eqref{eq:dfig} by introducing the following state variables:
+\[
+x_1 = i_{dr},\quad x_2 = i_{qr},\quad x_3 = \omega_r .
+\]
+Let the parameters $a_1,a_2,\ldots,a_8$ be defined accordingly. The resulting nonlinear system can then be expressed in the compact state-space form
+\begin{equation}
+\begin{cases}
+\dot{x}_1 = a_1x_1 + \left(\omega_s - x_3\right)x_2 + a_2x_3 + \left(a_3u_{ds} + a_4u_{dr}\right),\\
+\dot{x}_2 = -\left(\omega_s - x_3\right)x_1 + a_1x_2 + a_5 + \left(a_3u_{qs} + a_4u_{qr}\right),\\
+\dot{x}_3 = a_6x_1 - a_7x_3 - a_8.
+\end{cases}
+\label{eq:compact}
+\end{equation}
+The coefficients appearing in \eqref{eq:compact} are given by
+\begin{gather*}
+a_1 = -\frac{R_sL_m^2}{\sigma L_s^2L_r} - \frac{R_r}{\sigma L_r},\quad a_2 = -\frac{L_m\psi_s}{\sigma L_rL_s},\quad a_3 = -\frac{L_m}{\sigma L_sL_r},\\
+a_4 = \frac{1}{\sigma L_r},\quad a_5 = \frac{R_sL_m\psi_s}{\sigma L_s^2L_r},\quad a_6 = \frac{3n_p^2L_m\psi_s}{2JL_s},\\
+a_7 = \frac{D}{J},\quad a_8 = \frac{n_p}{J}T_L,
+\end{gather*}
+with $\sigma = 1 - L_m^2/(L_sL_r)$. The stator flux is aligned with the $q$ axis, so that $u_{ds} = -\omega_s\psi_s$ and $u_{qs} = 0$.
+
+\begin{table}[!t]
+\caption{Main Parameters of the Chaotic DFIG System}
+\label{tab:params}
+\centering
+\begin{tabular}{|c|c||c|c|}
+\hline
+\textbf{Parameter} & \textbf{Value} & \textbf{Parameter} & \textbf{Value}\\
+\hline
+$R_s$ & $5.0536\times10^{-5}\,\Omega$ & $n_p$ & 2\\
+$R_r$ & $1.8781\times10^{-4}\,\Omega$ & $J$ & $31.18\,\mathrm{kg\cdot m^2}$\\
+$L_s$ & 0.0833\,H & $D$ & $71.85\,\mathrm{N\cdot m\cdot s/rad}$\\
+$L_r$ & 0.0844\,H & $T_L$ & $-11337\,\mathrm{N\cdot m}$\\
+$L_m$ & 0.0811\,H & $u_{dr}$ & 2.539\,V\\
+$\sigma$ & 0.0645 & $u_{qr}$ & $-2.936$\,V\\
+$\omega_s$ & $100\pi$\,rad/s & $u_{ds}$ & $-563.4$\,V\\
+$\psi_s$ & 1.7933\,Wb & $u_{qs}$ & 0\,V\\
+\hline
+\end{tabular}
+\end{table}
+
+The parameters listed in Table~\ref{tab:params} are physically consistent: $L_s, L_r > L_m$ and $\sigma = 0.0645\in(0,1)$. They give $a_1=-0.0433$, $a_2=-320.83$, $a_3=-178.91$, $a_4=183.76$, $a_5=0.1946$, $a_6=0.3360$, $a_7=2.3044$, $a_8=-727.20$. The constant terms of \eqref{eq:compact} are therefore $a_3u_{ds}+a_4u_{dr} = 1.0126\times10^5$ and $a_5+a_3u_{qs}+a_4u_{qr} = -539.32$.
+
+System \eqref{eq:compact} has three unstable equilibria: the saddle-foci $E_1 = (-64.94, -379.12, 306.11)$ (eigenvalues $1.462\pm7.673j$, $-5.315$) and $E_3 = (55.50, -272.00, 323.67)$ ($0.547\pm10.511j$, $-3.486$), and the saddle $E_2 = (-9.97, -12442.5, 314.12)$ ($-65.00$, $62.65$, $-0.043$). The divergence $\nabla\cdot f = 2a_1 - a_7 = -2.391$ is negative, so the system is dissipative.
+
+The chaotic attractor obtained from $x(0) = (0.3,\,0.6,\,3.6)^T$ is shown in Fig.~\ref{fig:attractor}.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig1.pdf}
+\caption{The chaotic attractors: a) The projection of the chaotic attractor in plan $x_1-x_2$; b) the projection of the chaotic attractor in plan $x_1-x_3$; c) the projection of the chaotic attractor in plan $x_2-x_3$; d) 3D trajectory of the system.}
+\label{fig:attractor}
+\end{figure}
+
+In Fig.~\ref{fig:attractor}, the trajectory winds around the two saddle-foci $E_1$ and $E_3$. The rotor speed remains positive and close to synchronism ($296\le\omega_r\le336$\,rad/s), while the rotor currents oscillate irregularly between about $-670$ and $+470$\,A. The Lyapunov exponents, computed with the QR-based variational method, are $(0.202, -0.010, -2.582)$. Their sum equals the divergence $-2.391$, and the Kaplan--Yorke dimension is 2.08. The positive largest exponent confirms chaos.
+
+\section{Reference Trajectory Generation and Tracking Error Formulation}
+The wind speed combines a mean value, low-frequency harmonics and a stochastic turbulence term:
+\begin{equation}
+v(t) = V_{mean} + \sum_{k=1}^{3}A_k\sin\left(2\pi f_kt\right) + v_{turb}(t)
+\end{equation}
+here $V_{mean}$ denotes the average wind speed, $A_k$ and $f_k$ are the amplitudes and frequencies of the harmonic components, and $v_{turb}(t)$ is a smoothed Gaussian noise process representing atmospheric turbulence.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{figures/fig2.pdf}
+\caption{Wind-speed trajectory.}
+\label{fig:wind}
+\end{figure}
+
+The resulting profile is shown in Fig.~\ref{fig:wind}. The power reference is
+\begin{equation}
+P_{ref}(t) = \frac{1}{2}\rho\pi R^2C_pv^3(t)
+\end{equation}
+with $C_p$ the optimal power coefficient. With the stator flux aligned with the $q$ axis (Section~III), the electromagnetic torque and the stator active power are governed by the $d$-axis rotor current, leading to the reference
+\begin{equation}
+i_{dr,ref}(t) = -\frac{2}{3}\frac{P_{ref}(t)}{V_s}\frac{L_s}{L_m}
+\end{equation}
+The corresponding measured active power is
+\begin{equation}
+P_m(t) = -\frac{3}{2}\frac{L_m}{L_s}V_si_{dr}(t)
+\end{equation}
+The reference for the $q$-axis rotor current is derived from the stator reactive-power expression under stator-flux orientation,
+\begin{equation}
+i_{qr,ref}(t) = -\frac{2L_s}{3L_mV_s}\left(Q_s(t) - \frac{3V_s^2}{2\omega_sL_s}\right)
+\end{equation}
+and, by imposing $Q_s(t)=0$, simplifies to the constant operating point
+\begin{equation}
+i_{qr,ref} = \frac{V_s}{\omega_sL_m} = \frac{\psi_s}{L_m}
+\label{eq:iqrref}
+\end{equation}
+which ensures unity power-factor operation.
+
+The reference rotor speed is obtained from the optimal tip-speed ratio, giving
+\begin{equation}
+\omega_{r,ref}(t) = \frac{G\,\lambda_{opt}}{R}\,v(t)
+\label{eq:wref}
+\end{equation}
+The complete reference trajectory is therefore
+\[
+x_r(t) = \begin{bmatrix} i_{dr,ref}(t)\\ i_{qr,ref}(t)\\ \omega_{r,ref}(t)\end{bmatrix},
+\]
+with tracking error $e(t) = x(t) - x_r(t)$.
+
+\section{Hybrid Control of a Novel Chaotic DFIG-Based System}
+The controlled system takes the form
+\begin{equation}
+\begin{aligned}
+\dot{x}_1 &= a_1x_1 + \left(\omega_s - x_3\right)x_2 + a_2x_3 + a_3u_{ds} + a_4u_1,\\
+\dot{x}_2 &= -\left(\omega_s - x_3\right)x_1 + a_1x_2 + a_5 + a_3u_{qs} + a_4u_2,\\
+\dot{x}_3 &= a_6x_1 - a_7x_3 - a_8,
+\end{aligned}
+\label{eq:controlled}
+\end{equation}
+where $x = [x_1,x_2,x_3]^T = [i_{dr},i_{qr},\omega_r]^T$ and the two control inputs $u_1 = u_{dr}$ and $u_2 = u_{qr}$ are the rotor voltages imposed by the rotor-side converter. The speed equation has no direct input: $\omega_r$ is controlled through the electromagnetic torque, i.e., through $i_{dr}$. With the parameters of Table~\ref{tab:params}, \eqref{eq:controlled} reads
+\begin{align*}
+\dot{x}_1 &= -0.0433\,x_1 + \left(\omega_s - x_3\right)x_2 - 320.83\,x_3\\
+&\qquad + 1.0079\times10^5 + 183.76\,u_1,\\
+\dot{x}_2 &= -\left(\omega_s - x_3\right)x_1 - 0.0433\,x_2 + 0.1946 + 183.76\,u_2,\\
+\dot{x}_3 &= 0.3360\,x_1 - 2.3044\,x_3 + 727.20.
+\end{align*}
+In open loop ($u_1 = 2.539$\,V, $u_2 = -2.936$\,V), \eqref{eq:controlled} reduces to the chaotic system \eqref{eq:compact}. The control objective is to make the state follow the reference trajectory introduced in Section~IV. Consequently, convergence of the tracking error also removes the chaotic motion and provides the required MPPT behavior.
+
+The control structure is shown in Fig.~\ref{fig:arch}. Predictive control \cite{Senouci2014}--\cite{Messadi2017} is simple to configure and has a low computational cost, which makes it widely used for chaotic systems, while feedback control \cite{Messadi2023}--\cite{Chen2011} stabilizes unstable chaotic dynamics in real time and can steer trajectories toward desired states. The proposed structure uses the nonlinear compensation to deal with the state coupling, while the predictive part accounts for the actuator constraint.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig3.pdf}
+\caption{Proposed hybrid MPC--nonlinear feedback control architecture: outer speed loop and inner current loops acting on the rotor voltages $u_1 = u_{dr}$, $u_2 = u_{qr}$.}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Outer Speed Loop}
+Since $T_e\propto i_{dr}$, the speed is controlled through the reference of $i_{dr}$. With $e_\omega = \omega_r - \omega_{r,ref}$ and the nominal model,
+\begin{equation}
+i_{dr}^{*} = \frac{\dot{\omega}_{r,ref} + a_7\,\omega_{r,ref} + a_8 - \lambda e_\omega - \lambda_I\!\int\! e_\omega\,dt}{a_6},
+\label{eq:outer}
+\end{equation}
+where $a_8 = n_pT_L/J$ uses the load (or aerodynamic) torque. Substituting \eqref{eq:outer} into the third line of \eqref{eq:controlled} gives
+\[
+\dot{e}_\omega = -(\lambda + a_7)\,e_\omega - \lambda_I\!\int\! e_\omega\,dt + a_6\left(i_{dr} - i_{dr}^{*}\right),
+\]
+an exponentially stable linear system driven by the inner tracking error; hence $e_\omega\to0$ once $i_{dr}\to i_{dr}^{*}$ (cascade argument). The inner reference is $x_d = [i_{dr}^{*}, i_{qr,ref}]^T$ with $i_{qr,ref} = \psi_s/L_m$ from \eqref{eq:iqrref}.
+
+\subsection{Inner Loop: Nonlinear Feedback Compensation}
+Write the first two lines of \eqref{eq:controlled} as $\dot{x}_{1,2} = F_{1,2}(x) + a_4u_{1,2}$ and let $\hat{F}_{1,2}$ be the nominal model. The control law
+\begin{equation}
+u_{1,2} = \frac{1}{a_4}\Big(-\hat{F}_{1,2}(x) + \dot{x}_d + v\Big)
+\label{eq:fl}
+\end{equation}
+gives $\dot{e} = v + \Delta$, with $e = x_{1,2} - x_d$ and $\Delta = F_{1,2} - \hat{F}_{1,2}$ ($\Delta = 0$ nominally). The bilinear couplings $(\omega_s - x_3)x_{1,2}$ responsible for chaos are cancelled, leaving two decoupled integrators driven by $v$. Combining such a compensation with MPC has been shown effective for MPPT of wind turbines \cite{Jiang2023}.
+
+\subsection{Model Predictive Control}
+For each channel $i\in\{1,2\}$, the error is augmented with its integral, $\xi_i = [e_i, \int e_i dt]^T$, and sampled with period $T_s$:
+\begin{equation}
+\xi_i(k{+}1) = A\xi_i(k) + Bv_i(k),\quad A = \begin{bmatrix}1 & 0\\ T_s & 1\end{bmatrix},\ B = \begin{bmatrix}T_s\\ T_s^2/2\end{bmatrix}.
+\label{eq:disc}
+\end{equation}
+At each instant $k$, the MPC solves the quadratic program
+\begin{equation}
+\begin{aligned}
+\min_{v_i(\cdot|k)}\ & \sum_{j=1}^{N}\|\xi_i(k+j|k)\|_Q^2 + \|\xi_i(k+N|k)\|_P^2\\
+& + r\sum_{j=0}^{N-1}v_i(k+j|k)^2\\
+\text{s.t.}\ & \eqref{eq:disc},\qquad |u_i(k+j|k)|\le\bar{u},
+\end{aligned}
+\label{eq:qp}
+\end{equation}
+with prediction horizon $N$, weights $Q = Q^T > 0$, $r > 0$, and the converter voltage limit $\bar{u}$ (via \eqref{eq:fl}, a bound on $v_i$). Only the first optimal move is applied and the problem is solved again at $k+1$ (receding horizon) \cite{Mayne2000}; the integral is frozen when the limit is reached.
+
+\begin{theorem}
+Let $X = X^T > 0$ and $Y$ satisfy the LMI
+\begin{equation}
+\begin{bmatrix}
+X & (AX+BY)^T & XQ^{1/2} & \sqrt{r}\,Y^T\\
+AX+BY & X & 0 & 0\\
+Q^{1/2}X & 0 & I & 0\\
+\sqrt{r}\,Y & 0 & 0 & 1
+\end{bmatrix}\succeq 0,
+\label{eq:lmi}
+\end{equation}
+and set $P = X^{-1}$, $K = YX^{-1}$. Then $(A+BK)^TP(A+BK) - P + Q + rK^TK\preceq0$, and if \eqref{eq:qp}, augmented with the terminal constraint $\xi_i(k+N|k)\in\Omega = \{\xi^TP\xi\le\alpha\}$ ($\alpha$ such that $K\xi$ respects the limits in $\Omega$), is feasible at $k=0$ with $\Delta = 0$, it remains feasible and $\xi_i = 0$ is asymptotically stable.
+\end{theorem}
+
+\begin{IEEEproof}
+The Schur complement of \eqref{eq:lmi} gives $X - (AX+BY)^TX^{-1}(AX+BY) - XQX - rY^TY\succeq0$; pre- and post-multiplying by $P$ with $Y = KX$ yields the stated inequality. Thus $\xi^TP\xi$ is a Lyapunov function for $v = K\xi$ and $\Omega$ is invariant. By the standard terminal-cost argument \cite{Mayne2000}, the optimal cost decreases by at least $\|\xi_i(k)\|_Q^2 + rv_i(k)^2$ at each step, which proves recursive feasibility and asymptotic stability.
+\end{IEEEproof}
+
+\textit{Remark:} The LMI formulation of the terminal ingredients follows \cite{Kothare1996}. The maximal-volume solution of \eqref{eq:lmi} is the Riccati solution, so without active constraints the MPC returns exactly $v_i = K\xi_i$: a single gain $K = [k_e, k_I]$ from the LMI replaces the previous matrices $K_1$, $K_2$ and the diagonal $K$.
+
+\section{Numerical Simulations}
+All simulations integrate \eqref{eq:controlled} with a fourth-order Runge--Kutta scheme (step $T_s/4$). The controller uses $T_s = 1$\,ms, $N = 10$, $Q = \mathrm{diag}(1,3)$, $r = 10^{-6}$ (currents scaled by 100\,A), which gives $K = [-619.2, -1069.5]$ and an LMI residual below $10^{-15}$; the outer loop uses $\lambda = 10$\,s$^{-1}$, $\lambda_I = 25$\,s$^{-2}$, and the rotor voltages are limited to $|u_{dr}|, |u_{qr}|\le200$\,V.
+
+\subsection{Chaos Suppression}
+The system starts from $x(0) = (0.3, 0.6, 3.6)^T$ with the open-loop voltages of Table~\ref{tab:params} and evolves on the chaotic attractor. At $t = 10$\,s the controller is activated with the target $\omega_r^{*} = 1.05\,\omega_s = 329.9$\,rad/s and $i_{qr}^{*} = \psi_s/L_m = 22.1$\,A ($Q_s = 0$); the corresponding equilibrium $i_{dr}^{*} = 98.0$\,A is held with $u_{dr} = 29.3$\,V and $u_{qr} = -8.4$\,V.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig4.pdf}
+\caption{Time evolution of the state variables before and after control activation at $t = 10$\,s (dash-dot: target).}
+\label{fig:chaos}
+\end{figure}
+
+Fig.~\ref{fig:chaos} shows that the chaotic oscillations disappear as soon as the controller is activated: the speed reaches the positive super-synchronous target and the rotor currents settle at their equilibrium values, using only the rotor voltages. Table~\ref{tab:chaos} shows that the speed enters a 1\,\% band of the target in 0.13\,s without steady-state error. During the first instants the rotor voltages reach the 200\,V limit, which the MPC accounts for explicitly; afterwards they stay below 34\,V and settle at $u_{dr} = 29.3$\,V, $u_{qr} = -8.4$\,V.
+
+\begin{table}[!t]
+\caption{Chaos Suppression Performance (FL--MPC)}
+\label{tab:chaos}
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Value}\\
+\hline
+IAE of the speed error & 3.63\,rad\\
+Settling time (1\,\% band) & 0.13\,s\\
+Final speed error & $1.8\times10^{-6}$\,rad/s\\
+Steady rotor voltages $u_{dr}$, $u_{qr}$ & 29.3\,V, $-8.4$\,V\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{MPPT Tracking}
+For normal operation, the turbine torque $T_L = -T_a(v,\omega_r)$ of \eqref{eq:Ta} replaces the constant load, with $R = 20$\,m, $\lambda_{opt} = 8.1$, $C_{p,\max} = 0.48$ and $G = 86$ in \eqref{eq:wref} (pole pairs included), and the damping is set to its nominal value $D = 0.1$\,N$\cdot$m$\cdot$s/rad. The machine is driven by the wind of Fig.~\ref{fig:wind} (mean 9\,m/s); $\omega_{r,ref}$ follows the low-pass filtered wind (time constant 2\,s), so that $\omega_{r,ref}$ stays between 279 and 378\,rad/s and $P_{s,ref}$ between 142 and 478\,kW. The results in Figs.~\ref{fig:track} and \ref{fig:power} indicate that the three controlled states and the stator active power remain close to their MPPT references despite the imposed wind variations. After a short initial transient, the rotor speed converges to its reference and follows it throughout the simulation.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig5.pdf}
+\caption{Tracking performance of the state variables $i_{dr}$, $i_{qr}$, and $\omega_r$ under the proposed hybrid control scheme.}
+\label{fig:track}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig6.pdf}
+\caption{Active power tracking performance: stator power $P_s$ and MPPT reference $P_{s,ref}$, and power tracking error.}
+\label{fig:power}
+\end{figure}
+
+\begin{table}[!t]
+\caption{MPPT Tracking Performance of FL--MPC ($t\ge5$\,s)}
+\label{tab:mppt}
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Value}\\
+\hline
+RMS error of $\omega_r$ & 0.008\,rad/s\\
+RMS error of $i_{dr}$ & 3.28\,A\\
+RMS error of $i_{qr}$ & 0.085\,A\\
+RMS error of $P_s$ & 2.70\,kW (0.93\,\% of mean $P_s$)\\
+Speed settling time (2\,\% band) & 0.13\,s\\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+The nonlinear behavior of the considered DFIG wind energy conversion system was examined using the selected machine parameters. The equilibrium points, dissipativity condition, and Lyapunov exponents characterize the chaotic operating regime obtained in open loop. A hybrid controller using only the rotor voltages was then introduced. The outer loop provides the $i_{dr}$ reference from the speed error, while nonlinear feedback compensation reduces the effect of the current-state coupling. The MPC part deals with the rotor-voltage constraint and uses the LMI-based terminal ingredients described above. In simulation, the chaotic oscillations are removed after controller activation, while the MPPT case shows satisfactory stator-power tracking under turbulent wind conditions. Extension of the model to include converter and grid dynamics, together with experimental validation, remains to be considered.
+
+\section*{Conflict of Interest}
+The authors declare there are no conflicts of interest.
+
+\begin{thebibliography}{00}
+\bibitem{IEA2024} International Energy Agency (IEA), \textit{World Energy Outlook 2024: Global Energy Demand and Renewable Energy Transition}, Paris, France, 2024. [Online]. Available: \url{https://www.iea.org/reports/world-energy-outlook-2024}
+\bibitem{IRENA2024} International Renewable Energy Agency (IRENA), \textit{Renewable Energy Statistics 2024}, Abu Dhabi, UAE, 2024. [Online]. Available: \url{https://www.irena.org/publications/2024/Jul/Renewable-energy-statistics-2024}
+\bibitem{UNEP2024} United Nations Environment Programme (UNEP), \textit{Emissions Gap Report 2024: The Need for Sustainable Energy Sources}, Nairobi, Kenya, 2024.
+\bibitem{GWEC2024} Global Wind Energy Council (GWEC), \textit{Global Wind Report 2024: Annual Market Update}, Brussels, Belgium, 2024. [Online]. Available: \url{https://gwec.net/global-wind-report-2024/}
+\bibitem{IEA2024b} International Energy Agency (IEA), \textit{Renewables 2024: Analysis and Forecast to 2028}, Paris, France, 2024. [Online]. Available: \url{https://www.iea.org/reports/renewables-2024}
+\bibitem{Heier2020} S. Heier, \textit{Grid Integration of Wind Energy: Onshore and Offshore Conversion Systems}, 4th ed. Chichester, UK: Wiley, 2020.
+\bibitem{Pena1996} R. Pena, J. C. Clare, and G. M. Asher, ``Doubly fed induction generator using back-to-back PWM converters and its application to variable-speed wind-energy generation,'' \textit{IEE Proc. Electric Power Applications}, vol. 143, no. 3, pp. 231--241, May 1996.
+\bibitem{Simoes2017} M. G. Simoes and F. A. Farret, \textit{Renewable Energy Systems: Design and Analysis with Induction Generators}, 2nd ed. Boca Raton, FL, USA: CRC Press, 2017.
+\bibitem{Muller2002} S. Muller, M. Deicke, and R. W. De Doncker, ``Doubly fed induction generator systems for wind turbines,'' \textit{IEEE Industry Applications Magazine}, vol. 8, no. 3, pp. 26--33, May/Jun. 2002.
+\bibitem{Chhipa2022} A. A. Chhipa, P. Chakrabarti, V. Bolshev, T. Chakrabarti, and G. N. Samarin, ``Modeling and control strategy of wind energy conversion system with grid-connected doubly-fed induction generator,'' \textit{Energies}, vol. 15, no. 18, p. 6694, Sep. 2022.
+\bibitem{Xu2007} L. Xu and Y. Wang, ``Dynamic modeling and control of DFIG-based wind turbines under unbalanced network conditions,'' \textit{IEEE Trans. Power Systems}, vol. 22, no. 1, pp. 314--323, Feb. 2007.
+\bibitem{Tapia2003} A. Tapia, G. Tapia, J. X. Ostolaza, and J. R. Saenz, ``Modeling and control of a wind turbine driven doubly fed induction generator,'' \textit{IEEE Trans. Energy Conversion}, vol. 18, no. 2, pp. 194--204, Jun. 2003.
+\bibitem{Lei2006} Y. Lei, A. Mullane, G. Lightbody, and R. Yacamini, ``Modeling of the wind turbine with a doubly fed induction generator for grid integration studies,'' \textit{IEEE Trans. Energy Conversion}, vol. 21, no. 1, pp. 257--264, Mar. 2006.
+\bibitem{Rahimi2009} M. Rahimi and M. Parniani, ``Dynamic behavior and transient stability analysis of fixed speed wind turbines,'' \textit{Renewable Energy}, vol. 34, no. 12, pp. 2613--2624, Dec. 2009.
+\bibitem{Qiao2009} W. Qiao, G. K. Venayagamoorthy, and R. G. Harley, ``Real-time implementation of a STATCOM on a wind farm equipped with doubly fed induction generators,'' \textit{IEEE Trans. Industry Applications}, vol. 45, no. 1, pp. 98--107, Jan./Feb. 2009.
+\bibitem{Nian2011} H. Nian, Y. Song, P. Zhou, and Y. He, ``Improved direct power control of a wind turbine driven doubly fed induction generator during transient grid voltage unbalance,'' \textit{IEEE Trans. Energy Conversion}, vol. 26, no. 3, pp. 976--986, Sep. 2011.
+\bibitem{Xiang2006} D. Xiang, L. Ran, P. J. Tavner, and S. Yang, ``Control of a doubly fed induction generator in a wind turbine during grid fault ride-through,'' \textit{IEEE Trans. Energy Conversion}, vol. 21, no. 3, pp. 652--662, Sep. 2006.
+\bibitem{Rahimi2010} M. Rahimi and M. Parniani, ``Efficient control scheme of wind turbines with doubly fed induction generators for low-voltage ride-through capability enhancement,'' \textit{IET Renewable Power Generation}, vol. 4, no. 3, pp. 242--252, May 2010.
+\bibitem{Morren2005} J. Morren and S. W. H. de Haan, ``Ride-through of wind turbines with doubly-fed induction generator during a voltage dip,'' \textit{IEEE Trans. Energy Conversion}, vol. 20, no. 2, pp. 435--441, Jun. 2005.
+\bibitem{Tsili2009} M. Tsili and S. Papathanassiou, ``A review of grid code technical requirements for wind farms,'' \textit{IET Renewable Power Generation}, vol. 3, no. 3, pp. 308--332, Sep. 2009.
+\bibitem{Mechter2016} A. Mechter, K. Kemih, and M. Ghanes, ``Backstepping control of a wind turbine for low wind speeds,'' \textit{Nonlinear Dynamics}, vol. 84, no. 4, pp. 2435--2445, 2016.
+\bibitem{Mechter2015} A. Mechter, K. Kemih, and M. Ghanes, ``Sliding mode control of a wind turbine with exponential reaching law,'' \textit{Acta Polytechnica Hungarica}, vol. 12, no. 3, pp. 167--183, 2015.
+\bibitem{Bouguettah2024} I. Bouguettah, M. Messadi, K. Kemih, \textit{et al.}, ``Adaptive passive fault tolerant control of DFIG-based wind turbine using a self-tuning fractional integral sliding mode control,'' \textit{Frontiers in Energy Research}, vol. 12, p. 1429877, 2024.
+\bibitem{Senouci2014} A. Senouci and A. Boukabou, ``Predictive control and synchronization of chaotic and hyperchaotic systems based on a T--S fuzzy model,'' \textit{Mathematics and Computers in Simulation}, vol. 105, pp. 62--78, 2014.
+\bibitem{Boukabou2008} A. Boukabou, A. Chebbah, and N. Mansouri, ``Predictive control of continuous chaotic systems,'' \textit{Int. J. Bifurcation Chaos}, vol. 18, no. 2, pp. 587--592, 2008, doi: 10.1142/S0218127408020501.
+\bibitem{Messadi2015} M. Messadi and A. Mellit, ``Predictive control of a chaotic permanent magnet synchronous generator in a wind turbine system,'' \textit{Chinese Physics B}, vol. 24, no. 1, p. 010502, 2015.
+\bibitem{Takhi2022} H. Takhi, L. Moysis, N. Machkour, C. Volos, K. Kemih, and M. Ghanes, ``Predictive control and synchronization of uncertain perturbed chaotic permanent-magnet synchronous generator and its microcontroller implementation,'' \textit{Eur. Phys. J. Spec. Top.}, vol. 231, no. 3, pp. 443--451, 2022, doi: 10.1140/epjs/s11734-021-00422-4.
+\bibitem{Messadi2017} M. Messadi and A. Mellit, ``Control of chaos in an induction motor system with LMI predictive control and experimental circuit validation,'' \textit{Chaos, Solitons \& Fractals}, vol. 97, pp. 51--58, 2017.
+\bibitem{Messadi2023} M. Messadi, K. Kemih, and H. Hamiche, ``A new secure communications scheme based on synchronization of hybrid chaotic system,'' \textit{Chaos Theory Appl.}, vol. 5, no. 3, pp. 160--166, 2023, doi: 10.51537/chaos.1276714.
+\bibitem{Takhi2020} H. Takhi, K. Kemih, L. Moysis, \textit{et al.}, ``Passivity based control and synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,'' \textit{Int. J. Dyn. Control}, vol. 8, no. 3, pp. 973--990, 2020, doi: 10.1007/s40435-020-00618-x.
+\bibitem{Ren2006} H. Ren and D. Liu, ``Nonlinear feedback control of chaos in permanent magnet synchronous motor,'' \textit{IEEE Trans. Circuits Syst. II, Exp. Briefs}, vol. 53, no. 1, pp. 45--50, Jan. 2006.
+\bibitem{Chen2011} G. Chen, ``A simple adaptive feedback control method for chaos and hyper-chaos control,'' \textit{Applied Mathematics and Computation}, vol. 217, no. 17, pp. 7258--7264, 2011.
+\bibitem{Jiang2023} P. Jiang, T. Zhang, J. Geng, P. Wang, and L. Fu, ``An MPPT strategy for wind turbines combining feedback linearization and model predictive control,'' \textit{Energies}, vol. 16, no. 10, Art. no. 4244, 2023, doi: 10.3390/en16104244.
+\bibitem{Mayne2000} D. Q. Mayne, J. B. Rawlings, C. V. Rao, and P. O. M. Scokaert, ``Constrained model predictive control: Stability and optimality,'' \textit{Automatica}, vol. 36, no. 6, pp. 789--814, 2000, doi: 10.1016/S0005-1098(99)00214-9.
+\bibitem{Kothare1996} M. V. Kothare, V. Balakrishnan, and M. Morari, ``Robust constrained model predictive control using linear matrix inequalities,'' \textit{Automatica}, vol. 32, no. 10, pp. 1361--1379, 1996.
+\end{thebibliography}
+
+\end{document}
