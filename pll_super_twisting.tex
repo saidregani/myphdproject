@@ -1,0 +1,146 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+
+\newtheorem{remarque}{Remarque}
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\hth}{\hat{\theta}}
+\newcommand{\hw}{\hat{\omega}}
+
+\title{Estimation de la position du réseau par PLL\\ à mode glissant d'ordre deux (Super-Twisting)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Tensions du réseau et transformation de Clarke}
+
+On considère un réseau triphasé équilibré, écrit avec la convention cosinus :
+\begin{align}
+V_a &= V_m \cos\theta, \\
+V_b &= V_m \cos\!\left(\theta - \tfrac{2\pi}{3}\right), \\
+V_c &= V_m \cos\!\left(\theta + \tfrac{2\pi}{3}\right),
+\end{align}
+avec $\theta = \omega t + \theta_0$.
+
+La transformation de Clarke (version invariante en amplitude) donne
+\begin{align}
+V_\alpha &= \frac{2}{3}\left(V_a - \frac{1}{2}V_b - \frac{1}{2}V_c\right), \\
+V_\beta  &= \frac{2}{3}\left(\frac{\sqrt{3}}{2}V_b - \frac{\sqrt{3}}{2}V_c\right),
+\end{align}
+d'où
+\begin{equation}
+V_\alpha = V_m\cos\theta, \qquad V_\beta = V_m\sin\theta .
+\end{equation}
+
+\begin{remarque}
+Si l'on adopte plutôt $V_a = V_m\sin\theta$, on obtient $V_\alpha = V_m\sin\theta$ et
+$V_\beta = -V_m\cos\theta$. La PLL ci-dessous convergerait alors vers $\theta-\pi/2$.
+Il faut donc fixer une seule convention. Un déphasage constant
+$V_a = V_m\cos(\theta+\Delta\theta)$ conduit simplement à l'estimation de $\theta+\Delta\theta$.
+\end{remarque}
+
+\section{Détecteur de phase}
+
+Soit $\hth$ la position estimée. On définit le signal d'erreur
+(composante $q$ de la transformation de Park calculée avec $\hth$) :
+\begin{align}
+\varepsilon &= -V_\alpha\sin\hth + V_\beta\cos\hth \\
+&= V_m\left[\sin\theta\cos\hth - \cos\theta\sin\hth\right] \\
+&= V_m\sin(\theta-\hth) = V_m \sin\psi, \qquad \psi \triangleq \theta-\hth .
+\end{align}
+
+Pour rendre les gains indépendants de l'amplitude, on normalise :
+\begin{equation}
+\hat V_m = \sqrt{V_\alpha^2+V_\beta^2}, \qquad
+e = \frac{\varepsilon}{\hat V_m} = \sin\psi \;\approx\; \psi \quad (|\psi|\ll 1).
+\end{equation}
+
+\section{Dynamique de l'erreur}
+
+En supposant $V_m$ constant :
+\begin{equation}
+\dot\psi = \omega - \hw, \qquad \hw \triangleq \frac{d\hth}{dt},
+\end{equation}
+\begin{equation}
+\dot e = \cos\psi\,\dot\psi = \cos\psi\,(\omega-\hw).
+\end{equation}
+
+\begin{remarque}
+Le facteur $\dot\psi$ est indispensable : $\dot\varepsilon = V_m\cos\psi\,\dot\psi$, et non $V_m\cos\psi$.
+De même, avec $V=\tfrac12\varepsilon^2$, on a
+$\dot V = \varepsilon\dot\varepsilon = V_m^2\sin\psi\cos\psi\,(\omega-\hw)$.
+\end{remarque}
+
+\section{Loi d'estimation Super-Twisting}
+
+On choisit
+\begin{align}
+\hw &= k_1 |e|^{1/2}\sign(e) + z + \omega_{ff}, \\
+\dot z &= k_2 \sign(e), \\
+\dot{\hth} &= \hw ,
+\end{align}
+où $\omega_{ff}$ est la pulsation nominale (anticipation, par ex.\ $2\pi\cdot 50$ rad/s)
+et $k_1,k_2>0$.
+
+\begin{remarque}
+Les signes sont \emph{positifs} dans la loi sur $\hw$. La forme standard
+$-k_1|x|^{1/2}\sign(x) + z$, $\dot z = -k_2\sign(x)$ décrit la dynamique
+\emph{en boucle fermée} de l'erreur, et non la loi de commande. Comme
+$\dot\psi = \omega-\hw$, appliquer les signes négatifs directement sur $\hw$
+crée une rétroaction positive, et l'estimateur diverge.
+\end{remarque}
+
+\section{Boucle fermée et convergence}
+
+On pose $\tilde z = z - (\omega-\omega_{ff})$. Au voisinage de $\psi=0$
+($e\approx\psi$, $\cos\psi\approx 1$) :
+\begin{align}
+\dot\psi &= -k_1|\psi|^{1/2}\sign(\psi) - \tilde z, \\
+\dot{\tilde z} &= k_2\sign(\psi) - \dot\omega ,
+\end{align}
+c'est-à-dire, avec $\tilde z' = -\tilde z$ :
+\begin{align}
+\dot\psi &= -k_1|\psi|^{1/2}\sign(\psi) + \tilde z', \\
+\dot{\tilde z}' &= -k_2\sign(\psi) + \rho(t), \qquad \rho = \dot\omega .
+\end{align}
+On retrouve la forme canonique du Super-Twisting avec une perturbation $\rho$.
+
+\paragraph{Hypothèse.} $|\dot\omega| \le L$ (variation de fréquence bornée).
+
+\paragraph{Fonction de Lyapunov (Moreno \& Osorio, 2008).}
+Avec $\zeta = \begin{bmatrix} |\psi|^{1/2}\sign(\psi) & \tilde z' \end{bmatrix}^\top$
+et $V(\zeta) = \zeta^\top P \zeta$, $P=P^\top>0$, on montre que
+$\dot V \le -\gamma V^{1/2}$ pour des gains bien choisis. On en déduit la convergence
+en temps fini de $(\psi,\tilde z')$ vers $(0,0)$, donc $\hth\to\theta$ et
+$z \to \omega-\omega_{ff}$ (donc $\hw\to\omega$).
+
+\begin{remarque}
+La fonction quadratique $V=\tfrac12\varepsilon^2$ ne suffit pas à prouver la
+convergence en temps fini du Super-Twisting. Il faut une fonction non quadratique
+comme ci-dessus.
+\end{remarque}
+
+\paragraph{Choix des gains.} Une condition suffisante classique (Levant) est
+\begin{equation}
+k_2 > L, \qquad k_1 \approx 1.5\sqrt{L}, \quad k_2 \approx 1.1\,L .
+\end{equation}
+
+\paragraph{Domaine de validité.} L'analyse est \emph{locale} : il faut
+$\cos\psi>0$, c'est-à-dire $|\psi|<\pi/2$. L'équilibre $\psi=\pi$ existe mais il est instable.
+
+\section{Résumé de l'algorithme}
+\begin{enumerate}
+  \item Mesurer $V_a,V_b,V_c$ et calculer $V_\alpha,V_\beta$ (Clarke).
+  \item $\hat V_m=\sqrt{V_\alpha^2+V_\beta^2}$, \quad
+        $e = \dfrac{-V_\alpha\sin\hth + V_\beta\cos\hth}{\hat V_m}$.
+  \item $\hw = k_1|e|^{1/2}\sign(e) + z + \omega_{ff}$, \quad $\dot z = k_2\sign(e)$.
+  \item $\dot\hth = \hw$ (intégration modulo $2\pi$).
+\end{enumerate}
+
+\end{document}
