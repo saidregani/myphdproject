@@ -1,0 +1,42 @@
+% Avis aux étudiants de L3 électronique
+% Compilation : pdflatex avis_L3_electronique.tex
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{helvet}                       % police sans-serif
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,landscape,margin=2cm]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{ulem}                        % soulignement
+\normalem
+
+\definecolor{cyanvif}{RGB}{0,240,255}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\renewcommand{\ULthickness}{1.5pt}       % trait de soulignement épais
+
+\begin{document}
+\vspace*{\fill}
+\begin{center}
+  {\fontsize{30}{36}\selectfont\bfseries
+   \uline{Avis aux étudiants de L3 électronique}\par}
+
+  \vspace{1.5cm}
+
+  {\fontsize{72}{80}\selectfont\bfseries Cours + TP en ligne\par}
+
+  \vspace{1.2cm}
+
+  {\fontsize{48}{56}\selectfont\bfseries Module :\par}
+
+  \vspace{0.6cm}
+
+  {\setlength{\fboxsep}{10pt}%
+   \colorbox{cyanvif}{\fontsize{54}{62}\selectfont\bfseries
+     \hspace{0.6cm}Travaux d'avant-projet\hspace{0.6cm}}\par}
+\end{center}
+\vspace*{\fill}
+\end{document}
