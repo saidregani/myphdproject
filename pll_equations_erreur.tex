@@ -1,0 +1,215 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\hth}{\hat{\theta}}
+\newcommand{\hw}{\hat{\omega}}
+\newtcolorbox{idee}{colback=blue!4,colframe=blue!50!black,title=Idée}
+\newtcolorbox{resultat}{colback=green!5,colframe=green!40!black,title=Résultat}
+
+\title{Obtention des équations de l'erreur\\ de la PLL Super-Twisting, étape par étape}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Rappel : ce dont on dispose}
+
+\paragraph{Le réseau.} L'angle réel $\theta$ tourne à la pulsation $\omega$ :
+\begin{equation}
+\dot\theta = \omega .
+\end{equation}
+
+\paragraph{Le détecteur de phase.} Il fournit l'erreur normalisée
+\begin{equation}
+e = \sin(\theta - \hth) .
+\end{equation}
+
+\paragraph{La loi d'estimation (ce que l'on implémente).}
+\begin{align}
+\hw &= k_1 |e|^{1/2}\sign(e) + z + \omega_{ff}, \label{eq:loi}\\
+\dot z &= k_2 \sign(e), \label{eq:z}\\
+\dot{\hth} &= \hw . \label{eq:int}
+\end{align}
+Ici $\omega_{ff}$ est une \textbf{constante} (par exemple $2\pi\cdot 50$ rad/s), donc $\dot\omega_{ff}=0$.
+
+\section{Pourquoi changer de variables ?}
+
+\begin{idee}
+L'implémentation utilise les variables $\hth$ et $z$. Pour étudier la stabilité, on veut
+plutôt des variables qui mesurent directement \emph{l'erreur}, c'est-à-dire qui valent $0$
+quand la PLL est parfaitement verrouillée. On pourra alors montrer qu'elles tendent vers $0$.
+\end{idee}
+
+On se demande quelles sont les deux grandeurs qui doivent s'annuler quand la PLL fonctionne bien.
+
+\begin{enumerate}
+  \item \textbf{L'erreur de phase.} On veut $\hth = \theta$, donc on pose
+  \begin{equation}
+  \boxed{x_1 \triangleq \psi = \theta - \hth .}
+  \end{equation}
+
+  \item \textbf{L'erreur sur l'intégrateur $z$.} Une fois la PLL verrouillée, on doit avoir $\hw=\omega$
+  et $e=0$. D'après \eqref{eq:loi}, cela donne
+  \[
+  \omega = 0 + z + \omega_{ff} \quad\Longrightarrow\quad z = \omega - \omega_{ff}.
+  \]
+  L'intégrateur $z$ doit donc apprendre l'écart de fréquence $\omega-\omega_{ff}$.
+  On mesure ce qui lui manque encore :
+  \begin{equation}
+  \boxed{x_2 \triangleq (\omega - \omega_{ff}) - z .}
+  \end{equation}
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+ & PLL verrouillée & PLL non verrouillée \\
+\hline
+$x_1 = \theta-\hth$ & $0$ & $\neq 0$ \\
+$x_2 = (\omega-\omega_{ff})-z$ & $0$ & $\neq 0$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Calcul de $\dot x_1$}
+
+\paragraph{Étape 1 : dériver la définition.}
+\begin{equation}
+\dot x_1 = \dot\theta - \dot{\hth} = \omega - \hw .
+\end{equation}
+
+\paragraph{Étape 2 : remplacer $\hw$ par la loi \eqref{eq:loi}.}
+\begin{equation}
+\dot x_1 = \omega - \Big(k_1|e|^{1/2}\sign(e) + z + \omega_{ff}\Big).
+\end{equation}
+
+\paragraph{Étape 3 : regrouper les termes.} On rassemble $\omega$, $\omega_{ff}$ et $z$ :
+\begin{equation}
+\dot x_1 = -k_1|e|^{1/2}\sign(e) \;+\; \underbrace{(\omega - \omega_{ff}) - z}_{=\,x_2}.
+\end{equation}
+Le groupe entre accolades est exactement la définition de $x_2$. Voilà pourquoi on a choisi
+$x_2$ de cette façon.
+\begin{equation}
+\dot x_1 = -k_1|e|^{1/2}\sign(e) + x_2 .
+\end{equation}
+
+\paragraph{Étape 4 : exprimer $e$ avec $x_1$.} Puisque $e=\sin(\theta-\hth)=\sin x_1$ :
+\begin{itemize}
+  \item $|e|^{1/2} = |\sin x_1|^{1/2}$ ;
+  \item $\sign(e) = \sign(\sin x_1)$.
+\end{itemize}
+
+\paragraph{Étape 5 : simplifier $\sign(\sin x_1)$.} On regarde le signe du sinus sur $]-\pi,\pi[$ :
+\begin{center}
+\begin{tabular}{c|ccc}
+$x_1$ & $]-\pi,\,0[$ & $0$ & $]0,\,\pi[$ \\
+\hline
+$\sin x_1$ & $<0$ & $0$ & $>0$ \\
+$\sign(\sin x_1)$ & $-1$ & $0$ & $+1$ \\
+$\sign(x_1)$ & $-1$ & $0$ & $+1$
+\end{tabular}
+\end{center}
+Les deux dernières lignes sont identiques. Donc, tant que $|x_1|<\pi$,
+\begin{equation}
+\sign(\sin x_1) = \sign(x_1).
+\end{equation}
+
+\begin{resultat}
+\begin{equation}
+\dot x_1 = -k_1\,|\sin x_1|^{1/2}\,\sign(x_1) + x_2 \tag{17}
+\end{equation}
+\end{resultat}
+
+\section{Calcul de $\dot x_2$}
+
+\paragraph{Étape 1 : dériver la définition.}
+\begin{equation}
+\dot x_2 = \frac{d}{dt}\Big[(\omega-\omega_{ff}) - z\Big] = \dot\omega - \underbrace{\dot\omega_{ff}}_{=\,0} - \dot z = \dot\omega - \dot z .
+\end{equation}
+$\omega_{ff}$ est constante, donc sa dérivée est nulle. En revanche, la fréquence du réseau
+$\omega$ peut varier (rampe de fréquence), donc $\dot\omega$ n'est pas forcément nulle.
+
+\paragraph{Étape 2 : remplacer $\dot z$ par \eqref{eq:z}.}
+\begin{equation}
+\dot x_2 = \dot\omega - k_2\sign(e).
+\end{equation}
+
+\paragraph{Étape 3 : remplacer $\sign(e)$.} Comme à la section précédente, $\sign(e)=\sign(x_1)$ :
+
+\begin{resultat}
+\begin{equation}
+\dot x_2 = -k_2\,\sign(x_1) + \dot\omega(t) \tag{18}
+\end{equation}
+\end{resultat}
+
+\section{Le système complet et son interprétation}
+
+En réunissant les deux résultats :
+\begin{equation}
+\left\{
+\begin{aligned}
+\dot x_1 &= -k_1\,|\sin x_1|^{1/2}\,\sign(x_1) + x_2 \\
+\dot x_2 &= -k_2\,\sign(x_1) + \dot\omega(t)
+\end{aligned}
+\right.
+\end{equation}
+
+\paragraph{Lecture de la première équation.}
+\begin{itemize}
+  \item Le terme $-k_1|\sin x_1|^{1/2}\sign(x_1)$ \emph{ramène toujours} $x_1$ vers $0$.
+        Si $x_1>0$, il est négatif et fait diminuer $x_1$. Si $x_1<0$, il est positif et fait augmenter $x_1$.
+  \item Le terme $x_2$ joue le rôle d'une perturbation. C'est l'écart de fréquence que
+        l'intégrateur n'a pas encore compensé.
+\end{itemize}
+
+\paragraph{Lecture de la deuxième équation.}
+\begin{itemize}
+  \item Le terme $-k_2\sign(x_1)$ fait évoluer $x_2$ jusqu'à ce que $z$ ait appris $\omega-\omega_{ff}$.
+  \item Le terme $\dot\omega(t)$ est la perturbation externe (variation de fréquence du réseau).
+        On suppose seulement $|\dot\omega|\le L$.
+\end{itemize}
+
+\paragraph{Lien avec le Super-Twisting standard.} La forme canonique de l'algorithme s'écrit
+\begin{equation}
+\dot x_1 = -k_1|x_1|^{1/2}\sign(x_1) + x_2,\qquad \dot x_2 = -k_2\sign(x_1) + \rho(t).
+\end{equation}
+Notre système a \textbf{exactement} cette forme, à deux différences près :
+\begin{itemize}
+  \item on a $|\sin x_1|^{1/2}$ au lieu de $|x_1|^{1/2}$ ; pour une petite erreur, $\sin x_1\approx x_1$ ;
+  \item la perturbation est $\rho=\dot\omega$.
+\end{itemize}
+Les signes \og $-$\fg{} de la forme standard apparaissent \emph{naturellement} dans les équations
+de l'erreur, alors que la loi \eqref{eq:loi}--\eqref{eq:z} contient des signes \og $+$\fg.
+Ils proviennent du signe \og $-$\fg{} de $\dot x_1 = \omega - \hw$ et de $\dot x_2 = \dot\omega - \dot z$.
+
+\paragraph{Point d'équilibre.} Pour $x_1=0$ et $x_2=0$, on a $\hth=\theta$, $z=\omega-\omega_{ff}$,
+et d'après \eqref{eq:loi}, $\hw = 0 + (\omega-\omega_{ff}) + \omega_{ff} = \omega$.
+La PLL estime alors exactement la phase et la fréquence.
+
+\section{Tableau récapitulatif des substitutions}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|l|l|}
+\hline
+On remplace & par \\
+\hline
+$\dot\theta$ & $\omega$ \\
+$\dot{\hth}$ & $\hw = k_1|e|^{1/2}\sign(e) + z + \omega_{ff}$ \\
+$(\omega-\omega_{ff})-z$ & $x_2$ \\
+$e$ & $\sin x_1$ \\
+$\sign(\sin x_1)$ & $\sign(x_1)$ \quad (si $|x_1|<\pi$) \\
+$\dot z$ & $k_2\sign(e)$ \\
+$\dot\omega_{ff}$ & $0$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{document}
