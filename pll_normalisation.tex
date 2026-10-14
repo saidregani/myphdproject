@@ -1,0 +1,219 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\numberwithin{equation}{section}
+
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\hth}{\hat{\theta}}
+\newcommand{\hw}{\hat{\omega}}
+
+\newtcolorbox{idee}{colback=blue!4,colframe=blue!50!black,title=Idée,fonttitle=\bfseries}
+\newtcolorbox{resultat}{colback=green!5,colframe=green!40!black,title=Résultat,fonttitle=\bfseries}
+\newtcolorbox{attention}{colback=red!4,colframe=red!50!black,title=Attention,fonttitle=\bfseries}
+
+\title{\textbf{Pourquoi normaliser le détecteur de phase ?}\\[4pt]
+\large Justification de $e \triangleq \varepsilon/\hat V_m$}
+\date{}
+
+\begin{document}
+\maketitle
+
+%=====================================================================
+\section{Ce n'est pas une hypothèse, c'est un choix de conception}
+%=====================================================================
+
+L'expression
+\begin{equation}
+e \triangleq \frac{\varepsilon}{\hat V_m}
+\end{equation}
+n'est ni une hypothèse sur le réseau, ni un résultat que l'on démontre.
+C'est une \textbf{définition} : on \emph{décide} de diviser le signal du détecteur par l'amplitude estimée.
+Le symbole $\triangleq$ signifie justement \og est défini comme\fg.
+
+\begin{idee}
+On fait ce choix parce que le signal brut $\varepsilon$ pose un problème, que l'on explique ci-dessous.
+La normalisation est la solution à ce problème.
+\end{idee}
+
+%=====================================================================
+\section{Le problème : $\varepsilon$ dépend de l'amplitude du réseau}
+%=====================================================================
+
+\subsection{Deux informations mélangées}
+Le détecteur de phase fournit
+\begin{equation}
+\varepsilon = V_m\sin\psi,\qquad \psi = \theta-\hth .
+\end{equation}
+Ce signal contient deux informations de nature différente :
+\begin{itemize}
+  \item $\sin\psi$ : \textbf{l'erreur de phase}, c'est ce que la PLL doit corriger ;
+  \item $V_m$ : \textbf{l'amplitude du réseau}, qui n'a rien à voir avec la phase.
+\end{itemize}
+
+\subsection{Conséquence sur la boucle fermée}
+Supposons que l'on utilise $\varepsilon$ directement dans la loi Super-Twisting :
+\begin{equation}
+\hw = k_1|\varepsilon|^{1/2}\sign(\varepsilon) + z + \omega_{ff},\qquad \dot z = k_2\sign(\varepsilon).
+\end{equation}
+
+\textbf{Étape 1.} On remplace $\varepsilon = V_m\sin\psi$ dans le terme en racine :
+\begin{equation}
+|\varepsilon|^{1/2} = |V_m\sin\psi|^{1/2} = V_m^{1/2}\,|\sin\psi|^{1/2},
+\end{equation}
+car $V_m>0$, donc $|V_m\sin\psi| = V_m|\sin\psi|$, et $(ab)^{1/2} = a^{1/2}b^{1/2}$ pour $a,b\ge0$.
+
+\textbf{Étape 2.} Le signe ne change pas, car $V_m>0$ :
+\begin{equation}
+\sign(\varepsilon) = \sign(V_m\sin\psi) = \sign(V_m)\,\sign(\sin\psi) = \sign(\sin\psi).
+\end{equation}
+
+\textbf{Étape 3.} En reprenant le calcul de $\dot x_1 = \omega-\hw$ avec $x_1=\psi$ et $x_2=(\omega-\omega_{ff})-z$ :
+\begin{equation}
+\boxed{\dot x_1 = -\underbrace{k_1\sqrt{V_m}}_{\text{gain effectif}}\,|\sin x_1|^{1/2}\sign(x_1) + x_2,
+\qquad \dot x_2 = -k_2\sign(x_1)+\dot\omega .}
+\end{equation}
+
+\begin{attention}
+Le gain réellement appliqué n'est plus $k_1$ mais $k_1\sqrt{V_m}$. Il dépend de la tension du réseau,
+que l'on ne contrôle pas et qui peut varier fortement.
+\end{attention}
+
+%=====================================================================
+\section{Deux exemples concrets}
+%=====================================================================
+
+\subsection{Exemple 1 : réseau 230 V}
+Pour un réseau 230 V efficaces, l'amplitude crête vaut
+\begin{equation}
+V_m = 230\sqrt2 \approx 325\ \text{V},\qquad \sqrt{V_m}\approx 18 .
+\end{equation}
+Le gain effectif vaut donc
+\begin{equation}
+k_1\sqrt{V_m}\approx 18\,k_1 .
+\end{equation}
+Avec $k_1=30$ (valeur utilisée dans la preuve), le gain réellement appliqué serait d'environ $540$.
+Les gains calculés dans l'analyse de stabilité ne correspondent plus du tout au système réel.
+
+\subsection{Exemple 2 : creux de tension}
+Lors d'un défaut, la tension peut chuter à $20\,\%$ de sa valeur nominale : $V_m\to0.2\,V_m$.
+Le gain effectif est alors multiplié par
+\begin{equation}
+\sqrt{0.2}\approx0.45 ,
+\end{equation}
+c'est-à-dire \textbf{divisé par plus de 2}.
+
+La condition de stabilité $k_2>K(k_1,L)$ a été établie pour une valeur fixe de $k_1$.
+Si le gain effectif change, cette condition peut ne plus être vérifiée,
+et ce, précisément pendant un défaut, quand la PLL doit rester stable.
+
+%=====================================================================
+\section{La solution : diviser par l'amplitude}
+%=====================================================================
+
+\subsection{L'amplitude se calcule à partir des mesures}
+\textbf{Étape 1.} On calcule la somme des carrés des composantes de Clarke :
+\begin{equation}
+V_\alpha^2+V_\beta^2 = V_m^2\cos^2\theta + V_m^2\sin^2\theta = V_m^2\left(\cos^2\theta+\sin^2\theta\right) = V_m^2 .
+\end{equation}
+\textbf{Étape 2.} On prend la racine carrée ($V_m>0$) :
+\begin{equation}
+\boxed{\hat V_m = \sqrt{V_\alpha^2+V_\beta^2} = V_m .}
+\end{equation}
+Cette quantité se calcule à chaque instant, sans connaître $\theta$ : c'est simplement la longueur du
+vecteur $(V_\alpha,V_\beta)$.
+
+\subsection{Définition de l'erreur normalisée}
+\textbf{Étape 1.} On divise $\varepsilon$ par $\hat V_m$ :
+\begin{equation}
+e \triangleq \frac{\varepsilon}{\hat V_m} = \frac{-V_\alpha\sin\hth+V_\beta\cos\hth}{\sqrt{V_\alpha^2+V_\beta^2}} .
+\end{equation}
+\textbf{Étape 2.} On remplace $\varepsilon=V_m\sin\psi$ et $\hat V_m = V_m$ :
+\begin{equation}
+e = \frac{V_m\sin\psi}{V_m} = \sin\psi .
+\end{equation}
+
+\begin{resultat}
+\begin{equation}
+e = \sin\psi .
+\end{equation}
+L'amplitude $V_m$ a disparu. Il ne reste que l'information de phase.
+\end{resultat}
+
+\subsection{Conséquence sur la boucle fermée}
+Avec $e$ à la place de $\varepsilon$, le même calcul qu'à la section 2 donne
+\begin{equation}
+\dot x_1 = -k_1|\sin x_1|^{1/2}\sign(x_1) + x_2,\qquad \dot x_2 = -k_2\sign(x_1)+\dot\omega .
+\end{equation}
+Le gain effectif est exactement $k_1$, quelle que soit la tension du réseau.
+
+%=====================================================================
+\section{Ce que l'on gagne}
+%=====================================================================
+
+\begin{center}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{lll}
+\toprule
+ & \textbf{Sans normalisation ($\varepsilon$)} & \textbf{Avec normalisation ($e$)} \\
+\midrule
+Expression & $V_m\sin\psi$ (en volts) & $\sin\psi$ (sans unité) \\
+Plage de valeurs & $[-V_m,\,V_m]$ & toujours $[-1,\,1]$ \\
+Gain effectif & $k_1\sqrt{V_m}$ (variable) & $k_1$ (constant) \\
+Creux de tension & dynamique modifiée & aucun effet \\
+Preuve de stabilité & dépend de $V_m$ & indépendante de $V_m$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{idee}
+Le terme $k_2\sign(\cdot)$ ne profite pas de la normalisation, et n'en a pas besoin :
+comme $V_m>0$, $\sign(\varepsilon)=\sign(e)$. Seul le terme en $k_1$ est concerné.
+\end{idee}
+
+%=====================================================================
+\section{Précautions pratiques}
+%=====================================================================
+
+\subsection{Division par zéro}
+Si la tension s'effondre ($\hat V_m\approx0$, court-circuit franc), la division devient impossible.
+On protège le calcul avec un seuil $V_{\min}>0$ :
+\begin{equation}
+e = \frac{\varepsilon}{\max\left(\hat V_m,\,V_{\min}\right)} .
+\end{equation}
+Dans ce cas extrême, le détecteur ne contient de toute façon plus d'information de phase.
+
+\subsection{Réseau déséquilibré}
+Si le réseau est déséquilibré, $\hat V_m$ n'est plus exactement constant : il oscille à la fréquence $2\omega$.
+La normalisation reste utile, mais elle est imparfaite. C'est une raison supplémentaire d'ajouter un
+pré-filtrage (DSOGI, MAF) avant le détecteur.
+
+\subsection{Une technique classique}
+La normalisation par l'amplitude est une pratique courante dans la littérature sur les PLL.
+Elle permet de régler la dynamique de la boucle indépendamment du niveau de tension.
+Ce n'est pas une astuce propre à cette preuve.
+
+%=====================================================================
+\section{Résumé}
+%=====================================================================
+
+\begin{resultat}
+On n'a rien supposé. On a \textbf{choisi} de diviser $\varepsilon$ par une amplitude que l'on sait calculer
+à partir des mesures, $\hat V_m=\sqrt{V_\alpha^2+V_\beta^2}$. Ainsi :
+\begin{itemize}
+  \item l'erreur normalisée vaut exactement $e=\sin\psi$ ;
+  \item le gain de la boucle est exactement $k_1$ ;
+  \item la PLL et sa preuve de stabilité ne dépendent plus de la tension du réseau.
+\end{itemize}
+\end{resultat}
+
+\end{document}
