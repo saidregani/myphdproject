@@ -1,0 +1,294 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\numberwithin{equation}{section}
+
+\newcommand{\hth}{\hat{\theta}}
+\newcommand{\hw}{\hat{\omega}}
+
+\newtcolorbox{idee}{colback=blue!4,colframe=blue!50!black,title=Idée,fonttitle=\bfseries}
+\newtcolorbox{resultat}{colback=green!5,colframe=green!40!black,title=Résultat,fonttitle=\bfseries}
+\newtcolorbox{attention}{colback=red!4,colframe=red!50!black,title=Attention,fonttitle=\bfseries}
+
+\title{\textbf{Dérivation de l'erreur normalisée}\\[4pt]
+$\displaystyle \dot e = \frac{de}{d\psi}\cdot\frac{d\psi}{dt} = \cos\psi\cdot\dot\psi$}
+\date{}
+
+\begin{document}
+\maketitle
+
+%=====================================================================
+\section{Ce que l'on cherche}
+%=====================================================================
+
+On connaît l'erreur normalisée du détecteur de phase :
+\begin{equation}\label{eq:e}
+e = \sin\psi,\qquad \psi(t) = \theta(t)-\hth(t).
+\end{equation}
+On veut sa dérivée \textbf{par rapport au temps} :
+\begin{equation}
+\dot e \triangleq \frac{de}{dt}.
+\end{equation}
+Cette dérivée indique à quelle vitesse l'erreur évolue. C'est elle qui intervient dans toute
+l'analyse de stabilité.
+
+\begin{attention}
+$e$ ne dépend \textbf{pas directement} du temps $t$. Il dépend de $\psi$, et c'est $\psi$ qui dépend du temps.
+On ne peut donc pas dériver \og directement\fg{} par rapport à $t$ : il faut passer par $\psi$.
+\end{attention}
+
+%=====================================================================
+\section{Une fonction composée : la chaîne $t\to\psi\to e$}
+%=====================================================================
+
+On peut voir le calcul de $e$ comme deux opérations successives :
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth, node distance=3.8cm,
+  box/.style={draw,rounded corners,minimum width=1.6cm,minimum height=1cm,fill=blue!5,font=\large}]
+\node[box] (t) {$t$};
+\node[box,right=of t] (p) {$\psi$};
+\node[box,right=of p] (e) {$e$};
+\draw[->,very thick] (t) -- node[above]{$\psi=\theta-\hth$} node[below,blue!60!black]{vitesse $\dfrac{d\psi}{dt}=\dot\psi$} (p);
+\draw[->,very thick] (p) -- node[above]{$e=\sin\psi$} node[below,blue!60!black]{sensibilité $\dfrac{de}{d\psi}=\cos\psi$} (e);
+\draw[->,thick,red!70!black,dashed] (t.north) to[bend left=30] node[above]{$\dfrac{de}{dt}=\ ?$} (e.north);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Couche intérieure} : le temps $t$ donne l'erreur de phase $\psi(t)$.
+  \item \textbf{Couche extérieure} : l'erreur de phase $\psi$ donne $e=\sin\psi$.
+\end{itemize}
+On écrit $e(t) = \sin\big(\psi(t)\big)$ : c'est une \textbf{fonction composée}.
+
+%=====================================================================
+\section{La règle de dérivation en chaîne}
+%=====================================================================
+
+\subsection{Énoncé}
+Si $e=f(\psi)$ et $\psi=\psi(t)$, alors
+\begin{equation}\label{eq:chaine}
+\boxed{\frac{de}{dt} = \frac{de}{d\psi}\cdot\frac{d\psi}{dt} = f'(\psi)\cdot\dot\psi .}
+\end{equation}
+\textbf{En mots :} (dérivée de la couche extérieure, évaluée en $\psi$) $\times$ (dérivée de la couche intérieure).
+
+\subsection{Pourquoi cette règle est vraie}
+On part de la définition de la dérivée comme limite d'un taux d'accroissement.
+
+\textbf{Étape 1.} Pendant un petit intervalle de temps $\Delta t$, $\psi$ varie de $\Delta\psi$,
+et $e$ varie de $\Delta e$.
+
+\textbf{Étape 2.} Si $\Delta\psi\neq0$, on multiplie et on divise par $\Delta\psi$ :
+\begin{equation}
+\frac{\Delta e}{\Delta t} = \frac{\Delta e}{\Delta\psi}\cdot\frac{\Delta\psi}{\Delta t}.
+\end{equation}
+C'est une simple identité algébrique : les $\Delta\psi$ se simplifient.
+
+\textbf{Étape 3.} On fait tendre $\Delta t\to0$. Alors $\Delta\psi\to0$ aussi (car $\psi$ est continue), et chaque
+rapport tend vers sa dérivée :
+\begin{equation}
+\underbrace{\frac{\Delta e}{\Delta t}}_{\to\,de/dt} = \underbrace{\frac{\Delta e}{\Delta\psi}}_{\to\,de/d\psi}\cdot\underbrace{\frac{\Delta\psi}{\Delta t}}_{\to\,d\psi/dt}.
+\end{equation}
+
+\begin{idee}
+Analogie : si $e$ varie 2 fois plus vite que $\psi$, et que $\psi$ varie 3 fois plus vite que $t$,
+alors $e$ varie $2\times3=6$ fois plus vite que $t$. Les vitesses se \textbf{multiplient}.
+\end{idee}
+
+%=====================================================================
+\section{Calcul du premier facteur : $\dfrac{de}{d\psi}=\cos\psi$}
+%=====================================================================
+
+On dérive $e=\sin\psi$ par rapport à $\psi$ (le temps n'intervient pas ici).
+
+\textbf{Étape 1 : taux d'accroissement.} Pour un petit $h$ :
+\begin{equation}
+\frac{\sin(\psi+h)-\sin\psi}{h}.
+\end{equation}
+\textbf{Étape 2 : formule d'addition.} $\sin(\psi+h)=\sin\psi\cos h+\cos\psi\sin h$, donc
+\begin{equation}
+\frac{\sin(\psi+h)-\sin\psi}{h} = \sin\psi\,\frac{\cos h-1}{h} + \cos\psi\,\frac{\sin h}{h}.
+\end{equation}
+\textbf{Étape 3 : limites classiques.} Quand $h\to0$ :
+\begin{equation}
+\frac{\sin h}{h}\to1,\qquad \frac{\cos h-1}{h}\to0 .
+\end{equation}
+\textbf{Étape 4.}
+\begin{equation}\label{eq:f1}
+\boxed{\frac{de}{d\psi} = \sin\psi\cdot0+\cos\psi\cdot1 = \cos\psi .}
+\end{equation}
+
+\textbf{Sens physique.} $\cos\psi$ est la \textbf{sensibilité du détecteur} : de combien $e$ varie quand
+l'erreur de phase augmente d'un petit angle.
+\begin{itemize}
+  \item Près de $\psi=0$ : $\cos\psi\approx1$, le détecteur est très sensible.
+  \item Près de $\psi=\pm\pi/2$ : $\cos\psi\approx0$, le détecteur devient insensible (sommet de la sinusoïde).
+\end{itemize}
+
+%=====================================================================
+\section{Calcul du second facteur : $\dfrac{d\psi}{dt}=\omega-\hw$}
+%=====================================================================
+
+\textbf{Étape 1.} On dérive la définition $\psi=\theta-\hth$. La dérivée d'une différence est la différence
+des dérivées :
+\begin{equation}
+\dot\psi = \frac{d\theta}{dt}-\frac{d\hth}{dt}.
+\end{equation}
+\textbf{Étape 2.} L'angle du réseau tourne à la pulsation $\omega$ :
+\begin{equation}
+\frac{d\theta}{dt}=\omega .
+\end{equation}
+\textbf{Étape 3.} L'angle estimé est l'intégrale de la pulsation estimée (intégrateur de la PLL) :
+\begin{equation}
+\frac{d\hth}{dt}=\hw .
+\end{equation}
+\textbf{Étape 4.}
+\begin{equation}\label{eq:f2}
+\boxed{\dot\psi = \omega-\hw .}
+\end{equation}
+
+\textbf{Sens physique.} $\dot\psi$ est la \textbf{vitesse de glissement} entre l'angle réel et l'angle estimé.
+Si $\hw=\omega$, les deux angles tournent à la même vitesse et l'écart $\psi$ reste constant.
+
+%=====================================================================
+\section{Assemblage}
+%=====================================================================
+
+On remplace \eqref{eq:f1} et \eqref{eq:f2} dans la règle \eqref{eq:chaine} :
+\begin{equation}
+\dot e = \underbrace{\frac{de}{d\psi}}_{\cos\psi}\cdot\underbrace{\frac{d\psi}{dt}}_{\dot\psi}.
+\end{equation}
+
+\begin{resultat}
+\begin{equation}
+\dot e = \cos\psi\cdot\dot\psi = \cos\psi\,(\omega-\hw).
+\end{equation}
+\[
+\text{vitesse de variation de } e \;=\; \underbrace{\text{sensibilité du détecteur}}_{\cos\psi}\;\times\;\underbrace{\text{vitesse de glissement de phase}}_{\omega-\hw}.
+\]
+\end{resultat}
+
+%=====================================================================
+\section{Vérification par une autre méthode : les dérivées partielles}
+%=====================================================================
+
+On peut aussi voir $e$ comme une fonction de \textbf{deux} angles qui dépendent tous les deux du temps :
+\begin{equation}
+e = \sin(\theta-\hth).
+\end{equation}
+La règle de dérivation en chaîne à deux variables donne
+\begin{equation}
+\dot e = \frac{\partial e}{\partial\theta}\,\dot\theta + \frac{\partial e}{\partial\hth}\,\dot\hth .
+\end{equation}
+\textbf{Calcul des dérivées partielles :}
+\begin{align}
+\frac{\partial e}{\partial\theta} &= \cos(\theta-\hth)\cdot\frac{\partial(\theta-\hth)}{\partial\theta} = \cos\psi\cdot(+1) = \cos\psi,\\
+\frac{\partial e}{\partial\hth} &= \cos(\theta-\hth)\cdot\frac{\partial(\theta-\hth)}{\partial\hth} = \cos\psi\cdot(-1) = -\cos\psi .
+\end{align}
+\textbf{Assemblage :}
+\begin{equation}
+\dot e = \cos\psi\cdot\omega + (-\cos\psi)\cdot\hw = \cos\psi\,(\omega-\hw).
+\end{equation}
+On retrouve \textbf{exactement} le même résultat. Passer par $\psi$ est simplement plus court.
+
+%=====================================================================
+\section{L'erreur à éviter}
+%=====================================================================
+
+\begin{attention}
+Écrire $\dot e = \cos\psi$ (ou $\dot\varepsilon = V_m\cos\psi$) est \textbf{faux} : on a oublié le facteur $\dot\psi$.
+$\cos\psi$ est la dérivée par rapport à l'\textbf{angle} $\psi$, pas par rapport au \textbf{temps}.
+\end{attention}
+
+\subsection*{Vérification par les unités}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\toprule
+Grandeur & Unité & Commentaire\\
+\midrule
+$e=\sin\psi$ & sans unité & \\
+$\dot e = de/dt$ & s$^{-1}$ & une dérivée par rapport au temps \\
+$\cos\psi$ & sans unité & donc $\dot e=\cos\psi$ est \textbf{incohérent} \\
+$\dot\psi=\omega-\hw$ & rad/s & \\
+$\cos\psi\cdot\dot\psi$ & s$^{-1}$ & \textbf{cohérent} \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+La vérification des unités permet de détecter immédiatement l'oubli du facteur $\dot\psi$.
+
+\subsection*{Vérification par un cas simple}
+Si la PLL est parfaitement synchronisée en fréquence ($\hw=\omega$), l'écart $\psi$ ne change pas,
+donc $e$ ne doit pas changer : $\dot e=0$.
+\begin{itemize}
+  \item Formule correcte : $\dot e = \cos\psi\cdot0 = 0$. \checkmark
+  \item Formule fausse : $\dot e = \cos\psi\neq0$. Elle prédit que $e$ varie alors que rien ne bouge.
+\end{itemize}
+
+%=====================================================================
+\section{Exemples pour s'entraîner}
+%=====================================================================
+
+\subsection*{Exemple 1 : $\psi(t)=3t$}
+\begin{equation}
+e = \sin(3t),\qquad \frac{de}{d\psi}=\cos(3t),\qquad \frac{d\psi}{dt}=3
+\quad\Longrightarrow\quad \dot e = 3\cos(3t).
+\end{equation}
+
+\subsection*{Exemple 2 : $\psi(t)=t^2$}
+\begin{equation}
+e = \sin(t^2),\qquad \frac{de}{d\psi}=\cos(t^2),\qquad \frac{d\psi}{dt}=2t
+\quad\Longrightarrow\quad \dot e = 2t\cos(t^2).
+\end{equation}
+
+\subsection*{Exemple 3 : application numérique à la PLL}
+On prend $\psi=0.3$ rad et un glissement $\omega-\hw = 2$ rad/s :
+\begin{equation}
+\dot e = \cos(0.3)\times2 \approx 0.955\times2 \approx 1.91\ \text{s}^{-1}.
+\end{equation}
+\textbf{Vérification numérique.} Après $\Delta t = 1$ ms, $\psi$ a augmenté de $2\times0.001 = 0.002$ rad :
+\begin{equation}
+\frac{\Delta e}{\Delta t} = \frac{\sin(0.302)-\sin(0.300)}{0.001} = \frac{0.297430-0.295520}{0.001}\approx1.91\ \text{s}^{-1}. \checkmark
+\end{equation}
+
+%=====================================================================
+\section{Cas particuliers utiles}
+%=====================================================================
+
+\subsection*{Petite erreur de phase}
+Si $|\psi|\ll1$, alors $\cos\psi\approx1$ et
+\begin{equation}
+\dot e\approx\dot\psi = \omega-\hw .
+\end{equation}
+Le détecteur se comporte comme une mesure directe de l'erreur de phase.
+
+\subsection*{Signal non normalisé}
+Pour $\varepsilon = V_m\sin\psi$ avec $V_m$ constant, la constante sort de la dérivée :
+\begin{equation}
+\dot\varepsilon = V_m\cos\psi\cdot\dot\psi .
+\end{equation}
+Si $V_m$ varie, on applique en plus la règle du produit $(uv)'=u'v+uv'$ :
+\begin{equation}
+\dot\varepsilon = \dot V_m\sin\psi + V_m\cos\psi\cdot\dot\psi .
+\end{equation}
+
+\subsection*{Utilisation dans la fonction de Lyapunov}
+Avec $V=\frac12e^2$, la règle de dérivation en chaîne s'applique encore une fois
+($V$ dépend de $e$, qui dépend de $t$) :
+\begin{equation}
+\dot V = \frac{dV}{de}\cdot\frac{de}{dt} = e\cdot\dot e = \sin\psi\cos\psi\,(\omega-\hw).
+\end{equation}
+
+\end{document}
