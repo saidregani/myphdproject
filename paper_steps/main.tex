@@ -61,15 +61,10 @@ grid~\cite{polinder2013,wu2011}. The machine-side converter (MSC) controls the g
 the maximum power point, and the grid-side converter (GSC) regulates the DC-link voltage and injects
 the power into the grid.
 
-These functions are usually performed by cascaded PI loops in rotating
-frames~\cite{chinchilla2006,yazdani2010}. The PMSG model is nonlinear and coupled through the rotor
-speed, and nonlinear controllers have therefore been studied for wind turbines and PMSGs, such as
-backstepping~\cite{mechter2016}, predictive control~\cite{messadi2015} and passivity-based
-control~\cite{takhi2020}. Passivity-based control (PBC)~\cite{ortega1998} shapes the energy of the
-closed loop and keeps the physical structure of the system, in particular the workless coupling terms
-of electrical machines. A reliable model is a prerequisite for such model-based designs: published
-models of PMSG wind turbines often mix the generator and receptor conventions between the voltage and
-the mechanical equations, and parameter sets are not always physically consistent.
+The machine-side currents are commonly controlled by PI loops in rotating
+frames~\cite{chinchilla2006,yazdani2010}. In this paper, passivity-based control
+(PBC)~\cite{ortega1998} is used for these currents, since it keeps the physical structure of the
+machine model.
 
 The contributions of this paper are:
 \begin{itemize}
@@ -116,7 +111,7 @@ speeds, with the maximum power curve $P_{opt}=K_{opt}\Omega^3$ (right).}
 \label{fig:turbine}
 \end{figure}
 
-For a rated power $P_n=2$~MW and $R=40$~m, a rotor radius typical of 2~MW turbines~\cite{rolan2009},
+For a rated power $P_n=2$~MW and $R=40$~m, close to the 2~MW turbine of~\cite{rolan2009} ($R=38$~m),
 the rated wind speed follows from $P_n=\frac12\rho\pi R^2C_{p,\max}v_n^3$, which gives
 $v_n=11.0$~m/s, and the rated rotor speed from $\Omega_n=\lambda_{opt}v_n/R=2.23$~rad/s. The rated
 torque is $T_n=P_n/\Omega_n=0.897$~MN$\cdot$m. The maximum power curve is
@@ -128,10 +123,7 @@ J\frac{d\Omega}{dt} = T_w + T_e - B\Omega
 \label{eq:shaft}
 \end{equation}
 where $J$ is the total inertia, $B$ the friction coefficient and $T_e$ the electromagnetic torque in
-the receptor convention ($T_e<0$ in generating mode). The inertia is obtained by scaling the rotor
-inertia of the 2~MW turbine of~\cite{van2015} ($6.3\times10^6$~kg$\cdot$m$^2$ for $R=45$~m) as
-$J\propto R^5$, which gives $J\approx3.5\times10^6$~kg$\cdot$m$^2$ and an inertia constant
-$H=J\Omega_n^2/(2P_n)=4.4$~s.
+the receptor convention ($T_e<0$ in generating mode).
 
 \section{Wind Speed Model}
 Two wind profiles are used (Fig.~\ref{fig:wind}). The step profile (9, 11 and 8~m/s), similar to the
@@ -190,7 +182,7 @@ Rotor radius & $R$ & 40 m & \cite{rolan2009}\\
 Air density & $\rho$ & 1.225 kg/m$^3$ & \cite{aimene2022}\\
 Rated wind / rotor speed & $v_n$, $\Omega_n$ & 11.0 m/s, 2.23 rad/s & (\ref{eq:pw})\\
 Rated torque & $T_n$ & 0.897 MN$\cdot$m & $P_n/\Omega_n$\\
-Total inertia & $J$ & $3.5\times10^6$ kg$\cdot$m$^2$ & \cite{van2015}\\
+Total inertia & $J$ & $2.8\times10^6$ kg$\cdot$m$^2$ & assumed\\
 Friction coefficient & $B$ & $10^3$ N$\cdot$m$\cdot$s/rad & assumed\\
 Pole pairs & $p$ & 26 & \cite{hasan2021}\\
 Stator resistance & $R_s$ & 0.78 m$\Omega$ & \cite{hasan2021}\\
@@ -348,9 +340,7 @@ power, the stored energy, the losses and the grid power verifies all its signs, 
 numerically. Step and turbulent wind profiles were defined for the evaluation. A passivity-based
 current controller for the machine-side converter, whose stability follows from a storage function,
 tracks the current references with a rise time of 3~ms, no overshoot and a negligible cross-coupling,
-with the sampling and the computation delay of a digital implementation. Future work will address the
-speed control for maximum power point tracking, the DC-link and grid-current control of the grid-side
-converter, and the compensation of parameter uncertainties.
+with the sampling and the computation delay of a digital implementation.
 
 \section*{Conflict of Interest}
 The authors declare there are no conflicts of interest.
@@ -368,14 +358,6 @@ generators applied to variable-speed wind-energy systems connected to the grid,'
 Energy Convers.}, vol.~21, no.~1, pp.~130--135, Mar. 2006.
 \bibitem{yazdani2010} A. Yazdani and R. Iravani, \emph{Voltage-Sourced Converters in Power Systems:
 Modeling, Control, and Applications}. Hoboken, NJ, USA: Wiley-IEEE Press, 2010.
-\bibitem{mechter2016} A. Mechter, K. Kemih, and M. Ghanes, ``Backstepping control of a wind turbine for
-low wind speeds,'' \emph{Nonlinear Dynamics}, vol.~84, no.~4, pp.~2435--2445, 2016.
-\bibitem{messadi2015} M. Messadi, A. Mellit, K. Kemih, and M. Ghanes, ``Predictive control of a chaotic
-permanent magnet synchronous generator in a wind turbine system,'' \emph{Chinese Phys. B}, vol.~24,
-no.~1, Art.~no.~010502, 2015, doi: 10.1088/1674-1056/24/1/010502.
-\bibitem{takhi2020} H. Takhi, K. Kemih, L. Moysis, \emph{et al.}, ``Passivity based control and
-synchronization of perturbed uncertain chaotic systems and their microcontroller implementation,''
-\emph{Int. J. Dyn. Control}, vol.~8, no.~3, pp.~973--990, 2020.
 \bibitem{ortega1998} R. Ortega, A. Lor\'ia, P. J. Nicklasson, and H. Sira-Ram\'irez,
 \emph{Passivity-Based Control of Euler-Lagrange Systems}. London, UK: Springer, 1998.
 \bibitem{heier2014} S. Heier, \emph{Grid Integration of Wind Energy: Onshore and Offshore Conversion
@@ -389,9 +371,6 @@ permanent magnet synchronous generator non-salient pole and salient pole rotor w
 \bibitem{rolan2009} A. Rolan, A. Luna, G. Vazquez, D. Aguilar, and G. Azevedo, ``Modeling of a variable
 speed wind turbine with a permanent magnet synchronous generator,'' in \emph{Proc. IEEE Int. Symp. Ind.
 Electron. (ISIE)}, Seoul, Korea, 2009, pp.~734--739, doi: 10.1109/ISIE.2009.5218120.
-\bibitem{van2015} T. L. Van, T. D. Nguyen, T. T. Tran, and H. D. Nguyen, ``Advanced control strategy of
-back-to-back PWM converters in PMSG wind power system,'' \emph{Adv. Electr. Electron. Eng.}, vol.~13,
-no.~2, 2015, doi: 10.15598/aeee.v13i2.1161.
 \bibitem{regani2026} S. Regani, M. Messadi, and K. Kemih, ``A novel chaos control approach with
 adaptive ANN compensation for a DFIG-based wind turbine,'' \emph{Mathematics}, under review, 2026.
 \bibitem{khalil2002} H. K. Khalil, \emph{Nonlinear Systems}, 3rd ed. Upper Saddle River, NJ, USA:
