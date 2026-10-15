@@ -42,7 +42,7 @@ if strcmp(mode, 'single')        % one run: opt.scen, opt.ctrl, opt.set (struct)
 end
 
 ctrls = {'PI', 'FP', 'FPANN'};          % PI | flat+PBC | flat+PBC+ANN
-scens = {'nominal', 'robust'};
+scens = {'step', 'nominal', 'robust'};
 RES = struct();
 for s = 1:numel(scens)
   for c = 1:numel(ctrls)
@@ -135,10 +135,17 @@ Tw  = 0.5*P.rho*pi*P.R^2*heier_cp(lam)*v^3/max(W, 0.05);
 end
 
 %% ========================================================================
-function v = wind_profile(P, t)
-% v(t) = Vm + sum A_k sin(2 pi f_k t) + v_t(t); v_t: AR(1) coloured noise
-% (std sig_t, correlation time tau_t) from a Park-Miller generator and the
-% Box-Muller transform (identical sequence in MATLAB and Octave).
+function v = wind_profile(P, t, scen)
+% step scenario: 9 -> 11 m/s at 10 s, 11 -> 8 m/s at 25 s.
+% otherwise: v(t) = Vm + sum A_k sin(2 pi f_k t) + v_t(t); v_t: AR(1) coloured
+% noise (std sig_t, correlation time tau_t) generated on a 1 ms grid by a
+% Park-Miller generator and the Box-Muller transform (identical sequence in
+% MATLAB and Octave), then interpolated on the simulation grid.
+if strcmp(scen, 'step')
+  v = 9*ones(size(t));  v(t >= 10) = 11;  v(t >= 25) = 8;
+  return
+end
+tg = 0:1e-3:t(end) + 1e-3;  tq = t;  t = tg;
 n  = numel(t);  dt = t(2) - t(1);
 a  = exp(-dt/P.tau_t);  g = sqrt(1 - a^2)*P.sig_t;
 s  = P.seed;  vt = zeros(1, n);  x = 0;  k = 1;
@@ -156,6 +163,7 @@ v = P.Vm + vt;
 for k = 1:numel(P.Aw)
   v = v + P.Aw(k)*sin(2*pi*P.fw(k)*t);
 end
+v = interp1(t, v, tq);
 end
 
 %% ========================================================================
@@ -176,7 +184,7 @@ end
 %% ========================================================================
 function r = wecs_simulate(P, ctrl, scen)
 Ts = P.Ts;  N = round(P.Tend/Ts);  t = (0:N)*Ts;
-v  = wind_profile(P, t);
+v  = wind_profile(P, t, scen);
 % ---- true plant
 Q = P;  kTw = 1;  dip = false;
 if strcmp(scen, 'robust')
