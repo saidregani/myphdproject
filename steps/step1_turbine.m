@@ -28,7 +28,7 @@ fprintf('T at v_n    = %.3f MN.m\n', Prat/Wn/1e6);
 %% Figure 1: Cp(lambda)
 figure;
 plot(lam, Cp, 'LineWidth', 1.2); grid on;
-xlabel('\lambda'); ylabel('C_p');
+xlabel('\lambda'); ylabel('C_p'); ylim([0 0.5]);
 title('Power coefficient (\beta = 0)');
 
 %% Figure 2: P(Omega) for several wind speeds + MPPT curve
