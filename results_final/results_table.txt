@@ -1,0 +1,37 @@
+STEP
+metric              PI          FP       FPANN
+IAE_W           0.1153    0.073779    0.037389
+RMS_isq       0.061068    0.036649    0.036128
+RMS_igd       0.072669     0.29003      0.2842
+dV_max          58.681      1.6987      1.6738
+dV_dip             NaN         NaN         NaN
+ISE_V           863.86    0.092804    0.095314
+E_kWh           13.862      13.858      13.857
+eta_mppt        97.987      97.959      97.952
+Te_std         0.19751     0.21765     0.24728
+
+NOMINAL
+metric              PI          FP       FPANN
+IAE_W          0.19415     0.14354     0.10455
+RMS_isq       0.056856    0.042615    0.040547
+RMS_igd       0.047333     0.21101     0.20097
+dV_max          9.9507     0.16008     0.15984
+dV_dip             NaN         NaN         NaN
+ISE_V           455.06    0.021929    0.021817
+E_kWh           10.049      10.051      10.043
+eta_mppt        97.731      97.717      97.694
+Te_std         0.17298     0.18663     0.20689
+
+ROBUST
+metric              PI          FP       FPANN
+IAE_W          0.22972     0.17688     0.12644
+RMS_isq       0.062783    0.046659    0.043978
+RMS_igd         6.8014      6.8342      6.4894
+dV_max          9.8785     0.23753     0.24974
+dV_dip          11.311      14.601      13.909
+ISE_V           473.27      2.4131       2.139
+E_kWh           10.979      10.981      10.973
+eta_mppt        97.733      97.718      97.692
+Te_std         0.17607     0.18728     0.21217
+
+Model power-balance check: max |Pw - dE/dt - losses - Pg| / Pn = 6.98e-16
