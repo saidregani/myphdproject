@@ -19,6 +19,10 @@ function RES = PMSG_WECS(mode, opt)
 % Grid side: currents counted from the inverter towards the grid,
 %   vi = Rf*ig + Lf*dig/dt - wg*Lf*[igq; -igd] + vg   (dq, vg aligned on d).
 % Every error is defined as (measured - reference).
+% NON-IDEALITIES (P.real = 1): the controller only sees measurements:
+%   white sensor noise on the currents, the DC voltage, the grid voltage and
+%   the encoder speed (filtered), and the grid voltage contains 5th and 7th
+%   background harmonics. P.real = 0 gives the ideal case.
 %
 % Usage (MATLAB or GNU Octave, no toolbox needed):
 %   RES = PMSG_WECS;          % runs 2 scenarios x 3 controllers, prints the
@@ -36,8 +40,9 @@ if strcmp(mode, 'single')        % one run: opt.scen, opt.ctrl, opt.set (struct)
     for j = 1:numel(f), P = setfield_path(P, f{j}, opt.set.(f{j})); end
   end
   RES = wecs_simulate(P, opt.ctrl, opt.scen);
-  M = RES.M;  fprintf('RES %s %s IAE_W=%.5g RMSisq=%.4g dVmax=%.4g dVdip=%.4g E=%.5g eta=%.4f Testd=%.4g\n', ...
-    opt.scen, opt.ctrl, M.IAE_W, M.RMS_isq, M.dV_max, M.dV_dip, M.E_kWh, M.eta_mppt, M.Te_std);
+  M = RES.M;  fprintf('RES %s %s IAE_W=%.5g RMSisq=%.4g RMSigd=%.4g dVmax=%.4g dVdip=%.4g E=%.5g eta=%.4f Testd=%.4g THD=%.3g\n', ...
+    opt.scen, opt.ctrl, M.IAE_W, M.RMS_isq, M.RMS_igd, M.dV_max, M.dV_dip, M.E_kWh, M.eta_mppt, M.Te_std, M.THD_ig);
+  if isfield(opt, 'export') && opt.export, wecs_export_one(RES); end
   return
 end
 
@@ -95,7 +100,17 @@ P.Wmin  = 0.5*P.Wn;  P.Wmax = P.Wn;            % speed reference range
 % ---- sampling: regular sampling, double update -> Ts = 1/(2 fsw)
 P.Ts   = 1/(2*P.fsw);      % 231.5 us
 P.Tend = 40;               % simulated time [s]
-P.dec  = 10;               % logging decimation
+P.dec  = 2;                % logging decimation (2160 Hz, resolves 300 Hz)
+% ---- non-idealities: measurements and grid
+P.real  = 1;               % 1: realistic measurements and grid, 0: ideal
+P.sn_i  = 5;               % current sensor noise, std [A] (0.2 % of rated)
+P.sn_v  = 1;               % DC-voltage sensor noise, std [V]
+P.sn_vg = 1;               % grid-voltage sensor noise, std [V]
+P.sn_W  = 2e-3;            % encoder speed noise, std [rad/s]
+P.tauW  = 5e-3;            % speed measurement filter [s]
+P.tauvg = 2e-3;            % filter of vgd used for the current reference [s]
+P.h5 = 0.02;  P.h7 = 0.015;  % 5th (neg. seq.) and 7th (pos. seq.) grid harmonics [pu]
+P.nseed = 987654321;       % seed of the sensor noise
 % ---- wind (eq. (80) of the authors' earlier work + realistic turbulence)
 P.Vm   = 8.5;  P.Aw = [1.5 0.2 0.3];  P.fw = [0.03 0.16 0.17];
 P.sig_t = 0.5;  P.tau_t = 1.5;  P.seed = 12345;   % rotor-effective turbulence
@@ -166,6 +181,26 @@ end
 v = interp1(t, v, tq);
 end
 
+function z = sensor_noise(P, m, n)
+% m x n standard normal numbers (Park-Miller + Box-Muller, as for the wind)
+s = P.nseed;  u = zeros(1, m*n + 1);
+for k = 1:numel(u)
+  s = mod(16807*s, 2147483647);  u(k) = s/2147483647;
+end
+h = floor(numel(u)/2);  r = sqrt(-2*log(u(1:h)));
+z = [r.*cos(2*pi*u(h+1:2*h)), r.*sin(2*pi*u(h+1:2*h))];
+z = reshape(z(1:m*n), m, n);
+end
+
+function vg = grid_voltage(P, t, dip)
+% grid voltage in the frame of the fundamental; the 5th (negative sequence)
+% and 7th (positive sequence) harmonics appear at 6*wg in this frame
+k = 1;
+if dip && t >= P.rob.tdip && t < P.rob.tdip + P.rob.ddip, k = 1 - P.rob.kdip; end
+a  = 6*P.wg*t;
+vg = k*P.Vgm*([1; 0] + P.real*(P.h5*[cos(a); -sin(a)] + P.h7*[cos(a); sin(a)]));
+end
+
 %% ========================================================================
 function dx = plant(x, u, Tw, vg, Q)
 % x = [isd isq W Vdc igd igq], u = [vsd vsq vid viq] (converter voltages)
@@ -206,7 +241,9 @@ u   = [us; ui];
 % ---- controller state
 S = struct('vm', v(1), 'Wr', W0, 'dWr', 0, 'zW', 0, 'zy', 0, ...
            'zs', [0;0], 'zg', [0;0], 'isf', [0; isq0], 'igf', [igd0; 0], ...
-           'W', zeros(1, size(P.nn.c, 2)), 'u', u, 'Dh', 0);
+           'W', zeros(1, size(P.nn.c, 2)), 'u', u, 'Dh', 0, 'Wm', W0, 'vgf', P.Vgm);
+% ---- sensor noise (8 channels: isd isq W Vdc igd igq vgd vgq)
+if P.real, Z = sensor_noise(P, 8, N+1); else, Z = zeros(8, N+1); end
 % integrators preloaded so that every controller starts at the equilibrium
 Te0c = 1.5*P.p*P.psi*isq0;                      % torque command seen by the controller
 if strcmp(ctrl, 'PI')
@@ -218,16 +255,20 @@ else
   S.zy = 0;
 end
 % ---- logs
-nl = floor(N/P.dec) + 1;  L = zeros(nl, 18);  kl = 0;
+nl = floor(N/P.dec) + 1;  L = zeros(nl, 24);  kl = 0;
 for k = 1:N+1
   tk = t(k);
-  vg = [P.Vgm; 0];
-  if dip && tk >= P.rob.tdip && tk < P.rob.tdip + P.rob.ddip
-    vg = (1 - P.rob.kdip)*vg;
+  vg = grid_voltage(P, tk, dip);
+  % ---------------- measurements -------------------------------------------
+  nz  = Z(:, k);
+  xm  = x + [P.sn_i*nz(1:2); 0; P.sn_v*nz(4); P.sn_i*nz(5:6)];
+  if P.real                                     % encoder speed, low-pass filtered
+    S.Wm = S.Wm + Ts/P.tauW*(x(3) + P.sn_W*nz(3) - S.Wm);  xm(3) = S.Wm;
   end
+  vgm = vg + P.sn_vg*nz(7:8);
   % ---------------- controller (uses measured x, previous u) -------------
   S.vm = S.vm + Ts/P.tau_a*(v(k) - S.vm);       % anemometer (first-order lag)
-  [unew, S, lg] = controller(P, ctrl, x, S, vg);
+  [unew, S, lg] = controller(P, ctrl, xm, S, vgm);
   % ---------------- logging ---------------------------------------------
   if mod(k-1, P.dec) == 0
     kl = kl + 1;
@@ -235,23 +276,25 @@ for k = 1:N+1
     lam = x(3)*P.R/v(k);
     Pg = 1.5*(vg(1)*x(5) + vg(2)*x(6));  Qg = 1.5*(vg(2)*x(5) - vg(1)*x(6));
     L(kl,:) = [tk, v(k), x', lg.Wr, lg.isqr, lg.igdr, Tw, lam, ...
-               heier_cp(lam)*kTw, Pg, Qg, lg.Dh, lg.Twh];
+               heier_cp(lam)*kTw, Pg, Qg, lg.Dh, lg.Twh, xm'];
   end
   if k > N, break; end
   % ---------------- plant: RK4 over one sample, u held (ZOH) -------------
   % the voltage computed now is applied after one sample (computation delay)
   h  = Ts;  vk = v(k);
+  vh = grid_voltage(P, tk + h/2, dip);  ve = grid_voltage(P, tk + h, dip);
   k1 = plant(x,  u, kTw*aero_torque(Q, x(3), vk),  vg, Q);
-  x2 = x + h/2*k1;  k2 = plant(x2, u, kTw*aero_torque(Q, x2(3), vk), vg, Q);
-  x3 = x + h/2*k2;  k3 = plant(x3, u, kTw*aero_torque(Q, x3(3), vk), vg, Q);
-  x4 = x + h*k3;    k4 = plant(x4, u, kTw*aero_torque(Q, x4(3), vk), vg, Q);
+  x2 = x + h/2*k1;  k2 = plant(x2, u, kTw*aero_torque(Q, x2(3), vk), vh, Q);
+  x3 = x + h/2*k2;  k3 = plant(x3, u, kTw*aero_torque(Q, x3(3), vk), vh, Q);
+  x4 = x + h*k3;    k4 = plant(x4, u, kTw*aero_torque(Q, x4(3), vk), ve, Q);
   x  = x + h/6*(k1 + 2*k2 + 2*k3 + k4);
   u  = unew;
 end
 L = L(1:kl, :);
 r.ctrl = ctrl;  r.scen = scen;
 names = {'t','v','isd','isq','W','Vdc','igd','igq','Wr','isqr','igdr', ...
-         'Tw','lam','Cp','Pg','Qg','Dh','Twh'};
+         'Tw','lam','Cp','Pg','Qg','Dh','Twh', ...
+         'isdm','isqm','Wm','Vdcm','igdm','igqm'};          % last six: measured
 for j = 1:numel(names), r.(names{j}) = L(:, j); end
 r = wecs_metrics(P, Q, r, dip);
 end
@@ -302,10 +345,12 @@ else
   % flatness: dy2/dt = Pin - Pg - 1.5 Rf |ig|^2, imposed dy2/dt = -nu2
   Pgr = Pin - 1.5*P.Rf*(ig'*ig) + P.k21*ey + P.k22*S.zy;
 end
-igdr  = 2*Pgr/(3*vg(1));
+vgd = vg(1);
+if P.real, S.vgf = S.vgf + Ts/P.tauvg*(vg(1) - S.vgf);  vgd = S.vgf; end
+igdr  = 2*Pgr/(3*vgd);
 igdrl = min(max(igdr, -P.Igmax), P.Igmax);
 if igdrl == igdr, S.zy = S.zy + Ts*ey; end
-igr  = [igdrl; -2*P.Qr/(3*vg(1))];
+igr  = [igdrl; -2*P.Qr/(3*vgd)];
 % ---- reference derivatives (first-order filters) ------------------------
 disr = (isr - S.isf)/P.taud;  S.isf = S.isf + Ts*disr;
 digr = (igr - S.igf)/P.taud;  S.igf = S.igf + Ts*digr;
@@ -347,12 +392,21 @@ M.dV_dip  = NaN;  if dip, M.dV_dip = max(abs(r.Vdc(idip) - P.Vdcr)); end
 M.ISE_V   = sum((r.Vdc(win) - P.Vdcr).^2)*dt;            % [V^2 s]
 M.E_kWh   = sum(r.Pg(win))*dt/3.6e6;
 M.eta_mppt = sum(r.Pw(win))/sum(Pmax(win))*100;          % [%]
-M.Te_std  = std(diff(r.Te(win)))/dt/1e6;                 % torque activity [MN.m/s]
+nf   = max(1, round(0.05/dt));                              % 50 ms moving average
+Tef  = filter(ones(nf, 1)/nf, 1, r.Te);
+M.Te_std  = std(diff(Tef(win)))/dt/1e6;                  % torque activity [MN.m/s]
+% grid-current THD over 10 cycles (20 to 20.2 s), harmonics 2 to 20
+t0  = min(20, r.t(end) - 0.21);
+iw  = find(r.t >= t0 - dt/2, 1) + (0:round(10/P.fg/dt) - 1);
+th  = P.wg*r.t(iw);
+ia  = r.igd(iw).*cos(th) - r.igq(iw).*sin(th);
+F   = abs(fft(ia));
+M.THD_ig = 100*sqrt(sum(F(1 + 10*(2:20)).^2))/F(11);     % [%]
 r.M = M;
 end
 
 function wecs_table(RES, scens, ctrls)
-f = {'IAE_W','RMS_isq','RMS_igd','dV_max','dV_dip','ISE_V','E_kWh','eta_mppt','Te_std'};
+f = {'IAE_W','RMS_isq','RMS_igd','dV_max','dV_dip','ISE_V','E_kWh','eta_mppt','Te_std','THD_ig'};
 for s = 1:numel(scens)
   fprintf('\n%s\n%-10s', upper(scens{s}), 'metric');
   fprintf('%12s', ctrls{:});  fprintf('\n');
@@ -383,15 +437,19 @@ end
 function wecs_export(RES, scens, ctrls)
 for s = 1:numel(scens)
   for c = 1:numel(ctrls)
-    r = RES.(scens{s}).(ctrls{c});
-    M = [r.t r.v r.W r.Wr r.Tw r.Te r.Cp r.lam r.isd r.isq r.isqr r.Vdc ...
-         r.igd r.igq r.igdr r.Pg r.Qg r.Dh r.Twh];
-    fid = fopen(sprintf('res_%s_%s.csv', scens{s}, ctrls{c}), 'w');
-    fprintf(fid, 't,v,W,Wr,Tw,Te,Cp,lam,isd,isq,isqr,Vdc,igd,igq,igdr,Pg,Qg,Dh,Twh\n');
-    fprintf(fid, [repmat('%.7g,', 1, size(M, 2)-1) '%.7g\n'], M');
-    fclose(fid);
+    wecs_export_one(RES.(scens{s}).(ctrls{c}));
   end
 end
+end
+
+function wecs_export_one(r)
+M = [r.t r.v r.W r.Wr r.Tw r.Te r.Cp r.lam r.isd r.isq r.isqr r.Vdc ...
+     r.igd r.igq r.igdr r.Pg r.Qg r.Dh r.Twh r.isdm r.isqm r.Wm r.Vdcm r.igdm r.igqm];
+fid = fopen(sprintf('res_%s_%s.csv', r.scen, r.ctrl), 'w');
+fprintf(fid, ['t,v,W,Wr,Tw,Te,Cp,lam,isd,isq,isqr,Vdc,igd,igq,igdr,Pg,Qg,Dh,Twh,' ...
+              'isdm,isqm,Wm,Vdcm,igdm,igqm\n']);
+fprintf(fid, [repmat('%.7g,', 1, size(M, 2)-1) '%.7g\n'], M');
+fclose(fid);
 end
 
 function wecs_plots(RES, P)
