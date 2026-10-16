@@ -109,6 +109,7 @@ P.sn_vg = 1;               % grid-voltage sensor noise, std [V]
 P.sn_W  = 2e-3;            % encoder speed noise, std [rad/s]
 P.tauW  = 5e-3;            % speed measurement filter [s]
 P.tauvg = 2e-3;            % filter of vgd used for the current reference [s]
+P.tauP  = 2e-3;            % filter of the feedforward power Pdc [s]
 P.h5 = 0.02;  P.h7 = 0.015;  % 5th (neg. seq.) and 7th (pos. seq.) grid harmonics [pu]
 P.nseed = 987654321;       % seed of the sensor noise
 % ---- wind (eq. (80) of the authors' earlier work + realistic turbulence)
@@ -241,7 +242,8 @@ u   = [us; ui];
 % ---- controller state
 S = struct('vm', v(1), 'Wr', W0, 'dWr', 0, 'zW', 0, 'zy', 0, ...
            'zs', [0;0], 'zg', [0;0], 'isf', [0; isq0], 'igf', [igd0; 0], ...
-           'W', zeros(1, size(P.nn.c, 2)), 'u', u, 'Dh', 0, 'Wm', W0, 'vgf', P.Vgm);
+           'W', zeros(1, size(P.nn.c, 2)), 'u', u, 'Dh', 0, 'Wm', W0, 'vgf', P.Vgm, ...
+           'Pf', -1.5*(us'*[0; isq0]));
 % ---- sensor noise (8 channels: isd isq W Vdc igd igq vgd vgq)
 if P.real, Z = sensor_noise(P, 8, N+1); else, Z = zeros(8, N+1); end
 % integrators preloaded so that every controller starts at the equilibrium
@@ -336,6 +338,7 @@ S.Dh = Dh;
 isr  = [0; Terl/(1.5*P.p*P.psi)];
 % ---- DC-link loop -> igd* ------------------------------------------------
 Pin  = -1.5*(S.u(1)*isd + S.u(2)*isq);         % power entering the DC link
+if P.real, S.Pf = S.Pf + Ts/P.tauP*(Pin - S.Pf);  Pin = S.Pf; end   % filtered
 y2   = 0.5*P.C*Vdc^2 + 0.75*P.Lf*(ig'*ig);
 y2r  = 0.5*P.C*P.Vdcr^2 + 0.75*P.Lf*(S.igf'*S.igf);
 ey   = y2 - y2r;
