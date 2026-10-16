@@ -64,58 +64,63 @@ new_system(mdl);  open_system(mdl);
 set_param(mdl, 'SolverType', 'Fixed-step', 'Solver', 'ode4', 'FixedStep', 'Ts', ...
           'StopTime', 'Tend', 'InitFcn', initCode, 'ReturnWorkspaceOutputs', 'on');
 
-%% Top level
-mk_wind(mdl, 'Wind', [30 40 130 100]);
-mk_turbine(mdl, 'Turbine', [230 40 330 120], 'kTw');
-mk_pmsg(mdl, 'PMSG and shaft', [430 40 530 140]);
-mk_dclink(mdl, 'DC link', [630 40 730 220]);
-mk_grid(mdl, 'L filter and grid', [830 40 930 160]);
-mk_controller(mdl, 'Control (flatness + PBC + RBF-ANN)', [430 300 630 500]);
+%% Top level: plant on the first row, control below, signals linked by Goto/From tags
+C = 'Control (flatness + PBC + RBF-ANN)';
+mk_wind(mdl, 'Wind', [80 100 180 150]);
+mk_turbine(mdl, 'Turbine', [380 100 480 220], 'kTw');
+mk_pmsg(mdl, 'PMSG and shaft', [680 100 780 260]);
+mk_dclink(mdl, 'DC link', [980 100 1080 400]);
+mk_grid(mdl, 'L filter and grid', [1280 100 1380 290]);
+mk_controller(mdl, C, [680 520 900 820]);
+outs = {'Wind/1', 'v'; 'Turbine/1', 'Tw'; 'Turbine/2', 'Cp'; 'PMSG and shaft/1', 'isd';
+        'PMSG and shaft/2', 'isq'; 'PMSG and shaft/3', 'W'; 'PMSG and shaft/4', 'Te'; 'DC link/1', 'Vdc';
+        'L filter and grid/1', 'igd'; 'L filter and grid/2', 'igq'; 'L filter and grid/3', 'vgd';
+        'L filter and grid/4', 'Pg'; 'L filter and grid/5', 'Qg'; [C '/1'], 'vsd'; [C '/2'], 'vsq';
+        [C '/3'], 'vid'; [C '/4'], 'viq'; [C '/5'], 'Wr'; [C '/6'], 'isqr'; [C '/7'], 'igdr'; [C '/8'], 'Dh'};
+for k = 1:size(outs, 1), tag_out(mdl, outs{k,1}, outs{k,2}); end
+add_block('simulink/Sinks/Terminator', [mdl '/Term lambda'], 'Position', [520 182 535 197], 'ShowName', 'off');
+add_line(mdl, 'Turbine/3', 'Term lambda/1');
+ins = {'v', 'Turbine/1'; 'W', 'Turbine/2'; 'vsd', 'PMSG and shaft/1'; 'vsq', 'PMSG and shaft/2';
+       'Tw', 'PMSG and shaft/3'; 'vsd', 'DC link/1'; 'vsq', 'DC link/2'; 'isd', 'DC link/3';
+       'isq', 'DC link/4'; 'vid', 'DC link/5'; 'viq', 'DC link/6'; 'igd', 'DC link/7'; 'igq', 'DC link/8';
+       'vid', 'L filter and grid/1'; 'viq', 'L filter and grid/2'; 'v', [C '/1']; 'W', [C '/2'];
+       'isd', [C '/3']; 'isq', [C '/4']; 'Vdc', [C '/5']; 'igd', [C '/6']; 'igq', [C '/7']; 'vgd', [C '/8']};
+for k = 1:size(ins, 1), tag_in(mdl, ins{k,1}, ins{k,2}); end
 
-W = @(a, b) add_line(mdl, a, b, 'autorouting', 'on');
-W('Wind/1', 'Turbine/1');                         W('Wind/1', 'Control (flatness + PBC + RBF-ANN)/1');
-W('PMSG and shaft/3', 'Turbine/2');               W('PMSG and shaft/3', 'Control (flatness + PBC + RBF-ANN)/2');
-W('Turbine/1', 'PMSG and shaft/3');
-W('Control (flatness + PBC + RBF-ANN)/1', 'PMSG and shaft/1');  W('Control (flatness + PBC + RBF-ANN)/1', 'DC link/1');
-W('Control (flatness + PBC + RBF-ANN)/2', 'PMSG and shaft/2');  W('Control (flatness + PBC + RBF-ANN)/2', 'DC link/2');
-W('PMSG and shaft/1', 'DC link/3');               W('PMSG and shaft/1', 'Control (flatness + PBC + RBF-ANN)/3');
-W('PMSG and shaft/2', 'DC link/4');               W('PMSG and shaft/2', 'Control (flatness + PBC + RBF-ANN)/4');
-W('Control (flatness + PBC + RBF-ANN)/3', 'DC link/5');  W('Control (flatness + PBC + RBF-ANN)/3', 'L filter and grid/1');
-W('Control (flatness + PBC + RBF-ANN)/4', 'DC link/6');  W('Control (flatness + PBC + RBF-ANN)/4', 'L filter and grid/2');
-W('L filter and grid/1', 'DC link/7');            W('L filter and grid/1', 'Control (flatness + PBC + RBF-ANN)/6');
-W('L filter and grid/2', 'DC link/8');            W('L filter and grid/2', 'Control (flatness + PBC + RBF-ANN)/7');
-W('DC link/1', 'Control (flatness + PBC + RBF-ANN)/5');
-W('L filter and grid/3', 'Control (flatness + PBC + RBF-ANN)/8');
-
-%% Logging (To Workspace) and scopes
-add_block('simulink/Sources/Clock', [mdl '/Clock'], 'Position', [30 560 60 590]);
-logs = {'t', 'Clock/1'; 'v', 'Wind/1'; 'W', 'PMSG and shaft/3'; 'Wr', 'Control (flatness + PBC + RBF-ANN)/5';
-        'Tw', 'Turbine/1'; 'Cp', 'Turbine/2'; 'Te', 'PMSG and shaft/4'; 'isd', 'PMSG and shaft/1';
-        'isq', 'PMSG and shaft/2'; 'isqr', 'Control (flatness + PBC + RBF-ANN)/6'; 'Vdc', 'DC link/1';
-        'igd', 'L filter and grid/1'; 'igq', 'L filter and grid/2'; 'igdr', 'Control (flatness + PBC + RBF-ANN)/7';
-        'Pg', 'L filter and grid/4'; 'Qg', 'L filter and grid/5'; 'Dh', 'Control (flatness + PBC + RBF-ANN)/8'};
-for k = 1:size(logs, 1)
-  y = 540 + 40*k;
-  add_block('simulink/Sinks/To Workspace', [mdl '/log_' logs{k,1}], 'Position', [1100 y 1170 y+25], ...
-            'VariableName', logs{k,1}, 'SaveFormat', 'Array', 'SampleTime', 'Tlog', 'MaxDataPoints', 'inf');
-  W(logs{k,2}, ['log_' logs{k,1} '/1']);
+%% Measurements (right side): To Workspace and scopes fed by From tags
+add_block('simulink/Sources/Clock', [mdl '/Clock'], 'Position', [1600 100 1630 130]);
+add_block('simulink/Sinks/To Workspace', [mdl '/log_t'], 'Position', [1680 100 1750 130], ...
+          'VariableName', 't', 'SaveFormat', 'Array', 'SampleTime', 'Tlog', 'MaxDataPoints', 'inf');
+add_line(mdl, 'Clock/1', 'log_t/1');
+logs = {'v', 'W', 'Wr', 'Tw', 'Cp', 'Te', 'isd', 'isq', 'isqr', 'Vdc', 'igd', 'igq', 'igdr', 'Pg', 'Qg', 'Dh'};
+for k = 1:numel(logs)
+  y = 100 + 45*k;
+  add_block('simulink/Sinks/To Workspace', [mdl '/log_' logs{k}], 'Position', [1680 y 1750 y+30], ...
+            'VariableName', logs{k}, 'SaveFormat', 'Array', 'SampleTime', 'Tlog', 'MaxDataPoints', 'inf');
+  tag_in(mdl, logs{k}, ['log_' logs{k} '/1']);
 end
-scopes = {'Scope speed', 'PMSG and shaft/3', 'Control (flatness + PBC + RBF-ANN)/5';
-          'Scope isq', 'PMSG and shaft/2', 'Control (flatness + PBC + RBF-ANN)/6';
-          'Scope igd', 'L filter and grid/1', 'Control (flatness + PBC + RBF-ANN)/7';
-          'Scope powers', 'L filter and grid/4', 'L filter and grid/5'};
+scopes = {'Scope speed', 'W', 'Wr'; 'Scope isq', 'isq', 'isqr'; 'Scope igd', 'igd', 'igdr'; 'Scope powers', 'Pg', 'Qg'};
 for k = 1:size(scopes, 1)
-  y = 600 + 90*k;
-  add_block('simulink/Signal Routing/Mux', [mdl '/Mux ' scopes{k,1}], 'Inputs', '2', 'Position', [900 y 905 y+40]);
-  add_block('simulink/Sinks/Scope', [mdl '/' scopes{k,1}], 'Position', [950 y 980 y+40]);
-  W(scopes{k,2}, ['Mux ' scopes{k,1} '/1']);  W(scopes{k,3}, ['Mux ' scopes{k,1} '/2']);
-  W(['Mux ' scopes{k,1} '/1'], [scopes{k,1} '/1']);
+  y = 100 + 110*(k-1);
+  add_block('simulink/Signal Routing/Mux', [mdl '/Mux ' scopes{k,1}], 'Inputs', '2', ...
+            'Position', [2000 y 2005 y+50], 'ShowName', 'off');
+  add_block('simulink/Sinks/Scope', [mdl '/' scopes{k,1}], 'Position', [2060 y+5 2100 y+45]);
+  tag_in(mdl, scopes{k,2}, ['Mux ' scopes{k,1} '/1']);  tag_in(mdl, scopes{k,3}, ['Mux ' scopes{k,1} '/2']);
+  add_line(mdl, ['Mux ' scopes{k,1} '/1'], [scopes{k,1} '/1']);
 end
-add_block('simulink/Sinks/Scope', [mdl '/Scope Vdc'], 'Position', [950 1100 980 1140]);  W('DC link/1', 'Scope Vdc/1');
-add_block('simulink/Sinks/Scope', [mdl '/Scope ANN'], 'Position', [950 1180 980 1220]);
-W('Control (flatness + PBC + RBF-ANN)/8', 'Scope ANN/1');
-
-arrange(mdl);
+add_block('simulink/Sinks/Scope', [mdl '/Scope Vdc'], 'Position', [2060 545 2100 585]);
+tag_in(mdl, 'Vdc', 'Scope Vdc/1');
+add_block('simulink/Sinks/Scope', [mdl '/Scope ANN'], 'Position', [2060 645 2100 685]);
+tag_in(mdl, 'Dh', 'Scope ANN/1');
+try
+  n1 = Simulink.Annotation(mdl, 'PLANT: wind, turbine, PMSG, back-to-back converter, DC link, L filter, grid');
+  n1.Position = [80 60];
+  n2 = Simulink.Annotation(mdl, 'CONTROL: MPPT, flatness (speed, DC link), PBC (MSC, GSC), RBF neural network');
+  n2.Position = [680 480];
+  n3 = Simulink.Annotation(mdl, 'MEASUREMENTS');
+  n3.Position = [1600 60];
+catch
+end
 save_system(mdl, fullfile(here, [mdl '.slx']));
 fprintf('Model %s.slx created in %s. Open it and press Run (scopes show the results).\n', mdl, here);
 open_system(mdl);
@@ -308,44 +313,48 @@ end
 function mk_controller(parent, name, pos)
 s = subsys(parent, name, pos, {'v', 'W', 'isd', 'isq', 'Vdc', 'igd', 'igq', 'vgd'}, ...
            {'vsd', 'vsq', 'vid', 'viq', 'Wr', 'isqr', 'igdr', 'Dh'});
-mk_mppt(s, 'MPPT reference', [150 40 250 120]);
-mk_turbine(s, 'Turbine model', [300 40 400 120], '1');
-mk_rbf(s, 'RBF network', [300 160 400 260]);
-mk_speed(s, 'Flatness speed loop', [450 40 550 160]);
-mk_dcloop(s, 'Flatness DC-link loop', [450 300 550 460]);
-mk_pbc_msc(s, 'PBC machine side', [650 40 750 160]);
-mk_pbc_gsc(s, 'PBC grid side', [650 300 750 420]);
+outs = {'vsd', 'vsq', 'vid', 'viq', 'Wr', 'isqr', 'igdr', 'Dh'};
+for k = 1:numel(outs), set_param([s '/' outs{k}], 'Position', [1500 40+60*k 1530 54+60*k]); end
+ins = {'v', 'W', 'isd', 'isq', 'Vdc', 'igd', 'igq', 'vgd'};
+for k = 1:numel(ins), set_param([s '/' ins{k}], 'Position', [20 40+60*k 50 54+60*k]); end
+mk_mppt(s, 'MPPT reference', [250 60 350 170]);
+mk_turbine(s, 'Turbine model', [250 260 350 380], '1');
+mk_rbf(s, 'RBF network', [250 470 350 610]);
+mk_speed(s, 'Flatness speed loop', [650 60 750 250]);
+mk_dcloop(s, 'Flatness DC-link loop', [650 330 750 650]);
+mk_pbc_msc(s, 'PBC machine side', [1000 60 1100 240]);
+mk_pbc_gsc(s, 'PBC grid side', [1000 330 1100 510]);
+nm = {'Delay vsd', 'Delay vsq', 'Delay vid', 'Delay viq'};  ic = {'us0(1)', 'us0(2)', 'ui0(1)', 'ui0(2)'};
 for k = 1:4
-  nm = {'Delay vsd', 'Delay vsq', 'Delay vid', 'Delay viq'};  ic = {'us0(1)', 'us0(2)', 'ui0(1)', 'ui0(2)'};
   add_block('simulink/Discrete/Unit Delay', [s '/' nm{k}], 'InitialCondition', ic{k}, 'SampleTime', 'Ts', ...
-            'Position', [800 40+60*k 840 70+60*k]);
+            'Position', [1300 80+90*k 1340 110+90*k]);
 end
-add_block('simulink/Sinks/Terminator', [s '/T1'], 'Position', [450 200 470 220]);
-add_block('simulink/Sinks/Terminator', [s '/T2'], 'Position', [450 240 470 260]);
-w(s, 'v/1', 'MPPT reference/1');
-w(s, 'MPPT reference/1', 'Turbine model/1');  w(s, 'MPPT reference/1', 'RBF network/2');
-w(s, 'MPPT reference/2', 'Flatness speed loop/2');  w(s, 'MPPT reference/2', 'Wr/1');
-w(s, 'MPPT reference/3', 'Flatness speed loop/3');
-w(s, 'W/1', 'Turbine model/2');  w(s, 'W/1', 'RBF network/1');  w(s, 'W/1', 'Flatness speed loop/1');
-w(s, 'W/1', 'PBC machine side/4');
-w(s, 'Turbine model/1', 'Flatness speed loop/4');  w(s, 'Turbine model/2', 'T1/1');  w(s, 'Turbine model/3', 'T2/1');
-w(s, 'RBF network/1', 'Flatness speed loop/5');  w(s, 'RBF network/1', 'Dh/1');
-w(s, 'Flatness speed loop/1', 'PBC machine side/3');  w(s, 'Flatness speed loop/1', 'isqr/1');
-w(s, 'Flatness speed loop/2', 'RBF network/3');  w(s, 'Flatness speed loop/3', 'RBF network/4');
-w(s, 'isd/1', 'Flatness DC-link loop/4');  w(s, 'isd/1', 'PBC machine side/1');
-w(s, 'isq/1', 'Flatness DC-link loop/5');  w(s, 'isq/1', 'PBC machine side/2');
-w(s, 'Vdc/1', 'Flatness DC-link loop/1');  w(s, 'Vdc/1', 'PBC machine side/5');  w(s, 'Vdc/1', 'PBC grid side/5');
-w(s, 'igd/1', 'Flatness DC-link loop/2');  w(s, 'igd/1', 'PBC grid side/1');
-w(s, 'igq/1', 'Flatness DC-link loop/3');  w(s, 'igq/1', 'PBC grid side/2');
-w(s, 'vgd/1', 'Flatness DC-link loop/8');  w(s, 'vgd/1', 'PBC grid side/4');
-w(s, 'PBC machine side/1', 'Delay vsd/1');  w(s, 'PBC machine side/2', 'Delay vsq/1');
-w(s, 'Delay vsd/1', 'vsd/1');  w(s, 'Delay vsd/1', 'Flatness DC-link loop/6');
-w(s, 'Delay vsq/1', 'vsq/1');  w(s, 'Delay vsq/1', 'Flatness DC-link loop/7');
-w(s, 'PBC grid side/1', 'Delay vid/1');  w(s, 'PBC grid side/2', 'Delay viq/1');
-w(s, 'Delay vid/1', 'vid/1');  w(s, 'Delay viq/1', 'viq/1');
-w(s, 'PBC grid side/3', 'Flatness DC-link loop/9');
-w(s, 'Flatness DC-link loop/1', 'PBC grid side/3');  w(s, 'Flatness DC-link loop/1', 'igdr/1');
-arrange(s);
+add_block('simulink/Sinks/Terminator', [s '/T1'], 'Position', [420 330 435 345], 'ShowName', 'off');
+add_block('simulink/Sinks/Terminator', [s '/T2'], 'Position', [420 360 435 375], 'ShowName', 'off');
+add_line(s, 'Turbine model/2', 'T1/1');  add_line(s, 'Turbine model/3', 'T2/1');
+src = {'v/1', 'v'; 'W/1', 'W'; 'isd/1', 'isd'; 'isq/1', 'isq'; 'Vdc/1', 'Vdc'; 'igd/1', 'igd';
+       'igq/1', 'igq'; 'vgd/1', 'vgd'; 'MPPT reference/1', 'vm'; 'MPPT reference/2', 'Wr';
+       'MPPT reference/3', 'dWr'; 'Turbine model/1', 'Twh'; 'RBF network/1', 'Dh';
+       'Flatness speed loop/1', 'isqr'; 'Flatness speed loop/2', 'eW'; 'Flatness speed loop/3', 'enW';
+       'Flatness DC-link loop/1', 'igdr'; 'PBC machine side/1', 'vsd_c'; 'PBC machine side/2', 'vsq_c';
+       'PBC grid side/1', 'vid_c'; 'PBC grid side/2', 'viq_c'; 'PBC grid side/3', 'igf';
+       'Delay vsd/1', 'vsd_a'; 'Delay vsq/1', 'vsq_a'; 'Delay vid/1', 'vid_a'; 'Delay viq/1', 'viq_a'};
+for k = 1:size(src, 1), tag_out(s, src{k,1}, src{k,2}); end
+dst = {'v', 'MPPT reference/1'; 'vm', 'Turbine model/1'; 'W', 'Turbine model/2';
+       'W', 'RBF network/1'; 'vm', 'RBF network/2'; 'eW', 'RBF network/3'; 'enW', 'RBF network/4';
+       'W', 'Flatness speed loop/1'; 'Wr', 'Flatness speed loop/2'; 'dWr', 'Flatness speed loop/3';
+       'Twh', 'Flatness speed loop/4'; 'Dh', 'Flatness speed loop/5';
+       'Vdc', 'Flatness DC-link loop/1'; 'igd', 'Flatness DC-link loop/2'; 'igq', 'Flatness DC-link loop/3';
+       'isd', 'Flatness DC-link loop/4'; 'isq', 'Flatness DC-link loop/5'; 'vsd_a', 'Flatness DC-link loop/6';
+       'vsq_a', 'Flatness DC-link loop/7'; 'vgd', 'Flatness DC-link loop/8'; 'igf', 'Flatness DC-link loop/9';
+       'isd', 'PBC machine side/1'; 'isq', 'PBC machine side/2'; 'isqr', 'PBC machine side/3';
+       'W', 'PBC machine side/4'; 'Vdc', 'PBC machine side/5';
+       'igd', 'PBC grid side/1'; 'igq', 'PBC grid side/2'; 'igdr', 'PBC grid side/3';
+       'vgd', 'PBC grid side/4'; 'Vdc', 'PBC grid side/5';
+       'vsd_c', 'Delay vsd/1'; 'vsq_c', 'Delay vsq/1'; 'vid_c', 'Delay vid/1'; 'viq_c', 'Delay viq/1';
+       'vsd_a', 'vsd/1'; 'vsq_a', 'vsq/1'; 'vid_a', 'vid/1'; 'viq_a', 'viq/1';
+       'Wr', 'Wr/1'; 'isqr', 'isqr/1'; 'igdr', 'igdr/1'; 'Dh', 'Dh/1'};
+for k = 1:size(dst, 1), tag_in(s, dst{k,1}, dst{k,2}); end
 end
 
 function mk_mppt(parent, name, pos)
@@ -586,4 +595,30 @@ b(s, 'Term', 'simulink/Sinks/Terminator');
 w(s, 'vi lim/1', 'Demux/1');  w(s, 'Demux/1', 'vid/1');  w(s, 'Demux/2', 'viq/1');
 w(s, 'ig filter/1', 'Demux igf/1');  w(s, 'Demux igf/1', 'igf/1');  w(s, 'Demux igf/2', 'Term/1');
 arrange(s);
+end
+
+function tag_out(sys, src, tag)
+% subsystem output -> Goto block placed just right of the port
+persistent n
+if isempty(n), n = 0; end
+n = n + 1;
+i = find(src == '/', 1, 'last');  blk = src(1:i-1);  k = str2double(src(i+1:end));
+ph = get_param([sys '/' blk], 'PortHandles');  pp = get_param(ph.Outport(k), 'Position');
+g = sprintf('Goto %d', n);
+add_block('simulink/Signal Routing/Goto', [sys '/' g], 'GotoTag', tag, 'ShowName', 'off', ...
+          'Position', [pp(1)+30 pp(2)-9 pp(1)+90 pp(2)+9]);
+add_line(sys, src, [g '/1']);
+end
+
+function tag_in(sys, tag, dst)
+% From block placed just left of the input port -> subsystem/block input
+persistent n
+if isempty(n), n = 0; end
+n = n + 1;
+i = find(dst == '/', 1, 'last');  blk = dst(1:i-1);  k = str2double(dst(i+1:end));
+ph = get_param([sys '/' blk], 'PortHandles');  pp = get_param(ph.Inport(k), 'Position');
+f = sprintf('From %d', n);
+add_block('simulink/Signal Routing/From', [sys '/' f], 'GotoTag', tag, 'ShowName', 'off', ...
+          'Position', [pp(1)-90 pp(2)-9 pp(1)-30 pp(2)+9]);
+add_line(sys, [f '/1'], dst);
 end
