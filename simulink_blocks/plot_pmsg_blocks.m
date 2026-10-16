@@ -1,0 +1,21 @@
+%% Plots of PMSG_WECS_blocks (run after: out = sim('PMSG_WECS_blocks');)
+g = @(n) squeeze(out.get(n));
+t = g('t');
+figure('Name', 'Reference vs measured');
+subplot(3,2,1); plot(t, g('W'), 'r', 'LineWidth', 1.5); hold on; plot(t, g('Wr'), 'k--'); grid on;
+ylabel('\Omega (rad/s)'); legend('\Omega', '\Omega^*');
+subplot(3,2,2); plot(t, g('Vdc'), 'r', 'LineWidth', 1.5); hold on; plot(t, Vdcr*ones(size(t)), 'k--'); grid on;
+ylabel('V_{dc} (V)'); legend('V_{dc}', 'V_{dc}^*');
+subplot(3,2,3); plot(t, g('isq'), 'r', 'LineWidth', 1.5); hold on; plot(t, g('isqr'), 'k--'); grid on;
+ylabel('i_{sq} (A)'); legend('i_{sq}', 'i_{sq}^*');
+subplot(3,2,4); plot(t, g('isd'), 'r', 'LineWidth', 1.5); hold on; plot(t, 0*t, 'k--'); grid on;
+ylabel('i_{sd} (A)'); legend('i_{sd}', 'i_{sd}^*');
+subplot(3,2,5); plot(t, g('igd'), 'r', 'LineWidth', 1.5); hold on; plot(t, g('igdr'), 'k--'); grid on;
+ylabel('i_{gd} (A)'); xlabel('t (s)'); legend('i_{gd}', 'i_{gd}^*');
+subplot(3,2,6); plot(t, g('igq'), 'r', 'LineWidth', 1.5); hold on; plot(t, 0*t, 'k--'); grid on;
+ylabel('i_{gq} (A)'); xlabel('t (s)'); legend('i_{gq}', 'i_{gq}^*');
+figure('Name', 'Wind, Cp, powers and ANN');
+subplot(4,1,1); plot(t, g('v')); grid on; ylabel('v (m/s)');
+subplot(4,1,2); plot(t, g('Cp')); grid on; ylabel('C_p'); ylim([0 0.6]);
+subplot(4,1,3); plot(t, g('Pg')/1e6, t, g('Qg')/1e6); grid on; ylabel('MW, Mvar'); legend('P_g', 'Q_g');
+subplot(4,1,4); plot(t, g('Dh')/1e3); grid on; ylabel('\Delta estimate (kN.m)'); xlabel('t (s)');
