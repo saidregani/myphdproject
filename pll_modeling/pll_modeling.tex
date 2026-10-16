@@ -1,0 +1,125 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern,amsmath,amssymb,booktabs}
+\usepackage[a4paper,margin=1.3cm,top=1.0cm,bottom=1.0cm]{geometry}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlength{\abovedisplayskip}{4pt}\setlength{\belowdisplayskip}{4pt}
+\setlength{\abovedisplayshortskip}{2pt}\setlength{\belowdisplayshortskip}{2pt}
+\pagestyle{empty}
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\sat}{\operatorname{sat}}
+\begin{document}
+
+\begin{center}
+{\large\bfseries Modélisation de la PLL Super-Twisting à gain variable $N_F$}
+\end{center}
+\vspace{-6pt}\small
+
+La PLL (bloc \texttt{PLL}) estime la phase $\hat\theta$, la pulsation $\hat\omega$ et la fréquence $\hat f$ de la tension du réseau $v_{abc}$. Elle comprend une transformation de Park, une erreur de phase normalisée, un correcteur (PI ou Super-Twisting, choisi par le commutateur \texttt{choix\_pll}) et un oscillateur numérique.
+
+\textbf{1. Transformation de Park} (axe $d$ à $90^\circ$ en retard sur la phase $a$, bloc \texttt{abc to dq0}) :
+\begin{equation}
+\begin{bmatrix} v_d\\ v_q\\ v_0\end{bmatrix}=\frac{2}{3}
+\begin{bmatrix}
+\sin\hat\theta & \sin(\hat\theta-\frac{2\pi}{3}) & \sin(\hat\theta+\frac{2\pi}{3})\\
+\cos\hat\theta & \cos(\hat\theta-\frac{2\pi}{3}) & \cos(\hat\theta+\frac{2\pi}{3})\\
+\frac12 & \frac12 & \frac12
+\end{bmatrix}
+\begin{bmatrix} v_a\\ v_b\\ v_c\end{bmatrix}.
+\end{equation}
+Pour un réseau équilibré $v_a=V_m\sin\theta_g$, $v_b=V_m\sin(\theta_g-\frac{2\pi}{3})$, $v_c=V_m\sin(\theta_g+\frac{2\pi}{3})$, avec l'erreur de phase $\delta=\theta_g-\hat\theta$ :
+\begin{equation}
+v_d=V_m\cos\delta,\qquad v_q=V_m\sin\delta,\qquad v_0=0 .
+\end{equation}
+La composante $v_0$ n'est pas utilisée (\texttt{Term\_v0}). À l'accrochage ($\delta=0$) : $v_d=V_m$ et $v_q=0$.
+
+\textbf{2. Erreur normalisée} (bloc \texttt{e\_norm}) : l'erreur est rendue indépendante de l'amplitude du réseau :
+\begin{equation}
+e=\frac{v_q}{\sqrt{v_d^2+v_q^2}+1}=\frac{V_m}{V_m+1}\,\sin\delta\;\approx\;\sin\delta\;\approx\;\delta .
+\end{equation}
+Le terme $+1$ (en V) évite la division par zéro ; il est négligeable devant $V_m=325{,}3$ V.
+
+\textbf{3. Oscillateur et dynamique de l'erreur} (blocs \texttt{somme\_w}, \texttt{Int\_theta}, \texttt{mod\_2pi}, \texttt{vers\_Hz}) :
+\begin{equation}
+\hat\omega=\omega_0+\Delta\omega,\qquad
+\hat\theta=\operatorname{mod}\!\Big(\int\hat\omega\,dt,\;2\pi\Big),\qquad
+\hat f=\frac{\hat\omega}{2\pi}.
+\end{equation}
+Avec $\rho(t)=\omega_g(t)-\omega_0$ l'écart de pulsation du réseau, la dynamique de l'erreur est :
+\begin{equation}
+\dot\delta=\omega_g-\hat\omega=\rho(t)-\Delta\omega .
+\end{equation}
+
+\textbf{4. Correcteur PI} (\texttt{choix\_pll} en haut, bloc \texttt{PI\_pll}) :
+\begin{equation}
+\Delta\omega=\sat_{\pm\Delta\omega_{\max}}\!\Big(K_p\,v_q+K_i\!\int v_q\,dt\Big),
+\end{equation}
+avec un anti-windup par \emph{clamping}. Linéarisée ($v_q\approx V_m\delta$), la boucle a pour polynôme caractéristique $s^2+K_pV_m\,s+K_iV_m=s^2+2\zeta\omega_n s+\omega_n^2$. On en déduit $K_p=2\zeta\omega_n/V_m$ et $K_i=\omega_n^2/V_m$.
+
+\textbf{5. Correcteur Super-Twisting à gain variable} (\texttt{choix\_pll} en bas ; blocs \texttt{terme\_k1}, \texttt{signe\_e}, \texttt{NFp\_x\_k1}, \texttt{NFp\_x\_k2}, \texttt{gain\_k2}, \texttt{integ\_z}, \texttt{somme\_ST}) :
+\begin{equation}
+\Delta\omega=k_1\,N_F(e)\,|e|^{1/2}\sgn(e)+z,\qquad
+\dot z=k_2\,N_F^2(e)\,\sgn(e).
+\end{equation}
+Avec $x_1=e\approx\delta$ et $x_2=\rho-z$, la boucle fermée prend la forme Super-Twisting :
+\begin{equation}
+\dot x_1\approx-k_1N_F(x_1)\,|x_1|^{1/2}\sgn(x_1)+x_2,\qquad
+\dot x_2=-k_2N_F^2(x_1)\,\sgn(x_1)+\dot\rho(t).
+\end{equation}
+Les gains effectifs sont $\lambda=k_1N_F$ et $\alpha=k_2N_F^2$. Pour $|\dot\rho|\le C$, la condition suffisante de Levant (1993) est $\alpha>C$ et $\lambda^2\ge 4C(\alpha+C)/(\alpha-C)$, calculée à $N_F$ figé. Elle ne fait que se renforcer quand $N_F$ augmente : il suffit donc de la vérifier pour $N_F=1$. Pour un échelon de fréquence, $\dot\rho=0$ après l'échelon ($C=0$). L'échelon agit alors comme une condition initiale sur $x_2$, et $(x_1,x_2)\to(0,0)$ en temps fini.
+
+\textbf{6. Gain variable $N_F$} (chaîne \texttt{NFp\_*}) : l'erreur est convertie en degrés et bornée sous la barrière $\varepsilon$ :
+\begin{equation}
+a=\sat_{[0,\;0{,}99\varepsilon]}\!\Big(\tfrac{180}{\pi}|e|\Big),\qquad
+N_F=\sat_{[0,\;N_{\max}]}\!\left(a^{\,E(a)}\right),\qquad
+E(a)=\frac{(\arctan a)^{\beta}}{(\varepsilon-a)^{\gamma}} .
+\end{equation}
+On a $N_F(0)=1$ ($0^0=1$) et $N_F\approx1$ pour les petites erreurs ($N_F\ge 0{,}99994$ et $N_F<1{,}03$ pour $a<6^\circ$). $N_F$ croît fortement quand $a$ approche $\varepsilon$ (car $E(a)\to\infty$) et atteint $N_{\max}=3$ dès $a\approx10{,}1^\circ$. Les gains passent donc de $(k_1,k_2)$ en régime établi à $(3k_1,\,9k_2)$ pour les grandes erreurs. La PLL reste douce à l'accrochage et devient rapide lors des sauts de phase ou de fréquence.
+
+\textbf{7. Discrétisation} : intégrateurs \texttt{Int\_theta} et \texttt{integ\_z} et action intégrale du PI en Euler explicite, $T_s/(z-1)$. Par exemple, $\hat\theta_{k+1}=\operatorname{mod}(\hat\theta_k+T_s\hat\omega_k,\,2\pi)$.
+
+\vspace{2pt}
+\noindent
+\begin{minipage}[t]{0.53\textwidth}
+\vspace{0pt}\centering
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+Paramètre & Symbole (\texttt{variable}) & Valeur\\
+\midrule
+Pas d'échantillonnage & $T_s$ (\texttt{Ts}) & $1\,\mu$s\\
+Amplitude simple & $V_m=\sqrt2\,V_{ph}$ & $325{,}3$ V\\
+Pulsation nominale & $\omega_0$ (\texttt{w0}) & $2\pi\cdot50$ rad/s\\
+PI : $f_n$, $\zeta$ & \texttt{fn\_pll}, \texttt{zeta} & 20 Hz, 0,707\\
+PI : $K_p$, $K_i$ & \texttt{Kp\_pll}, \texttt{Ki\_pll} & 0,546 ; 48,5\\
+Saturation PI & $\Delta\omega_{\max}$ (\texttt{dw\_max}) & $2\pi\cdot5$ rad/s\\
+ST : $k_1$ & \texttt{k1\_pll} & 60 rad/s\\
+ST : $k_2$ & \texttt{k2\_pll} & 600 rad/s$^2$\\
+Barrière & $\varepsilon$ (\texttt{eps\_pll}) & $12^\circ$\\
+Puissances & $\beta$, $\gamma$ (\texttt{beta\_pll}, \texttt{gamma\_pll}) & 3 ; 3\\
+Saturation de $N_F$ & $N_{\max}$ (\texttt{Nmax\_pll}) & 3\\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.43\textwidth}
+\vspace{0pt}\centering
+\begin{tikzpicture}
+\begin{axis}[width=\linewidth,height=3.7cm,xmin=0,xmax=12,ymin=0.8,ymax=3.3,
+  xlabel={$a$ (degrés)},ylabel={$N_F$},xtick={0,2,4,6,8,10,12},ytick={1,2,3},
+  grid=both,grid style={gray!25},tick label style={font=\scriptsize},label style={font=\small}]
+\addplot[thick,blue] coordinates {
+(0.00,1.0000) (1.00,1.0000) (2.00,1.0009) (3.00,1.0029) (4.00,1.0063) (5.00,1.0122) (6.00,1.0233) (7.00,1.0465) (8.00,1.1033) (9.00,1.2883) (9.20,1.3720) (9.30,1.4266) (9.40,1.4929) (9.50,1.5744) (9.60,1.6762) (9.70,1.8055) (9.80,1.9732) (9.90,2.1958) (10.00,2.5002) (10.10,2.9317) (10.11,3.0000) (10.40,3.0000) (11.88,3.0000)};
+\addplot[densely dashed,red] coordinates {(12,0.8) (12,3.3)};
+\node[font=\scriptsize,red,anchor=east] at (axis cs:11.9,1.25) {$\varepsilon=12^\circ$};
+\end{axis}
+\end{tikzpicture}
+
+{\small Gain variable $N_F(a)$ ($\beta=\gamma=3$, $N_{\max}=3$)}
+\end{minipage}
+
+\end{document}
