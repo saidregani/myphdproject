@@ -121,6 +121,7 @@ try
   n3.Position = [1600 60];
 catch
 end
+colorize(mdl);
 save_system(mdl, fullfile(here, [mdl '.slx']));
 fprintf('Model %s.slx created in %s. Open it and press Run (scopes show the results).\n', mdl, here);
 open_system(mdl);
@@ -621,4 +622,26 @@ f = sprintf('From %d', n);
 add_block('simulink/Signal Routing/From', [sys '/' f], 'GotoTag', tag, 'ShowName', 'off', ...
           'Position', [pp(1)-90 pp(2)-9 pp(1)-30 pp(2)+9]);
 add_line(sys, [f '/1'], dst);
+end
+
+function colorize(mdl)
+% light background colour for every block (by block type, subsystems by role)
+BLUE = '[0.85 0.92 1]';  YEL = '[1 1 0.8]';  GRN = '[0.86 1 0.86]';  ORA = '[1 0.92 0.8]';
+PUR = '[0.93 0.89 1]';  PNK = '[1 0.89 0.92]';  CYA = '[0.88 1 1]';  GRY = '[0.92 0.92 0.92]';
+typ = {'Integrator', BLUE; 'DiscreteIntegrator', BLUE; 'UnitDelay', BLUE; 'DiscreteTransferFcn', BLUE;
+       'Gain', YEL; 'Sum', GRN; 'Product', ORA; 'DotProduct', ORA; 'Math', ORA; 'Sqrt', ORA; 'MinMax', ORA;
+       'Lookup_n-D', CYA; 'Constant', PUR; 'Step', PUR; 'Sin', PUR; 'RandomNumber', PUR; 'Clock', PUR;
+       'Saturate', PNK; 'RelationalOperator', PNK; 'DataTypeConversion', PNK; 'Switch', PNK;
+       'Goto', CYA; 'From', CYA; 'Scope', GRY; 'ToWorkspace', GRY; 'Terminator', GRY};
+sub = {'Wind', BLUE; 'Turbine', BLUE; 'PMSG and shaft', BLUE; 'DC link', BLUE; 'L filter and grid', BLUE;
+       'Control (flatness + PBC + RBF-ANN)', YEL; 'MPPT reference', GRN; 'Turbine model', BLUE;
+       'RBF network', PUR; 'Flatness speed loop', ORA; 'Flatness DC-link loop', ORA;
+       'PBC machine side', PNK; 'PBC grid side', PNK};
+blks = find_system(mdl, 'Type', 'Block');
+for k = 1:numel(blks)
+  bt = get_param(blks{k}, 'BlockType');
+  if strcmp(bt, 'SubSystem'), list = sub;  key = get_param(blks{k}, 'Name');  else, list = typ;  key = bt;  end
+  i = find(strcmp(list(:,1), key), 1);
+  if ~isempty(i), set_param(blks{k}, 'BackgroundColor', list{i,2}); end
+end
 end
