@@ -49,7 +49,7 @@ def panel(ax, ref, meas, lab, unit, s=1.0, ylim=None, zoom=None, zbox=None, loc=
 fig, ax = plt.subplots(3, 2, figsize=(W, 5.2), sharex=True)
 panel(ax[0, 0], d['Wr'], d['Wm'], r'\Omega', 'rad/s', ylim=(1.3, 2.55), zoom=(24.6, 27.0, 2.0, 2.26), zbox=(0.05, 0.47, 0.22, 0.33))
 panel(ax[0, 1], 1200 + z, d['Vdcm'], 'V_{dc}', 'V', ylim=(1180, 1225), zoom=(24.95, 25.4, 1190, 1210), zbox=(0.6, 0.06, 0.35, 0.36))
-panel(ax[1, 0], d['isqr'], d['isqm'], 'i_{sq}', 'kA', 1e3, ylim=(-3.2, 0.7), zoom=(24.9, 25.8, -2.6, -0.3), zbox=(0.4, 0.55, 0.22, 0.36), loc='upper right')
+panel(ax[1, 0], d['isqr'], d['isqm'], 'i_{sq}', 'kA', 1e3, ylim=(-3.2, 0.7), zoom=(24.9, 25.8, -2.6, -0.3), zbox=(0.05, 0.5, 0.22, 0.36), loc='upper right')
 panel(ax[1, 1], z, d['isdm'], 'i_{sd}', 'A', ylim=(-60, 60))
 panel(ax[2, 0], d['igdr'], d['igdm'], 'i_{gd}', 'kA', 1e3, ylim=(0, 3.4), zoom=(24.9, 25.8, 0.3, 2.5), zbox=(0.05, 0.5, 0.22, 0.33))
 panel(ax[2, 1], z, d['igqm'], 'i_{gq}', 'A', ylim=(-150, 150))
