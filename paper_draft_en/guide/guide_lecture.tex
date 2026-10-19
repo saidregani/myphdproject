@@ -1,0 +1,757 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{mathptmx}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,array}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+\newcommand{\bv}[1]{\mathbf{#1}}
+\newcommand{\Jm}{\boldsymbol{\mathcal{J}}}
+\newenvironment{expl}{\begin{itemize}[leftmargin=1.2em,itemsep=2pt,topsep=2pt]}{\end{itemize}}
+\newcommand{\sens}{\item \textbf{Sens.}~}
+\newcommand{\termes}{\item \textbf{Les termes.}~}
+\newcommand{\origine}{\item \textbf{D'où elle vient.}~}
+\newcommand{\num}{\item \textbf{Valeurs numériques.}~}
+\newcommand{\role}{\item \textbf{À quoi elle sert.}~}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Guide de lecture de l'article\par}
+\vspace{4pt}
+{\large\itshape Hybrid Flatness- and Passivity-Based Control with Adaptive RBF Compensation\\
+for a 2~MW Direct-Drive PMSG Wind Energy Conversion System\par}
+\vspace{6pt}
+{\normalsize Abréviations, symboles et explication détaillée de chaque équation\par}
+\end{center}
+
+\tableofcontents
+
+%======================================================================
+\section{L'idée de l'article en une page}
+Le système étudié est une éolienne de 2~MW à entraînement direct : la turbine fait tourner directement
+une machine synchrone à aimants permanents (PMSG), sans multiplicateur. La puissance passe par deux
+convertisseurs dos à dos : le convertisseur côté machine (MSC) redresse la tension du générateur, le bus
+continu (\emph{DC link}) découple les deux convertisseurs, et le convertisseur côté réseau (GSC) injecte la
+puissance dans le réseau 690~V, 50~Hz à travers un filtre $L$.
+
+La commande proposée a trois couches, chacune avec un rôle précis :
+\begin{enumerate}[itemsep=2pt]
+\item \textbf{La platitude (FBC)} génère les références. À partir de la vitesse désirée de la turbine, elle
+calcule directement le couple et le courant $i_{sq}^*$ nécessaires ; à partir de l'énergie désirée du bus
+continu, elle calcule directement la puissance et le courant $i_{gd}^*$ à injecter dans le réseau.
+\item \textbf{La passivité (PBC)} fait suivre ces références de courant par les deux convertisseurs. Elle
+garde la structure énergétique de la machine et du filtre et ajoute de l'amortissement.
+\item \textbf{Le réseau de neurones RBF adaptatif} apprend en ligne l'erreur du modèle du couple
+aérodynamique (et des paramètres) et la compense dans la loi de vitesse, sans changer les gains.
+\end{enumerate}
+L'article montre ensuite, par une analyse de Lyapunov, que tous les signaux restent bornés, puis vérifie
+par simulation (avec bruit de mesure et harmoniques du réseau) que les grandeurs suivent leurs références,
+et que le réseau de neurones réduit l'erreur de vitesse de 26.5 à 44.8\,\%.
+
+\textbf{Organisation de l'article.} Section~2 : modèle du système. Section~3 : objectifs de commande et
+MPPT. Section~4 : platitude. Section~5 : passivité. Section~6 : réseau RBF. Section~7 : stabilité.
+Section~8 : simulations. Section~9 : conclusion.
+
+%======================================================================
+\section{Abréviations}
+\begin{longtable}{@{}p{1.9cm}p{5.6cm}p{7.4cm}@{}}
+\toprule
+Abréviation & En anglais & Signification\\
+\midrule
+\endhead
+WECS & Wind Energy Conversion System & Système de conversion de l'énergie éolienne (turbine + générateur + convertisseurs + réseau).\\
+PMSG & Permanent Magnet Synchronous Generator & Générateur synchrone à aimants permanents.\\
+D-PMSG & Direct-drive PMSG & PMSG à entraînement direct (sans multiplicateur).\\
+MSC & Machine-Side Converter & Convertisseur côté machine (redresseur MLI qui commande les courants du générateur).\\
+GSC & Grid-Side Converter & Convertisseur côté réseau (onduleur MLI qui injecte la puissance au réseau).\\
+DC & Direct Current & Continu ; \emph{DC link} = bus continu entre les deux convertisseurs.\\
+AC & Alternating Current & Alternatif.\\
+PWM & Pulse Width Modulation & Modulation de largeur d'impulsion (MLI).\\
+SVPWM & Space Vector PWM & MLI vectorielle ; limite linéaire de la tension : $V_{dc}/\sqrt3$.\\
+FOC & Field-Oriented Control & Commande vectorielle classique (boucles PI dans le repère $dq$).\\
+PI & Proportional-Integral & Correcteur proportionnel-intégral.\\
+FBC & Flatness-Based Control & Commande par platitude différentielle.\\
+PBC & Passivity-Based Control & Commande basée sur la passivité (mise en forme de l'énergie + injection d'amortissement).\\
+IDA-PBC & Interconnection and Damping Assignment PBC & Variante de la PBC qui impose l'interconnexion et l'amortissement (réf. [20]).\\
+PCH & Port-Controlled Hamiltonian & Système hamiltonien commandé par ports (forme énergétique d'un modèle).\\
+SMC & Sliding Mode Control & Commande par modes glissants.\\
+MPC & Model Predictive Control & Commande prédictive.\\
+RBF & Radial Basis Function & Fonction à base radiale (ici gaussienne).\\
+RBFNN & RBF Neural Network & Réseau de neurones à fonctions de base radiales.\\
+ANN & Artificial Neural Network & Réseau de neurones artificiels (ici, le réseau RBF).\\
+MPPT & Maximum Power Point Tracking & Recherche du point de puissance maximale.\\
+TSR & Tip-Speed Ratio & Vitesse spécifique $\lambda=\Omega R/v$ ; la MPPT \og TSR\fg{} impose $\lambda=\lambda^\star$.\\
+OTC & Optimal Torque Control & MPPT par couple optimal $T_e^*=K_{opt}\Omega^2$ (non utilisée dans l'article).\\
+PLL & Phase-Locked Loop & Boucle à verrouillage de phase (synchronisation au réseau ; supposée idéale ici).\\
+THD & Total Harmonic Distortion & Taux de distorsion harmonique du courant.\\
+TDD & Total Demand Distortion & Distorsion rapportée au courant nominal (norme IEEE 519).\\
+IEEE & Institute of Electrical and Electronics Engineers & Ici : norme IEEE Std 519-2014 sur les harmoniques.\\
+PF & Power Factor & Facteur de puissance ($Q_g=0$ $\Rightarrow$ PF $=1$).\\
+RK4 & Runge--Kutta (order 4) & Méthode d'intégration numérique d'ordre 4 à pas fixe.\\
+ZOH & Zero-Order Hold & Bloqueur d'ordre zéro (tension maintenue constante pendant $T_s$).\\
+UUB & Uniformly Ultimately Bounded & Uniformément finalement borné : l'erreur entre, après un temps fini, dans un ensemble borné et y reste.\\
+IAE & Integral of Absolute Error & Intégrale de la valeur absolue de l'erreur.\\
+ISE & Integral of Squared Error & Intégrale du carré de l'erreur.\\
+RMSE & Root-Mean-Square Error & Erreur quadratique moyenne (racine).\\
+MAE & Mean Absolute Error & Erreur absolue moyenne.\\
+std & standard deviation & Écart type.\\
+rms & root mean square & Valeur efficace.\\
+LCL & Inductor--Capacitor--Inductor & Filtre $LCL$ (perspective de l'article).\\
+HIL & Hardware-In-the-Loop & Validation \og matériel dans la boucle\fg{} (perspective).\\
+$dq$ / $abc$ & -- & Repère tournant de Park / grandeurs triphasées.\\
+\bottomrule
+\end{longtable}
+
+%======================================================================
+\section{Symboles}
+Les valeurs sont celles de l'article (Tables 1 et 3). \og Calc.\fg{} = valeur calculée.
+\begin{longtable}{@{}p{2.2cm}p{6.9cm}p{1.9cm}p{3.9cm}@{}}
+\toprule
+Symbole & Signification & Unité & Valeur\\
+\midrule
+\endhead
+\multicolumn{4}{@{}l}{\emph{Turbine et vent}}\\
+$v$, $v_m$ & vitesse du vent ; vent mesuré par l'anémomètre & m/s & 6--11\\
+$\rho$ & masse volumique de l'air & kg/m$^3$ & 1.225\\
+$R$ & rayon du rotor & m & 40\\
+$\Omega$ & vitesse mécanique du rotor & rad/s & $\Omega_n=2.23$\\
+$\lambda$, $\lambda^\star$ & vitesse spécifique, valeur optimale & -- & $\lambda^\star=8.1$\\
+$\beta$ & angle de calage des pales (pitch) & deg & 0\\
+$C_p$, $C_{p,\max}$ & coefficient de puissance, maximum & -- & 0.48\\
+$P_w$, $T_w$ & puissance et couple aérodynamiques & W, N$\cdot$m & --\\
+$\hat T_w$ & couple aérodynamique estimé par le modèle & N$\cdot$m & --\\
+$P_n$, $v_n$, $T_n$ & puissance, vent et couple nominaux & W, m/s, N$\cdot$m & 2~MW, 11.0, 0.897~MN$\cdot$m\\
+$J$, $B$ & inertie totale, frottement visqueux & kg$\cdot$m$^2$, N$\cdot$m$\cdot$s & $2.8\times10^6$, $10^3$\\
+\multicolumn{4}{@{}l}{\emph{Générateur}}\\
+$p$ & nombre de paires de pôles & -- & 26\\
+$R_s$, $L_s$ & résistance et inductance statoriques ($L_d=L_q=L_s$) & $\Omega$, H & 0.78~m$\Omega$, 1.57~mH\\
+$\psi_f$ & flux des aimants & Wb & 9.18\\
+$\omega_e$ & pulsation électrique $=p\Omega$ & rad/s & 58 à $\Omega_n$\\
+$v_{sd}, v_{sq}$; $\bv v_s$ & tensions statoriques ; vecteur $[v_{sd}\;v_{sq}]^T$ & V & --\\
+$i_{sd}, i_{sq}$; $\bv i_s$ & courants statoriques ; vecteur & A & $i_{sq}\approx-2.5$~kA à $T_n$\\
+$T_e$ & couple électromagnétique ($<0$ en générateur) & N$\cdot$m & --\\
+$\kappa$ & constante de couple $\frac32p\psi_f$ & N$\cdot$m/A & 358 (calc.)\\
+\multicolumn{4}{@{}l}{\emph{Bus continu, filtre, réseau}}\\
+$C$, $V_{dc}$, $V_{dc}^*$ & capacité, tension du bus et sa référence & F, V & 20~mF, 1200~V\\
+$P_{dc}$, $P_i$ & puissance entrant dans le bus (du MSC), sortant vers le GSC & W & --\\
+$\bv v_i$ & tension du GSC & V & --\\
+$L_f$, $R_f$ & inductance et résistance du filtre & H, $\Omega$ & 0.15~mH, 2~m$\Omega$\\
+$\bv i_g=[i_{gd}\;i_{gq}]^T$ & courant injecté au réseau & A & 2.37~kA crête nominal\\
+$\bv v_g=[v_{gd}\;v_{gq}]^T$ & tension du réseau ($v_{gq}=0$) & V & $v_{gd}=563$~V crête\\
+$\omega_g$ & pulsation du réseau & rad/s & $2\pi\cdot50$\\
+$P_g$, $Q_g$ & puissances active et réactive injectées & W, var & --\\
+$E$ & énergie totale stockée dans le système & J & --\\
+$y_2$ & énergie du bus et du filtre (sortie plate) & J & 14.4~kJ (bus)\\
+\multicolumn{4}{@{}l}{\emph{Commande}}\\
+$\Omega_{opt}$, $\Omega^*$ & vitesse optimale brute ; référence filtrée & rad/s & --\\
+$\omega_r$ & pulsation du filtre de référence & rad/s & 1\\
+$e_\Omega$, $e_y$ & erreurs de vitesse et d'énergie (mesure moins référence) & rad/s, J & --\\
+$\nu_1$ & accélération imposée (nouvelle entrée) & rad/s$^2$ & --\\
+$k_{11},k_{12}$ & gains de la boucle de vitesse & s$^{-1}$, s$^{-2}$ & 4, 4 (0 avec le RBF)\\
+$k_{21},k_{22}$ & gains de la boucle du bus continu & s$^{-1}$, s$^{-2}$ & 120, 3600\\
+$\bv e_s$, $\bv e_g$ & erreurs de courant MSC et GSC & A & --\\
+$\bv z_s$, $\bv z_g$ & intégrales des erreurs de courant & A$\cdot$s & --\\
+$R_a$, $K_i$ & amortissement et gain intégral PBC (MSC) & $\Omega$, $\Omega$/s & 1.57, 393\\
+$R_b$, $K_{ig}$ & amortissement et gain intégral PBC (GSC) & $\Omega$, $\Omega$/s & 0.148, 37.5\\
+$\omega_\Omega,\omega_v,\omega_i$ & pulsations des pôles doubles des boucles & rad/s & 2, 60, 500\\
+$\Jm$ & matrice antisymétrique $\bigl[\begin{smallmatrix}0&1\\-1&0\end{smallmatrix}\bigr]$ & -- & --\\
+$\bv e_q$ & vecteur $[0\;1]^T$ (axe $q$) & -- & --\\
+$H_s,H_e,H_g$ & énergies (fonctions de stockage) & J & --\\
+$T_s$ & période d'échantillonnage $1/(2f_{sw})$ & s & 231.5~$\mu$s\\
+$f_{sw}$ & fréquence de commutation & Hz & 2160\\
+\multicolumn{4}{@{}l}{\emph{Réseau de neurones et stabilité}}\\
+$\Delta$, $\hat\Delta$ & incertitude globale $T_w-\hat T_w$ et son estimation & N$\cdot$m & $\approx 83$~kN$\cdot$m (cas 3)\\
+$\bv z$ & entrée du réseau $[\Omega/\Omega_n,\;v_m/v_n]^T$ & -- & $\approx$0.5--1.1\\
+$\Phi_j$, $\bv c_j$, $b$ & gaussiennes, centres, largeur & -- & 25 unités, $b=0.15$\\
+$\bv W^*$, $\hat{\bv W}$, $\tilde{\bv W}$ & poids idéaux, estimés, erreur $\bv W^*-\hat{\bv W}$ & N$\cdot$m & --\\
+$\varepsilon$, $\bar\varepsilon$ & erreur d'approximation et sa borne & N$\cdot$m & --\\
+$\Gamma$, $\sigma$ & gain d'adaptation, $\sigma$-modification & --, s$^{-1}$ & $10^7$, 0.02\\
+$V$ & fonction de Lyapunov & J & --\\
+$\beta$, $c$, $\delta(t)$ & constantes et terme de la preuve (Théorème 1) & -- & $c=4$~s$^{-1}$\\
+\bottomrule
+\end{longtable}
+
+%======================================================================
+\section{Conventions utilisées dans l'article}
+\begin{itemize}[itemsep=3pt]
+\item \textbf{Convention récepteur (moteur).} Les tensions et courants de la machine sont orientés comme pour un
+moteur. En fonctionnement générateur, le couple $T_e$ et le courant $i_{sq}$ sont donc \textbf{négatifs}, et la
+puissance électrique fournie par la machine est $P_{dc}=-\frac32\bv v_s^T\bv i_s>0$. C'est la convention
+de l'article de référence d'Aimene et al. [8], et c'est sur ce point que les signes avaient été corrigés.
+\item \textbf{Transformation de Park à amplitude constante.} Les grandeurs $dq$ ont l'amplitude des
+grandeurs de phase (crête). C'est pourquoi les puissances ont un facteur $\frac32$ : $P=\frac32(v_di_d+v_qi_q)$.
+\item \textbf{Repère.} Pour la machine, l'axe $d$ est aligné sur le flux des aimants ; pour le réseau,
+l'axe $d$ est aligné sur la tension du réseau ($v_{gq}=0$), ce qui suppose une PLL idéale.
+\item \textbf{Erreurs.} Toutes les erreurs sont définies comme \og mesure moins référence\fg{} :
+$e_\Omega=\Omega-\Omega^*$, $\bv e_s=\bv i_s-\bv i_s^*$, etc.
+\item \textbf{Notation vectorielle.} $\bv i_s=[i_{sd}\;i_{sq}]^T$ ; $\|\bv x\|^2=x_d^2+x_q^2$ ;
+$\bv x^T\bv y=x_dy_d+x_qy_q$. La matrice $\Jm=\bigl[\begin{smallmatrix}0&1\\-1&0\end{smallmatrix}\bigr]$
+fait tourner un vecteur de $-90^\circ$ : $\Jm\bv i=[i_q\;\;-i_d]^T$. Propriété clé :
+$\bv x^T\Jm\bv x=x_dx_q-x_qx_d=0$ pour tout $\bv x$. Physiquement, un terme en $\Jm$ échange de l'énergie
+entre les axes sans en créer ni en dissiper : c'est un terme \og sans travail\fg{} (\emph{workless}).
+\item \textbf{Points.} $\dot x=dx/dt$ ; $\ddot x=d^2x/dt^2$ ; l'étoile $^*$ désigne une référence ;
+le chapeau $\hat{\ }$ une estimation ; le tilde $\tilde{\ }$ une erreur d'estimation.
+\end{itemize}
+
+%======================================================================
+\section{Explication des équations}
+La numérotation est la même que dans l'article.
+
+\subsection{Turbine (Section 2.2 de l'article)}
+\begin{equation}\tag{1}
+\lambda=\frac{\Omega R}{v},\qquad P_w=\tfrac{1}{2}\rho\pi R^2 C_p(\lambda,\beta)\,v^3,\qquad T_w=\frac{P_w}{\Omega}
+\end{equation}
+\begin{expl}
+\sens $\lambda$ compare la vitesse du bout de pale ($\Omega R$) à la vitesse du vent. $\frac12\rho\pi R^2v^3$
+est la puissance cinétique du vent qui traverse le disque du rotor ; la turbine n'en capte que la fraction
+$C_p$. $T_w$ est le couple que le vent applique sur l'arbre.
+\termes $\pi R^2$ : surface balayée ; $v^3$ : la puissance varie avec le cube du vent (vent $\times2$ $\Rightarrow$
+puissance $\times8$).
+\role c'est la source de puissance du système, et c'est le terme non mesuré que le réseau RBF aide à estimer.
+\end{expl}
+
+\begin{equation}\tag{2}
+C_p = 0.5176\Bigl(\frac{116}{\lambda_i}-0.4\beta-5\Bigr)e^{-21/\lambda_i}+0.0068\lambda,\qquad
+\frac{1}{\lambda_i}=\frac{1}{\lambda+0.08\beta}-\frac{0.035}{\beta^3+1}
+\end{equation}
+\begin{expl}
+\sens formule empirique de Heier [29] qui donne la courbe $C_p(\lambda)$ en forme de cloche. Pour $\beta=0$, le maximum est $C_{p,\max}=0.48$ à $\lambda^\star=8.1$.
+\origine ajustement de mesures sur des turbines réelles ; c'est le modèle le plus utilisé dans la littérature.
+\num vent nominal : $P_n=\frac12\rho\pi R^2C_{p,\max}v_n^3$ $\Rightarrow$
+$v_n=\bigl(2P_n/(\rho\pi R^2C_{p,\max})\bigr)^{1/3}=\bigl(4\cdot10^6/2956\bigr)^{1/3}=11.0$~m/s ;
+vitesse nominale $\Omega_n=\lambda^\star v_n/R=8.1\times11.0/40=2.23$~rad/s (21.3~tr/min) ;
+couple nominal $T_n=P_n/\Omega_n=0.897$~MN$\cdot$m.
+\end{expl}
+
+\subsection{Générateur PMSG (Section 2.3)}
+\begin{equation}\tag{3}
+v_{sd} = R_s i_{sd} + L_s\frac{di_{sd}}{dt} - \omega_e L_s i_{sq}
+\end{equation}
+\begin{equation}\tag{4}
+v_{sq} = R_s i_{sq} + L_s\frac{di_{sq}}{dt} + \omega_e L_s i_{sd} + \omega_e\psi_f
+\end{equation}
+\begin{expl}
+\sens loi des mailles du stator dans le repère tournant : tension $=$ chute résistive $+$ tension
+inductive $+$ couplage $+$ force électromotrice.
+\termes $R_si$ : pertes Joule ; $L_s\,di/dt$ : variation du courant ; $\mp\omega_eL_si_{q,d}$ :
+termes de couplage entre les axes $d$ et $q$ (ils viennent de la rotation du repère) ;
+$\omega_e\psi_f$ : force électromotrice (FEM) des aimants, seulement sur l'axe $q$.
+\num à $\Omega_n$ : $\omega_e=26\times2.23=58$~rad/s ($f_e=9.2$~Hz), FEM $\omega_e\psi_f=532$~V,
+proche de la tension crête du réseau (563~V) ; réactance $\omega_eL_s=0.091~\Omega$.
+\end{expl}
+
+\begin{equation}\tag{5}
+T_e = \tfrac32 p\,\psi_f\, i_{sq}
+\end{equation}
+\begin{expl}
+\sens pour une machine à pôles lisses ($L_d=L_q$), le couple ne dépend que de $i_{sq}$. C'est pourquoi on
+impose $i_{sd}^*=0$ : $i_{sd}$ ne produit pas de couple et ne ferait qu'ajouter des pertes.
+\num $\kappa=\frac32p\psi_f=358$~N$\cdot$m/A ; au couple nominal, $|i_{sq}|=897\,000/358=2.5$~kA.
+En générateur, $T_e<0$ donc $i_{sq}<0$.
+\end{expl}
+
+\begin{equation}\tag{6}
+L_s\dot{\bv{i}}_s = \bv{v}_s - R_s\bv{i}_s + \omega_eL_s\Jm\bv{i}_s - \omega_e\psi_f\bv{e}_q
+\end{equation}
+\begin{expl}
+\sens c'est (3)--(4) écrites sous forme vectorielle, en isolant la dérivée du courant. En développant :
+$\omega_eL_s\Jm\bv i_s=\omega_eL_s[i_{sq}\;\;-i_{sd}]^T$, on retrouve exactement $+\omega_eL_si_{sq}$ dans
+l'équation $d$ et $-\omega_eL_si_{sd}$ dans l'équation $q$.
+\role cette forme fait apparaître la matrice antisymétrique $\Jm$, qui est la clé de la commande par
+passivité (Section 5) et du bilan d'énergie (10).
+\end{expl}
+
+\subsection{Arbre mécanique (Section 2.4)}
+\begin{equation}\tag{7}
+J\frac{d\Omega}{dt} = T_w + T_e - B\Omega
+\end{equation}
+\begin{expl}
+\sens principe fondamental de la dynamique en rotation : le couple du vent accélère le rotor, le couple
+du générateur ($T_e<0$) le freine, le frottement $B\Omega$ aussi. Si $T_w=-T_e+B\Omega$, la vitesse est
+constante.
+\num énergie cinétique à $\Omega_n$ : $\frac12J\Omega_n^2=6.96$~MJ ; constante d'inertie
+$H=6.96/2=3.5$~s (valeur typique des grandes éoliennes). Cette grande inertie explique pourquoi la
+vitesse ne peut pas suivre instantanément les variations rapides du vent.
+\end{expl}
+
+\subsection{Bus continu et côté réseau (Section 2.5)}
+\begin{equation}\tag{8}
+CV_{dc}\frac{dV_{dc}}{dt} = P_{dc} - P_i,\qquad P_{dc}=-\tfrac32\bv{v}_s^T\bv{i}_s,\qquad
+P_i=\tfrac32\bv{v}_i^T\bv{i}_g
+\end{equation}
+\begin{expl}
+\sens l'énergie du condensateur $\frac12CV_{dc}^2$ a pour dérivée $CV_{dc}\dot V_{dc}$. Elle augmente si la
+puissance qui arrive du MSC ($P_{dc}$) est supérieure à celle qui part vers le GSC ($P_i$). Le signe $-$ de
+$P_{dc}$ vient de la convention récepteur : la puissance absorbée par la machine est
+$\frac32\bv v_s^T\bv i_s$, donc la puissance fournie est son opposé.
+\num énergie du bus : $\frac12\times0.02\times1200^2=14.4$~kJ, soit seulement 7~ms de puissance
+nominale. D'où la nécessité d'une boucle de bus rapide et d'une anticipation de $P_{dc}$.
+\end{expl}
+
+\begin{equation}\tag{9}
+L_f\dot{\bv{i}}_g = \bv{v}_i - R_f\bv{i}_g + \omega_gL_f\Jm\bv{i}_g - \bv{v}_g
+\end{equation}
+\begin{expl}
+\sens loi des mailles du filtre entre la tension du GSC $\bv v_i$ et la tension du réseau $\bv v_g$, dans
+le repère du réseau. Même structure que (6) : résistance, inductance, couplage en $\Jm$.
+\termes $P_g=\frac32v_{gd}i_{gd}$ et $Q_g=-\frac32v_{gd}i_{gq}$ : avec $v_{gq}=0$, la puissance active ne
+dépend que de $i_{gd}$ et la réactive que de $i_{gq}$ ; $i_{gq}^*=0$ donne $Q_g=0$.
+\num $v_{gd}=690\sqrt{2/3}=563$~V ; courant nominal crête $I_n=2P_n/(3\times563)=2.37$~kA.
+\end{expl}
+
+\subsection{Bilan d'énergie (Section 2.6)}
+\begin{equation}\tag{10}
+\dot E = P_w - B\Omega^2 - \tfrac32R_s\|\bv{i}_s\|^2 - \tfrac32R_f\|\bv{i}_g\|^2 - P_g
+\end{equation}
+\begin{expl}
+\sens la puissance du vent est soit stockée ($\dot E$), soit perdue (frottement, résistances), soit injectée
+au réseau. C'est la conservation de l'énergie.
+\origine on dérive $E=\frac12J\Omega^2+\frac34L_s\|\bv i_s\|^2+\frac12CV_{dc}^2+\frac34L_f\|\bv i_g\|^2$ et on
+remplace avec (6)--(9) :
+\begin{itemize}[itemsep=1pt]
+\item arbre : $J\Omega\dot\Omega=T_w\Omega+T_e\Omega-B\Omega^2$ ;
+\item machine : $\frac32\bv i_s^TL_s\dot{\bv i}_s=\frac32\bv i_s^T\bv v_s-\frac32R_s\|\bv i_s\|^2-\frac32\omega_e\psi_fi_{sq}$
+(le terme en $\Jm$ disparaît car $\bv i_s^T\Jm\bv i_s=0$) ;
+\item bus : $CV_{dc}\dot V_{dc}=-\frac32\bv v_s^T\bv i_s-\frac32\bv v_i^T\bv i_g$ ;
+\item filtre : $\frac32\bv i_g^TL_f\dot{\bv i}_g=\frac32\bv i_g^T\bv v_i-\frac32R_f\|\bv i_g\|^2-\frac32\bv i_g^T\bv v_g$.
+\end{itemize}
+En additionnant, les puissances des convertisseurs s'annulent deux à deux, et
+$T_e\Omega=\frac32p\psi_fi_{sq}\Omega=\frac32\omega_e\psi_fi_{sq}$ annule le terme de FEM. Il reste (10),
+avec $P_g=\frac32\bv i_g^T\bv v_g$.
+\role c'est la \textbf{preuve que tous les signes du modèle sont cohérents} (réponse directe à la remarque du
+professeur sur les signes). Numériquement, le résidu est inférieur à $10^{-15}P_n$.
+\end{expl}
+
+\subsection{Objectifs et MPPT (Section 3)}
+\begin{equation}\tag{11}
+\Omega_{opt}=\frac{\lambda^\star v_m}{R}
+\end{equation}
+\begin{expl}
+\sens pour capter le maximum de puissance, il faut $\lambda=\lambda^\star$, donc $\Omega=\lambda^\star v/R$
+(MPPT de type TSR). On utilise le vent mesuré $v_m$, limité à $[0.5\Omega_n,\Omega_n]$.
+\num à 9~m/s : $\Omega_{opt}=8.1\times9/40=1.82$~rad/s ; à 11~m/s : 2.23~rad/s.
+\end{expl}
+
+\begin{equation}\tag{12}
+\ddot\Omega^*=\omega_r^2(\Omega_{opt}-\Omega^*)-2\omega_r\dot\Omega^*
+\end{equation}
+\begin{expl}
+\sens filtre du second ordre de fonction de transfert $\Omega^*/\Omega_{opt}=\omega_r^2/(s+\omega_r)^2$
+(amortissement critique, sans dépassement). Il donne une référence lisse $\Omega^*$ \textbf{et sa dérivée}
+$\dot\Omega^*$, nécessaire à la loi plate (14).
+\role sans ce filtre, un échelon de vent demanderait un échelon de vitesse, impossible avec
+$J=2.8\times10^6$~kg$\cdot$m$^2$ (couple infini). Avec $\omega_r=1$~rad/s, la référence atteint sa nouvelle
+valeur en 4 à 5~s.
+\end{expl}
+
+\subsection{Platitude (Section 4)}
+\textbf{Définition.} Un système est \emph{plat} s'il existe une sortie $y$ (sortie plate) telle que tous les
+états et toutes les entrées s'écrivent en fonction de $y$ et d'un nombre fini de ses dérivées [17]. On
+peut alors calculer directement l'entrée qui produit une trajectoire désirée $y^*(t)$.
+
+\begin{equation}\tag{13}
+T_e=J\dot\Omega+B\Omega-T_w,\qquad i_{sq}=\frac{T_e}{\frac32p\psi_f}
+\end{equation}
+\begin{expl}
+\sens c'est (7) et (5) inversées : si l'on connaît $\Omega(t)$ et $\dot\Omega(t)$, on connaît le couple et le
+courant nécessaires. Avec $i_{sd}$, puis (3)--(4), on obtient aussi les tensions : $(\Omega,i_{sd})$ est une
+sortie plate du système PMSG $+$ arbre (Table 2).
+\end{expl}
+
+\begin{equation}\tag{14}
+\nu_1=\dot\Omega^*-k_{11}e_\Omega-k_{12}\!\int\!e_\Omega\,dt,\qquad e_\Omega=\Omega-\Omega^*
+\end{equation}
+\begin{equation}\tag{15}
+T_e^* = J\nu_1 + B\Omega - \hat T_w - \hat\Delta,\qquad i_{sq}^*=\frac{T_e^*}{\frac32p\psi_f},\qquad i_{sd}^*=0
+\end{equation}
+\begin{expl}
+\sens on remplace $\dot\Omega$ dans (13) par une accélération \og désirée\fg{} $\nu_1$ : la dérivée de la
+référence plus une correction proportionnelle et intégrale de l'erreur. $\hat T_w$ est le couple du vent
+calculé par le modèle (1)--(2) avec $v_m$ ; $\hat\Delta$ est la correction du réseau RBF.
+\origine en remplaçant (15) dans (7), avec $T_e=T_e^*$ (courant bien suivi) :
+$J\dot\Omega=T_w+(J\nu_1+B\Omega-\hat T_w-\hat\Delta)-B\Omega=J\nu_1+(T_w-\hat T_w)-\hat\Delta$.
+Comme $\nu_1=\dot\Omega^*-k_{11}e_\Omega-k_{12}\int e_\Omega$, on obtient l'équation d'erreur (23) ci-dessous.
+\num gains : l'équation d'erreur sans incertitude est $\ddot e+k_{11}\dot e+k_{12}e=0$ (en dérivant), de
+polynôme $s^2+k_{11}s+k_{12}$. Pour un pôle double en $-\omega_\Omega$ : $(s+\omega_\Omega)^2=s^2+2\omega_\Omega s+\omega_\Omega^2$,
+donc $k_{11}=2\omega_\Omega=4$, $k_{12}=\omega_\Omega^2=4$ avec $\omega_\Omega=2$~rad/s.
+\role $T_e^*$ est limité à $[-1.2T_n,0]$ (générateur uniquement) ; l'intégrale est gelée à la limite
+(anti-emballement).
+\end{expl}
+
+\begin{equation}\tag{16}
+\dot y_2 = P_{dc} - P_g - \tfrac32R_f\|\bv{i}_g\|^2,\qquad y_2=\tfrac12CV_{dc}^2+\tfrac34L_f\|\bv i_g\|^2
+\end{equation}
+\begin{expl}
+\sens $y_2$ est l'énergie stockée dans le bus \textbf{et} dans le filtre. Sa dérivée est une simple balance
+de puissances : ce qui arrive ($P_{dc}$) moins ce qui part ($P_g$) moins les pertes du filtre.
+\origine en dérivant $y_2$ avec (8) et (9) : les termes $\pm\frac32\bv v_i^T\bv i_g$ s'annulent et le
+terme en $\Jm$ disparaît. C'est pour cela qu'on ajoute l'énergie du filtre : l'équation devient
+\textbf{linéaire en $P_g$}, sans dérivée de courant [18].
+\end{expl}
+
+\begin{equation}\tag{17}
+P_g^* = P_{dc} - \tfrac32R_f\|\bv{i}_g\|^2 + k_{21}e_y + k_{22}\!\int\! e_y\,dt,\qquad
+i_{gd}^*=\frac{2P_g^*}{3v_{gd}},\qquad i_{gq}^*=0
+\end{equation}
+\begin{expl}
+\sens on impose $\dot y_2=-k_{21}e_y-k_{22}\int e_y$ ; en remplaçant dans (16) on trouve la puissance à
+injecter. Le terme $P_{dc}$ est une \textbf{anticipation} : la puissance du générateur est envoyée au réseau
+avant qu'elle ne fasse monter $V_{dc}$.
+\num pôle double en $-\omega_v$ : $k_{21}=2\omega_v=120$, $k_{22}=\omega_v^2=3600$ avec
+$\omega_v=60$~rad/s. $i_{gd}^*=2P_g^*/(3v_{gd})$ vient de $P_g=\frac32v_{gd}i_{gd}$.
+\role dans la simulation réaliste, $P_{dc}$ et $v_{gd}$ sont filtrés (2~ms) pour ne pas transmettre le bruit
+de mesure à la référence.
+\end{expl}
+
+\subsection{Passivité (Section 5)}
+\textbf{Idée.} Au lieu d'annuler toutes les non-linéarités, la PBC (i) impose une énergie désirée à la
+boucle fermée (\emph{energy shaping}) et (ii) ajoute de l'amortissement (\emph{damping injection}), en
+gardant les termes physiques qui ne produisent pas d'énergie (termes en $\Jm$) [19,20].
+
+\begin{equation}\tag{18}
+L_s\dot{\bv{i}}_s = \bigl(\omega_eL_s\Jm - R_s\bv{I}\bigr)\bv{i}_s + \bv{v}_s - \omega_e\psi_f\bv{e}_q ,
+\qquad \dot H_s = -R_s\|\bv{i}_s\|^2 + \bv{i}_s^T(\bv{v}_s-\omega_e\psi_f\bv{e}_q)
+\end{equation}
+\begin{expl}
+\sens c'est (6) écrite sous forme hamiltonienne : $\omega_eL_s\Jm$ (antisymétrique) $=$ interconnexion,
+$R_s\bv I$ (symétrique positive) $=$ dissipation. Avec l'énergie magnétique $H_s=\frac12L_s\|\bv i_s\|^2$,
+la dérivée montre que l'énergie varie seulement par la dissipation $-R_s\|\bv i_s\|^2$ et par la puissance
+fournie au port $\bv i_s^T(\ldots)$ : le système est \textbf{passif}.
+\end{expl}
+
+\begin{equation}\tag{19}
+\bv{v}_s^* = \underbrace{L_s\dot{\bv{i}}_s^* + R_s\bv{i}_s^* - \omega_eL_s\Jm\bv{i}_s^* + \omega_e\psi_f\bv{e}_q}_{\text{mise en forme de l'énergie}}
+\underbrace{- R_a\bv{e}_s}_{\text{amortissement}} - K_i\bv{z}_s
+\end{equation}
+\begin{expl}
+\sens la première partie est le modèle (6) appliqué à la référence : c'est la tension qui produirait
+exactement $\bv i_s^*$. $-R_a\bv e_s$ ajoute une résistance virtuelle $R_a$ qui amortit l'erreur ;
+$-K_i\bv z_s$ ($\dot{\bv z}_s=\bv e_s$) supprime l'erreur statique due aux erreurs de paramètres.
+\termes $\dot{\bv i}_s^*$ est obtenue par un filtre du premier ordre de 2~ms.
+\end{expl}
+
+\begin{equation}\tag{20}
+L_s\dot{\bv{e}}_s=-(R_s+R_a)\bv{e}_s+\omega_eL_s\Jm\bv{e}_s-K_i\bv{z}_s
+\end{equation}
+\begin{expl}
+\origine on soustrait $L_s\dot{\bv i}_s^*$ de (6) et on remplace $\bv v_s$ par (19) : la FEM
+$\omega_e\psi_f\bv e_q$ s'annule, et il reste une dynamique d'erreur qui a la \textbf{même structure} que la
+machine (couplage en $\Jm$ conservé) avec une résistance totale $R_s+R_a$.
+\num pôle double en $-\omega_i$ par axe : $L_ss^2+(R_s+R_a)s+K_i=L_s(s+\omega_i)^2$, d'où
+$R_a=2\omega_iL_s-R_s=2\times500\times1.57\cdot10^{-3}-0.78\cdot10^{-3}=1.57~\Omega$ et
+$K_i=\omega_i^2L_s=392.5~\Omega$/s.
+\end{expl}
+
+\begin{equation}\tag{21}
+\bv{v}_i^* = L_f\dot{\bv{i}}_g^* + R_f\bv{i}_g^* - \omega_gL_f\Jm\bv{i}_g^* + \bv{v}_g
+- R_b\bv{e}_g - K_{ig}\bv{z}_g
+\end{equation}
+\begin{expl}
+\sens même loi pour le filtre du réseau ; $+\bv v_g$ compense la tension du réseau.
+\num $R_b=2\times500\times0.15\cdot10^{-3}-2\cdot10^{-3}=0.148~\Omega$, $K_{ig}=500^2\times0.15\cdot10^{-3}=37.5~\Omega$/s.
+\end{expl}
+
+\textbf{Proposition 1 (expliquée).} Avec $H_e=\frac12L_s\|\bv e_s\|^2+\frac12K_i\|\bv z_s\|^2$ (énergie
+\og magnétique\fg{} de l'erreur $+$ énergie stockée dans l'intégrateur) :
+$\dot H_e=\bv e_s^TL_s\dot{\bv e}_s+K_i\bv z_s^T\dot{\bv z}_s$. En remplaçant (20) et $\dot{\bv z}_s=\bv e_s$ :
+$\dot H_e=-(R_s+R_a)\|\bv e_s\|^2+\omega_eL_s\underbrace{\bv e_s^T\Jm\bv e_s}_{=0}-K_i\bv e_s^T\bv z_s+K_i\bv z_s^T\bv e_s
+=-(R_s+R_a)\|\bv e_s\|^2\le0$. L'énergie de l'erreur ne peut que diminuer : la boucle de courant est
+stable. Les gains choisis séparent les bandes passantes d'une décade : courant 500, bus 60, vitesse
+2~rad/s.
+
+\subsection{Réseau RBF (Section 6)}
+\begin{equation}\tag{22}
+\Delta(\bv{x},t)=T_w-\hat T_w
+\end{equation}
+\begin{expl}
+\sens l'erreur entre le vrai couple du vent et le couple calculé par le modèle. Elle regroupe l'erreur du
+modèle $C_p$, le retard de l'anémomètre (qui mesure le vent en un point, avec 1~s de retard) et l'erreur
+sur les paramètres du générateur (par exemple $\psi_f$).
+\num dans le cas 3, sa moyenne vaut 83~kN$\cdot$m, soit 14\,\% du couple du vent.
+\end{expl}
+
+\begin{equation}\tag{23}
+J\bigl(\dot e_\Omega + k_{11}e_\Omega + k_{12}\textstyle\int e_\Omega\,dt\bigr) = \Delta-\hat\Delta
+\end{equation}
+\begin{expl}
+\sens équation de l'erreur de vitesse obtenue en mettant (15) dans (7). Si $\hat\Delta=\Delta$, le second
+membre est nul et l'erreur tend vers zéro avec les pôles choisis. Sinon, $\Delta-\hat\Delta$ agit comme une
+perturbation : le but du réseau est de rendre ce terme petit.
+\end{expl}
+
+\begin{equation}\tag{24}
+\bv{z}=\Bigl[\frac{\Omega}{\Omega_n}\;\;\frac{v_m}{v_n}\Bigr]^T
+\end{equation}
+\begin{expl}
+\sens l'entrée du réseau : le point de fonctionnement (vitesse et vent), normalisé pour être de l'ordre
+de 1. $\Delta$ dépend surtout de ce point de fonctionnement.
+\end{expl}
+
+\begin{equation}\tag{25}
+\Delta=\bv{W}^{*T}\boldsymbol\Phi(\bv{z})+\varepsilon,\qquad |\varepsilon|\le\bar\varepsilon ,\qquad
+\Phi_j(\bv{z})=\exp\Bigl(-\frac{\|\bv{z}-\bv{c}_j\|^2}{2b^2}\Bigr)
+\end{equation}
+\begin{expl}
+\sens théorème d'approximation universelle [21] : sur une région bornée, une fonction continue peut être
+approchée par une somme pondérée de gaussiennes, avec une erreur $\varepsilon$ aussi petite que l'on veut si
+l'on met assez de neurones. $\bv W^*$ sont les \og meilleurs\fg{} poids (inconnus).
+\termes chaque gaussienne $\Phi_j$ vaut 1 au centre $\bv c_j$ et décroît avec la distance ; les 25 centres
+forment une grille $5\times5$ avec les valeurs 0.5, 0.65, 0.8, 0.95 et 1.1 sur chaque axe ; la largeur
+$b=0.15$ est égale à l'espacement de la grille, donc les gaussiennes se recouvrent.
+\end{expl}
+
+\begin{equation}\tag{26}
+\hat\Delta(\bv{z})=\hat{\bv{W}}^T\boldsymbol\Phi(\bv{z})
+\end{equation}
+\begin{expl}
+\sens la sortie du réseau, avec les poids estimés $\hat{\bv W}$.
+\role avec le réseau, $k_{12}=0$ : sinon l'intégrale de la boucle de vitesse absorberait la partie lente de
+$\Delta$, l'erreur $e_\Omega$ resterait nulle en moyenne et le réseau n'apprendrait rien (constaté en
+simulation).
+\end{expl}
+
+\begin{equation}\tag{27}
+\dot{\hat{\bv{W}}} = \Gamma\bigl(\boldsymbol\Phi(\bv{z})\,e_\Omega - \sigma\hat{\bv{W}}\bigr),\qquad \hat{\bv{W}}(0)=0
+\end{equation}
+\begin{expl}
+\sens loi d'apprentissage en ligne : chaque poids $j$ change proportionnellement à l'erreur de vitesse et à
+l'activation de son neurone. Seuls les neurones proches du point de fonctionnement actuel apprennent.
+\termes $\Gamma$ : vitesse d'apprentissage ; $-\sigma\hat{\bv W}$ ($\sigma$-modification [23]) : un léger
+\og oubli\fg{} qui empêche les poids de dériver à cause du bruit ; sans lui, les poids pourraient croître
+indéfiniment. L'adaptation est gelée quand $T_e^*$ est saturé.
+\num $\Gamma=10^7$ paraît grand, mais il faut le comparer aux unités : $e_\Omega\approx10^{-2}$~rad/s et
+$\Phi\le1$, donc $\dot{\hat W}\approx10^5$~N$\cdot$m/s : le réseau apprend une correction de l'ordre de
+100~kN$\cdot$m en environ 1~s.
+\origine cette loi est choisie pour annuler le terme croisé dans la dérivée de la fonction de Lyapunov
+(voir la preuve, équation (32)).
+\end{expl}
+
+\subsection{Stabilité (Section 7)}
+\textbf{Les hypothèses.} (H1) L'approximation (25) est valable sur la région de fonctionnement. (H2) $J$ et
+$B$ sont connus, les erreurs de paramètres sont incluses dans $\Delta$, il n'y a pas de saturation, et les
+références et la tension du réseau sont bornées. Ce sont des hypothèses classiques ; la Remarque 1 de
+l'article dit honnêtement que l'échantillonnage, les saturations et le bruit ne sont pas couverts par la
+preuve, mais vérifiés par simulation.
+
+\textbf{Le théorème en mots.} (i) Les erreurs de courant tendent vers zéro. (ii) L'erreur de vitesse et
+l'erreur des poids finissent dans une petite région autour de zéro, dont la taille dépend de l'erreur
+d'approximation $\bar\varepsilon$ et de $\sigma$. (iii) L'erreur d'énergie du bus reste bornée. Donc tous
+les signaux restent bornés.
+
+\begin{equation}\tag{28}
+\limsup_{t\to\infty}\Bigl(\tfrac12Je_\Omega^2+\tfrac{1}{2\Gamma}\|\tilde{\bv{W}}\|^2\Bigr)\le\frac{\beta}{c},
+\qquad \beta=\frac{\bar\varepsilon^2}{Jk_{11}}+\frac{\sigma\bar W^2}{2},\qquad c=\min(k_{11},\sigma\Gamma)
+\end{equation}
+\begin{expl}
+\sens c'est la taille de la région finale (borne UUB). $\limsup$ = la plus grande valeur que la quantité
+prend \og à la fin\fg{}. Plus $\bar\varepsilon$ est petit, plus la borne est petite.
+\num $c=\min(4,\;0.02\times10^7)=4$~s$^{-1}$ : la convergence vers la région finale a une constante de
+temps d'environ 0.25~s pour cette fonction d'énergie.
+\end{expl}
+
+\begin{equation}\tag{29}
+\int_0^\infty\|\bv{e}_s\|^2dt\le\frac{H_e(0)}{R_s+R_a}
+\end{equation}
+\begin{expl}
+\origine on intègre $\dot H_e=-(R_s+R_a)\|\bv e_s\|^2$ de 0 à $t$ : $H_e(t)-H_e(0)=-(R_s+R_a)\int_0^t\|\bv e_s\|^2$,
+et comme $H_e(t)\ge0$, on obtient (29). L'erreur de courant a une \og énergie totale\fg{} finie.
+\role avec le lemme de Barbalat [30] (si une fonction a une intégrale finie et une dérivée bornée, elle
+tend vers zéro), on conclut $\bv e_s\to0$.
+\end{expl}
+
+\begin{equation}\tag{30}
+J\dot e_\Omega=-Jk_{11}e_\Omega+\tilde{\bv{W}}^T\boldsymbol\Phi+\varepsilon+\kappa e_{sq}
+\end{equation}
+\begin{expl}
+\origine (23) avec $k_{12}=0$, en remplaçant $\Delta-\hat\Delta=\bv W^{*T}\boldsymbol\Phi+\varepsilon-\hat{\bv W}^T\boldsymbol\Phi
+=\tilde{\bv W}^T\boldsymbol\Phi+\varepsilon$, et en tenant compte que le courant n'est pas exactement égal à
+sa référence : $T_e=\kappa i_{sq}=\kappa(i_{sq}^*+e_{sq})=T_e^*+\kappa e_{sq}$. C'est le terme qui
+\textbf{couple} la boucle de courant et la boucle de vitesse.
+\end{expl}
+
+\begin{equation}\tag{31}
+V=\tfrac12Je_\Omega^2+\tfrac{1}{2\Gamma}\|\tilde{\bv{W}}\|^2
+\end{equation}
+\begin{expl}
+\sens fonction de Lyapunov : \og énergie cinétique\fg{} de l'erreur de vitesse $+$ \og énergie\fg{} de l'erreur
+des poids. Elle est positive et nulle seulement si les deux erreurs sont nulles.
+\end{expl}
+
+\begin{equation}\tag{32}
+\dot V=-Jk_{11}e_\Omega^2+e_\Omega\varepsilon+\kappa e_\Omega e_{sq}+\sigma\tilde{\bv{W}}^T\hat{\bv{W}}
+\end{equation}
+\begin{expl}
+\origine $\dot V=e_\Omega J\dot e_\Omega+\frac1\Gamma\tilde{\bv W}^T\dot{\tilde{\bv W}}$, avec
+$\dot{\tilde{\bv W}}=-\dot{\hat{\bv W}}$ (car $\bv W^*$ est constant). En remplaçant (30) et (27) :
+le terme $e_\Omega\tilde{\bv W}^T\boldsymbol\Phi$ venant de (30) et le terme $-\tilde{\bv W}^T\boldsymbol\Phi e_\Omega$
+venant de (27) \textbf{s'annulent} : c'est exactement pour cela que la loi (27) a cette forme. Il reste (32).
+\end{expl}
+
+\begin{equation}\tag{33}
+\dot V\le-\frac{Jk_{11}}{2}e_\Omega^2-\frac\sigma2\|\tilde{\bv{W}}\|^2+\beta+\delta(t)\le-cV+\beta+\delta(t),
+\qquad \delta(t)=\frac{\kappa^2}{Jk_{11}}e_{sq}^2(t)
+\end{equation}
+\begin{expl}
+\origine trois majorations classiques :
+\begin{itemize}[itemsep=1pt]
+\item inégalité de Young $ab\le\frac{\gamma}{2}a^2+\frac{1}{2\gamma}b^2$ :
+$e_\Omega\varepsilon\le\frac{Jk_{11}}{4}e_\Omega^2+\frac{\bar\varepsilon^2}{Jk_{11}}$ et
+$\kappa e_\Omega e_{sq}\le\frac{Jk_{11}}{4}e_\Omega^2+\frac{\kappa^2}{Jk_{11}}e_{sq}^2$ ;
+\item identité $\tilde{\bv W}^T\hat{\bv W}=\tilde{\bv W}^T(\bv W^*-\tilde{\bv W})\le\frac12\|\bv W^*\|^2-\frac12\|\tilde{\bv W}\|^2$ ;
+\item comme $\frac{Jk_{11}}{2}e_\Omega^2=k_{11}\cdot\frac12Je_\Omega^2$ et
+$\frac\sigma2\|\tilde{\bv W}\|^2=\sigma\Gamma\cdot\frac{1}{2\Gamma}\|\tilde{\bv W}\|^2$, ces deux termes sont $\ge cV$.
+\end{itemize}
+\role le lemme de comparaison donne $V(t)\le V(0)e^{-ct}+\beta/c+\int_0^te^{-c(t-\tau)}\delta(\tau)d\tau$ :
+le premier terme disparaît, le dernier aussi (car $\delta$ a une intégrale finie grâce à (29)), et il reste
+$\beta/c$, c'est-à-dire (28).
+\end{expl}
+
+\textbf{Point (iii) du théorème.} Avec $\eta=\int e_y\,dt$, les équations (16)--(17) donnent
+$\ddot\eta+k_{21}\dot\eta+k_{22}\eta=-\frac32v_{gd}e_{gd}-\dot y_2^*$. Le polynôme $s^2+120s+3600=(s+60)^2$
+est stable (Hurwitz : toutes ses racines sont à partie réelle négative), l'entrée $e_{gd}$ tend vers zéro
+et $\dot y_2^*$ (variation de l'énergie de référence du filtre) est petite et bornée : l'erreur reste bornée.
+
+\subsection{Simulation (Section 8)}
+\begin{equation}\tag{34}
+v(t) = V_{mean} + \sum_{k=1}^{3} A_k\sin(2\pi f_k t) + v_{turb}(t)
+\end{equation}
+\begin{expl}
+\sens vent aléatoire : une moyenne de 8.5~m/s, trois sinusoïdes lentes (périodes 33, 6.3 et 5.9~s), comme
+dans l'article de Mathematics [27], plus une turbulence $v_{turb}$.
+\termes $v_{turb}$ est un bruit coloré du premier ordre :
+$v_{turb}[k+1]=a\,v_{turb}[k]+\sqrt{1-a^2}\,\sigma_t\,w[k]$, $a=e^{-\Delta t/\tau_t}$, avec
+$\sigma_t=0.5$~m/s, $\tau_t=1.5$~s, $\Delta t=1$~ms et $w$ un bruit blanc gaussien (graine fixe, donc
+résultats reproductibles).
+\end{expl}
+
+\begin{equation}\tag{35}
+\begin{gathered}
+\mathrm{RMSE}=\sqrt{\frac1N\sum_{k=1}^Ne_\Omega^2(k)},\qquad
+\mathrm{MAE}=\frac1N\sum_{k=1}^N|e_\Omega(k)|,\qquad
+e_{\max}=\max_k|e_\Omega(k)|,\\
+\mathrm{IAE}=\int|e_\Omega|\,dt,\qquad
+\mathrm{ISE}=\int e_\Omega^2\,dt
+\end{gathered}
+\end{equation}
+\begin{expl}
+\sens cinq mesures de l'erreur de vitesse calculées de 1 à 40~s : RMSE et ISE pénalisent les grandes
+erreurs, MAE et IAE l'erreur moyenne, $e_{\max}$ le pire instant. IAE et MAE donnent le même pourcentage
+d'amélioration car IAE $=$ MAE $\times$ durée.
+\end{expl}
+
+\textbf{Autres indicateurs des Tables 4 et 5.}
+\begin{itemize}[itemsep=2pt]
+\item \emph{Temps d'établissement} : temps après l'échelon de vent pour que $|e_\Omega|$ reste sous 2~mrad/s.
+\item \emph{Rendement MPPT} : $\eta=\int P_w\,dt\big/\int P_{\max}\,dt$, avec $P_{\max}=\frac12\rho\pi R^2C_{p,\max}v^3$.
+\item \emph{Ondulation de couple} : écart type de $T_e$ moins sa moyenne glissante sur 50~ms, en \% de $T_n$.
+\item \emph{Activité du couple} : écart type de la dérivée du couple moyenné sur 50~ms (MN$\cdot$m/s).
+\item \emph{THD} : $\mathrm{THD}=\sqrt{\sum_{h=2}^{20}I_h^2}\,/\,I_1$, calculé par FFT sur 10 périodes (0.2~s).
+La norme IEEE 519 [31] limite (pour un rapport $I_{cc}/I_L<20$) chaque harmonique impair d'ordre inférieur à 11 à 4\,\%, les harmoniques pairs au quart de cette valeur, et la distorsion totale à 5\,\%.
+\end{itemize}
+
+\textbf{Conditions réalistes de la simulation.} Bruit blanc sur les mesures : courants (écart type 5~A,
+soit 0.2\,\% du courant nominal), tension du bus et du réseau (1~V), vitesse du codeur (2~mrad/s, filtrée
+5~ms). Harmoniques du réseau : rang 5 (2\,\%, séquence inverse) et rang 7 (1.5\,\%, séquence directe). Dans le
+repère $dq$, ces deux harmoniques apparaissent toutes les deux à $6\times50=300$~Hz : c'est l'ondulation
+visible sur $i_{gq}$ et $P_g$.
+
+%======================================================================
+\section{Comment lire les figures et les tables}
+\begin{longtable}{@{}p{2.2cm}p{12.6cm}@{}}
+\toprule
+Élément & Ce qu'il faut regarder\\
+\midrule
+\endhead
+Fig. 1 & Le schéma du système : turbine, PMSG, MSC, bus, GSC, filtre, réseau.\\
+Fig. 2 & Comment la platitude calcule $i_{sq}^*$ (en haut) et $i_{gd}^*$ (en bas) à partir des références.\\
+Fig. 3 & La PBC : modèle de référence $+$ amortissement $+$ intégrale ; l'énergie $H$ diminue.\\
+Fig. 4 & Le contrôleur complet avec les trois couches et le réseau RBF.\\
+Fig. 5 & Les deux profils de vent (échelon et aléatoire).\\
+Fig. 6 & (a)--(b) la vitesse mesurée suit la référence ; (c) l'erreur est plus petite avec le RBF (rouge) ;
+(d) l'IAE cumulée : l'écart entre bleu et rouge grandit avec le temps.\\
+Fig. 7 & $C_p$ reste proche de 0.48 ; la puissance captée suit la puissance disponible.\\
+Fig. 8 & Les courants mesurés suivent leurs références ; $i_{sd}$ et $i_{gq}$ restent autour de zéro.\\
+Fig. 9 & (a) le couple suit sa référence, l'ondulation est faible ; (b) le RBF suit l'incertitude réelle.\\
+Fig. 10 & $V_{dc}$ reste à $\pm7$~V ; pendant le creux de tension, le courant double et $V_{dc}$ revient en 50~ms.\\
+Fig. 11 & $P_g$ suit le vent, $Q_g\approx0$ (facteur de puissance unitaire), même pendant le creux.\\
+Fig. 12 & Le courant du réseau est presque sinusoïdal ; chaque harmonique est sous la limite IEEE 519.\\
+Table 1 & Les paramètres et leurs sources (Hasan \& Shatil [28], Rolán [7], Aimene [8]).\\
+Table 2 & Les sorties plates et ce qu'on calcule à partir d'elles.\\
+Table 3 & Les paramètres du RBF et tous les gains.\\
+Table 4 & L'erreur de vitesse sans et avec RBF : amélioration de 26.5 à 44.8\,\% (IAE).\\
+Table 5 & Le reste du système ne change pas avec le RBF (bus, courants, THD, énergie) ; seul le couple est
+un peu plus actif (9 à 12\,\%).\\
+\bottomrule
+\end{longtable}
+
+%======================================================================
+\section{Questions probables du professeur et réponses}
+\begin{enumerate}[itemsep=5pt,leftmargin=*]
+\item \textbf{Pourquoi la convention récepteur, et comment être sûr des signes ?}
+C'est la convention de l'article de référence [8]. Le bilan d'énergie (10), obtenu analytiquement et
+vérifié numériquement (résidu $<10^{-15}P_n$), prouve que chaque signe du modèle est cohérent.
+
+\item \textbf{D'où viennent les valeurs numériques ?}
+Le générateur, le bus, le filtre et le réseau viennent de la Table I de Hasan et Shatil [28] ; le rayon de
+Rolán et al. [7] ; $\rho$ d'Aimene et al. [8] ; $C_p$ de Heier [29]. $J$, $B$ et $R_f$ sont supposés et
+indiqués comme tels ($J$ donne une constante d'inertie de 3.5~s, valeur typique).
+
+\item \textbf{Pourquoi la platitude et pas une simple boucle PI ?}
+La platitude calcule directement la commande à partir de la trajectoire désirée : le couple nécessaire
+pour suivre $\Omega^*$ et la puissance nécessaire pour garder l'énergie du bus. Pour le bus, l'anticipation
+de $P_{dc}$ envoie la puissance au réseau avant que $V_{dc}$ ne bouge.
+
+\item \textbf{Pourquoi l'énergie du filtre est-elle incluse dans $y_2$ ?}
+Pour que $\dot y_2$ soit exactement $P_{dc}-P_g-$ pertes, linéaire en $P_g$, sans dérivée du courant.
+
+\item \textbf{Qu'apporte la PBC par rapport à une linéarisation exacte ?}
+Elle ne compense pas les termes de couplage en $\Jm$ (ils ne créent pas d'énergie), elle ajoute un
+amortissement, et la convergence se démontre simplement avec l'énergie $H_e$ (Proposition 1).
+
+\item \textbf{Pourquoi $k_{12}=0$ avec le réseau de neurones ?}
+Sinon l'intégrale absorbe la partie lente de l'incertitude, l'erreur reste nulle en moyenne et le réseau
+n'apprend rien. Le réseau remplace l'intégrale.
+
+\item \textbf{Le RBF n'augmente pas l'énergie produite : à quoi sert-il ?}
+Il améliore la précision et la robustesse du suivi de vitesse (IAE $-$26.5 à $-$44.8\,\%, temps
+d'établissement divisé par deux) sans augmenter les gains. Avec une inertie aussi grande, l'énergie captée
+est déjà proche du maximum (97.7\,\%) ; l'article le dit clairement.
+
+\item \textbf{Pourquoi ne pas augmenter simplement $k_{11}$ ?}
+Le gain $k_{11}$ est multiplié par $J=2.8\times10^6$ dans (15) : il amplifie le bruit de mesure de la
+vitesse. Le réseau réduit l'erreur sans toucher ce gain (Remarque 1).
+
+\item \textbf{La preuve de stabilité couvre-t-elle tout ?}
+Non, et l'article le dit : elle suppose $J$, $B$ connus et pas de saturation, et ne couvre pas
+l'échantillonnage ni le bruit. Ces effets sont évalués par simulation réaliste.
+
+\item \textbf{Pourquoi un modèle moyen des convertisseurs ?}
+Il représente correctement la dynamique de commande (bande passante de 500~rad/s, très inférieure à
+$f_{sw}$). L'ondulation de commutation n'est pas représentée ; c'est une limite écrite dans la conclusion,
+avec un filtre $LCL$ en perspective.
+
+\item \textbf{La PLL est idéale : est-ce un problème ?}
+C'est une hypothèse courante pour étudier la commande ; la dynamique de la PLL est citée comme perspective.
+
+\item \textbf{Pourquoi le THD vaut 3.9\,\% ?}
+Parce que la tension du réseau contient 2\,\% d'harmonique 5 et 1.5\,\% d'harmonique 7 ; la boucle de
+courant ne les rejette pas totalement. Toutes les harmoniques restent sous les limites IEEE 519.
+
+\item \textbf{Pourquoi n'y a-t-il pas de comparaison avec FOC ou SMC ?}
+L'article évalue l'apport du réseau de neurones avec les mêmes gains (sans/avec RBF), comme l'article
+publié dans Mathematics [27]. Une comparaison avec d'autres commandes est annoncée comme travail futur.
+
+\item \textbf{Les résultats sont-ils reproductibles ?}
+Oui : le script MATLAB est fourni, le vent et le bruit utilisent un générateur avec une graine fixe
+(mêmes nombres sous MATLAB et Octave), et le paramètre \texttt{P.real} permet de passer du cas réaliste
+au cas idéal.
+\end{enumerate}
+
+\end{document}
