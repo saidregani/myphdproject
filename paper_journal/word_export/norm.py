@@ -30,6 +30,9 @@ def normalize(root):
             for c in kids: el.remove(c)
             for c in srt: el.append(c)
             n += 1
+    for mr in root.iter(qn('m:rPr')):
+        if mr.find(qn('m:nor')) is not None:
+            for x in mr.findall(qn('m:sty')) + mr.findall(qn('m:scr')): mr.remove(x)
     for el in root.iter(qn('w:rPr')):
         for c in el:
             if c.tail and c.tail.strip(): c.tail = None
